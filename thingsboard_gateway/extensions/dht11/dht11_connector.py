@@ -1,180 +1,171 @@
-# Copyright © 2023 The ThingsBoard Authors
-# 
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+"""
+文件名:dht11_connector.py
+功能:通过Adafruit_DHT库读取DHT11传感器数据,并将数据转换为ThingsBoard平台要求的格式
+"""
 
-"""DHT11连接器实现模块."""
-
-import json
-import time
 import Adafruit_DHT
-from threading import Thread, Lock
-from thingsboard_gateway.connectors.connector import Connector, log    
+import time
+
+from thingsboard_gateway.connectors.connector import Connector, log
 from thingsboard_gateway.tb_utility.tb_utility import TBUtility
 
-class Dht11Connector(Thread, Connector):
-    """DHT11连接器类.
-    
-    继承自Thread和Connector,实现了连接器的基本功能.
+
+class Dht11Connector(Connector):
     """
-    
+    DHT11连接器类,继承自Connector基类
+    负责通过Adafruit_DHT库读取DHT11传感器数据,并将数据转换为ThingsBoard平台要求的格式
+    """
+
     def __init__(self, gateway, config, connector_type):
-        """构造函数.
+        """
+        初始化方法
         
         Args:
-            gateway: 网关对象
-            config: 连接器配置信息
-            connector_type: 连接器类型
+            gateway (TBGatewayService): 网关服务对象
+            config (dict): 连接器配置信息
+            connector_type (str): 连接器类型(取值为"dht11")
         """
         super().__init__()
-        self.gateway = gateway  # 网关对象
-        self.config = config  # 连接器配置
-        self.connector_type = connector_type  # 连接器类型
-        self.devices = []  # 设备列表
-        self.mutex = Lock()  # 互斥锁,用于同步访问设备数据
-        self.data = {}  # 设备数据字典
-
-        # 加载设备配置
-        devices = self.config.get("devices", [])
-        for device in devices:
-            try:
-                name = device["name"]  # 设备名称
-                gpio = device["gpio"]  # GPIO引脚号
-                interval = device.get("reportInterval", 5000) / 1000.0  # 数据上报间隔,单位为秒
-                self.devices.append({
-                    "name": name,
-                    "gpio": gpio,
-                    "interval": interval  
-                })
-                log.info("Loaded device %s, gpio: %d, interval: %.1f", name, gpio, interval)
-            except Exception as e:
-                log.error("Failed to load device '%s', error: %s", device, str(e))
-        log.info("Loaded %d devices in total", len(self.devices))
-
-    def run(self):
-        """连接器主线程函数.
+        self.gateway = gateway
+        self.__config = config
+        self.__connector_type = connector_type
+        self.setName(config.get("name", "DHT11 Connector"))
         
-        定期采集所有设备的数据,并上报到Thingsboard.
+        self.devices = {}
+        self.__load_converters()
+        self.__last_update_time = 0
+        self.__update_period = self.__config['devices'][0].get('updatePeriod', 5)  # 默认更新周期为5秒
+        
+        log.info("Dht11 Connector initialized.")
+
+    def __load_converters(self):
         """
-        while True:
-            # 遍历设备列表,采集数据并上报
-            for device in self.devices:
-                try:
-                    name = device["name"]  # 设备名称
-                    gpio = device["gpio"]  # GPIO引脚号
-                    interval = device["interval"]  # 数据上报间隔
-
-                    # 读取DHT11传感器数据
-                    humidity, temperature = Adafruit_DHT.read_retry(Adafruit_DHT.DHT11, gpio)
-                    if humidity is None or temperature is None:
-                        log.warning("Failed to read data from device %s", name)
-                        continue
-
-                    # 同步更新设备数据  
-                    self.mutex.acquire()
-                    self.data[name] = {
-                        "temperature": temperature,
-                        "humidity": humidity
+        加载数据转换器
+        """
+        devices_config = self.__config.get('devices')
+        if devices_config is not None:
+            for device_config in devices_config:
+                device_name = device_config['name']
+                converter_name = device_config['converter']
+                
+                # 加载数据转换器
+                converter = TBUtility.check_and_import(self.__connector_type, converter_name)
+                if converter is not None:
+                    # 保存数据转换器实例和传感器引脚
+                    self.devices[device_name] = {
+                        'converter': converter(device_config),
+                        'pin': device_config['pinNumber']
                     }
-                    self.mutex.release()
+                    log.info(f'[{device_name}] Data converter {converter_name} loaded.')
+                else:
+                    log.error(f'[{device_name}] Failed to load data converter {converter_name}.')
+        else:
+            log.error('No devices found in configuration.')
 
-                    # 上报数据到Thingsboard
-                    self.__upload(name, self.data[name])
-                except Exception as e:
-                    log.exception(e)
-
-                # 延时,控制数据上报频率  
-                time.sleep(interval)
-
-            log.debug("All devices processed, waiting for next round")
-            time.sleep(1)
+    def open(self):
+        """
+        连接器开启方法,开启连接器时被调用
+        """
+        log.info("Starting Dht11 Connector...")
+        self.__last_update_time = time.time()
+        self.gateway.add_device(self.getName(), {"connector": self})
+        self.connected = True
 
     def close(self):
-        """关闭连接器."""
-        log.info("Stopping DHT11 connector")
-        self.stopped = True
+        """
+        连接器关闭方法,关闭连接器时被调用
+        """
+        self.connected = False
+        log.info("Dht11 Connector stopped.")
+        self.gateway.send_connector_status(self.getName(), 'Offline')
 
     def get_name(self):
-        """获取连接器名称.
+        """
+        获取连接器名称的方法
         
         Returns:
             str: 连接器名称
         """
-        return "DHT11 Connector"
+        return self.name
 
-    def on_attributes_update(self, content):  
-        """处理Thingsboard下发的属性更新请求.
+    def is_connected(self):
+        """
+        获取连接器连接状态的方法
+        
+        Returns:
+            bool: 连接器当前是否已连接
+        """
+        return self.connected
+
+    def on_attributes_update(self, content):
+        """
+        处理属性更新请求的方法
         
         Args:
             content (dict): 属性更新请求的内容
         """
-        log.debug(content)
-        device = content["device"]  # 设备名称
-        for key, value in content["data"].items():
-            if key == "reportInterval":
-                try:
-                    interval = int(value) / 1000.0  # 上报间隔,单位为秒
-                    updated = False  
-                    # 更新设备配置
-                    for item in self.devices:
-                        if item["name"] == device:
-                            item["interval"] = interval
-                            updated = True
-                            break
-                    
-                    if updated:
-                        log.info("Device %s report interval updated to %.1f", device, interval)
-                except Exception as e:
-                    log.exception(e)
-
-    def __upload(self, name, data):
-        """上报数据到Thingsboard.
-        
-        Args:
-            name (str): 设备名称
-            data (dict): 要上报的数据
-        """  
-        try:
-            # 组装数据
-            self.gateway.send_to_storage(self.get_name(), {
-                "deviceName": name,
-                "deviceType": "thermometer",  
-                "telemetry": [
-                    {
-                        "ts": int(time.time() * 1000),
-                        "values": data
-                    }
-                ]
-            })
-            log.debug("Data for device %s uploaded: %s", name, json.dumps(data))
-        except Exception as e:
-            log.exception(e)
+        log.debug(f"Received attributes update request: {content}")
+        device_name = content['device']
+        for attribute_key, attribute_value in content['data'].items():
+            log.debug(f"Updating attribute for device {device_name}: {attribute_key} = {attribute_value}")
+            # 在此处理属性更新请求,比如更新设备的属性值
 
     def server_side_rpc_handler(self, content):
-        """处理Thingsboard下发的RPC请求.
+        """
+        处理服务端RPC请求的方法
         
         Args:
             content (dict): RPC请求的内容
         """
-        try:
-            device = content["device"]  # 设备名称
-            # 修改数据上报间隔
-            if content["data"]["method"] == "setInterval":
-                interval = content["data"]["params"]["interval"]
-                self.on_attributes_update({
-                    "device": device,
-                    "data": {"reportInterval": interval}
-                })
-                log.info("RPC request for device %s processed, set interval to %d", device, interval)
-                self.gateway.send_rpc_reply(device, content["data"]["id"], {"success": True})
-        except Exception as e:
-            log.exception(e)
+        log.debug(f"Received RPC request: {content}")
+        device_name = content['device']
+        # 在此处理RPC请求,比如调用设备的方法
+
+    def collect_and_send_data(self):
+        """
+        采集并发送DHT11传感器数据
+        """
+        for device_name, device_config in self.devices.items():
+            pin = device_config['pin']
+            
+            # 读取DHT11传感器数据
+            humidity, temperature = Adafruit_DHT.read_retry(Adafruit_DHT.DHT11, pin)
+            
+            if humidity is None or temperature is None:
+                log.error(f'[{device_name}] Failed to read data from DHT11 sensor (pin {pin}).')
+                continue
+            else:
+                log.debug(f'[{device_name}] Temperature: {temperature}°C, Humidity: {humidity}%')
+            
+            # 封装传感器数据
+            data = {
+                'temperature': temperature,
+                'humidity': humidity
+            }
+            
+            # 转换传感器数据格式
+            converter = device_config['converter']
+            converted_data = converter.convert(device_config, data)
+            
+            # 发送数据到ThingsBoard平台
+            self.gateway.send_to_storage(self.getName(), converted_data)
+
+    def run(self):
+        """
+        连接器的主要逻辑,在独立的线程中运行
+        """
+        log.info("Dht11 Connector started.")
+        self.gateway.send_connector_status(self.getName(), 'Running')
+        
+        while True:
+            if self.connected:
+                current_time = time.time()
+                
+                # 判断是否达到数据采集的时间间隔
+                if current_time - self.__last_update_time >= self.__update_period:
+                    self.collect_and_send_data()
+                    self.__last_update_time = current_time
+                else:
+                    time.sleep(1)
+            else:
+                time.sleep(1)
