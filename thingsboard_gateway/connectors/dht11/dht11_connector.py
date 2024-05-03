@@ -66,14 +66,14 @@ class Dht11Connector(Thread, Connector):
         """
         连接器运行方法
         """
-        sensor = Adafruit_DHT.DHT11
         while not self.stopped:
             for device in self.devices:
                 try:
                     # 读取DHT11传感器数据
                     # self._log.info("pin: %s", device["pin"])
-                    humidity, temperature = Adafruit_DHT.read_retry(sensor, device["pin"])
-                    
+                    #humidity, temperature = Adafruit_DHT.read_retry(sensor, pin) 
+                    humidity, temperature = Adafruit_DHT.read_retry(Adafruit_DHT.DHT11, device["pin"])
+
                     # 转换数据格式
                     data = {
                         "temperature": temperature,
