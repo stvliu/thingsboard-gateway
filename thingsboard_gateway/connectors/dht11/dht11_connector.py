@@ -1,173 +1,163 @@
+#     Copyright 2024. ThingsBoard
+#
+#     Licensed under the Apache License, Version 2.0 (the "License");
+#     you may not use this file except in compliance with the License.
+#     You may obtain a copy of the License at
+#
+#         http://www.apache.org/licenses/LICENSE-2.0
+#
+#     Unless required by applicable law or agreed to in writing, software
+#     distributed under the License is distributed on an "AS IS" BASIS,
+#     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#     See the License for the specific language governing permissions and
+#     limitations under the License.
+
 """
-文件名:dht11_connector.py
-功能:通过Adafruit_DHT库读取DHT11传感器数据,并将数据转换为ThingsBoard平台要求的格式
+DHT11连接器实现文件
 """
 
-import Adafruit_DHT
 import time
-
+import Adafruit_DHT
+from threading import Thread
 from thingsboard_gateway.connectors.connector import Connector
+from thingsboard_gateway.tb_utility.tb_loader import TBModuleLoader
 from thingsboard_gateway.tb_utility.tb_utility import TBUtility
+from thingsboard_gateway.gateway.statistics_service import StatisticsService
 from thingsboard_gateway.tb_utility.tb_logger import init_logger
 
-
-class Dht11Connector(Connector):
-    """
-    DHT11连接器类,继承自Connector基类
-    负责通过Adafruit_DHT库读取DHT11传感器数据,并将数据转换为ThingsBoard平台要求的格式
-    """
-
+# 定义DHT11连接器类，继承自Connector
+class Dht11Connector(Thread, Connector):
     def __init__(self, gateway, config, connector_type):
         """
-        初始化方法
+        DHT11连接器初始化方法
         
-        Args:
-            gateway (TBGatewayService): 网关服务对象
-            config (dict): 连接器配置信息
-            connector_type (str): 连接器类型(取值为"dht11")
+        :param gateway: 网关对象
+        :param config: 连接器配置
+        :param connector_type: 连接器类型
         """
         super().__init__()
-        self.gateway = gateway
         self.__config = config
+        self.__gateway = gateway
         self.__connector_type = connector_type
-        self.setName(config.get("name", "DHT11 Connector"))
-        self._log = init_logger(gateway, self.name, config.get('logLevel', 'INFO'))
-        
-        self.devices = {}
-        self.__load_converters()
-        self.__last_update_time = 0
-        self.__update_period = self.__config['devices'][0].get('updatePeriod', 5)  # 默认更新周期为5秒
-        
-        self._log.info("Dht11 Connector initialized.")
 
-    def __load_converters(self):
-        """
-        加载数据转换器
-        """
-        devices_config = self.__config.get('devices')
-        if devices_config is not None:
-            for device_config in devices_config:
-                device_name = device_config['name']
-                converter_name = device_config['converter']
-                
-                # 加载数据转换器
-                converter = TBUtility.check_and_import(self.__connector_type, converter_name)
-                if converter is not None:
-                    # 保存数据转换器实例和传感器引脚
-                    self.devices[device_name] = {
-                        'converter': converter(device_config, self._log),
-                        'pin': device_config['pinNumber']
-                    }
-                    self._log.info(f'[{device_name}] Data converter {converter_name} loaded.')
-                else:
-                    self._log.error(f'[{device_name}] Failed to load data converter {converter_name}.')
-        else:
-            self._log.error('No devices found in configuration.')
+        self.statistics = {'MessagesReceived': 0,'MessagesSent': 0} # 初始化统计信息
+        
+        self.name = config.get('name', 'DHT11 Connector')
+        self._log = init_logger(gateway, self.name, config.get('logLevel', 'INFO')) # 初始化日志对象
+        
+        # 加载数据转换器
+        self.devices = self.__config["devices"]
+        self.load_converters()
+        
+        self.stopped = False 
+        self.daemon = True
 
+        self._log.info("Dht11Connector initialized.")
+        
     def open(self):
         """
-        连接器开启方法,开启连接器时被调用
+        连接器开启方法
         """
-        self._log.info("Starting Dht11 Connector...")
-        self.__last_update_time = time.time()
-        self.gateway.add_device(self.getName(), {"connector": self})
-        self.connected = True
+        self._log.info("Starting Dht11Connector...")
+        self.start()
+        self._log.info("Dht11Connector started.")
+                    
+    def run(self):
+        """
+        连接器运行方法
+        """
+        sensor = Adafruit_DHT.DHT11
+        while not self.stopped:
+            for device in self.devices:
+                try:
+                    # 读取DHT11传感器数据
+                    # self._log.info("pin: %s", device["pin"])
+                    humidity, temperature = Adafruit_DHT.read_retry(sensor, device["pin"])
+                    
+                    # 转换数据格式
+                    data = {
+                        "temperature": temperature,
+                        "humidity": humidity
+                    }
+                    converted_data = device["converter"].convert(device, data)
+                    
+                    # 发送数据到ThingsBoard
+                    self.__gateway.send_to_storage(self.name, self.get_id(), converted_data)
+                    self.statistics['MessagesSent'] += 1
+                    self._log.debug("Data to ThingsBoard: %s", converted_data)
+                    time.sleep(device["pollPeriod"])
+                except Exception as e:
+                    self._log.exception(e)
 
     def close(self):
         """
-        连接器关闭方法,关闭连接器时被调用
+        连接器关闭方法
         """
-        self.connected = False
-        self._log.info("Dht11 Connector stopped.")
-        self.gateway.send_connector_status(self.getName(), 'Offline')
-
+        self._log.info("Stopping Dht11Connector...")
+        self.stopped = True
+    
     def get_name(self):
         """
-        获取连接器名称的方法
-        
-        Returns:
-            str: 连接器名称
+        获取连接器名称
         """
         return self.name
-
+    
+    def get_id(self):
+        """
+        获取连接器ID
+        """
+        return self.__config.get("id", "dht11")
+    
     def is_connected(self):
         """
-        获取连接器连接状态的方法
-        
-        Returns:
-            bool: 连接器当前是否已连接
+        连接器是否已连接
         """
-        return self.connected
-
+        return not self.stopped
+    
+    def get_config(self):
+        """
+        获取连接器配置
+        """
+        return self.__config
+    
+    def get_type(self):
+        """
+        获取连接器类型
+        """
+        return self.__connector_type
+    
+    def is_stopped(self):
+        """
+        连接器是否已停止
+        """
+        return self.stopped
+    
+    @StatisticsService.CollectAllReceivedBytesStatistics(start_stat_type='allReceivedBytesFromTB')
     def on_attributes_update(self, content):
         """
-        处理属性更新请求的方法
-        
-        Args:
-            content (dict): 属性更新请求的内容
+        处理属性更新
         """
-        self._log.debug(f"Received attributes update request: {content}")
-        device_name = content['device']
-        for attribute_key, attribute_value in content['data'].items():
-            self._log.debug(f"Updating attribute for device {device_name}: {attribute_key} = {attribute_value}")
-            # 在此处理属性更新请求,比如更新设备的属性值
+        self._log.debug("Received attributes update request: %s", content)
 
+    @StatisticsService.CollectAllReceivedBytesStatistics(start_stat_type='allReceivedBytesFromTB')
     def server_side_rpc_handler(self, content):
         """
-        处理服务端RPC请求的方法
+        处理服务端RPC请求
+        """
+        self._log.debug("Received RPC request: %s", content)
         
-        Args:
-            content (dict): RPC请求的内容
+    def load_converters(self):
         """
-        self._log.debug(f"Received RPC request: {content}")
-        device_name = content['device']
-        # 在此处理RPC请求,比如调用设备的方法
-
-    def collect_and_send_data(self):
+        加载数据转换器
         """
-        采集并发送DHT11传感器数据
-        """
-        for device_name, device_config in self.devices.items():
-            pin = device_config['pin']
-            
-            # 读取DHT11传感器数据
-            humidity, temperature = Adafruit_DHT.read_retry(Adafruit_DHT.DHT11, pin)
-            
-            if humidity is None or temperature is None:
-                self._log.error(f'[{device_name}] Failed to read data from DHT11 sensor (pin {pin}).')
-                continue
-            else:
-                self._log.debug(f'[{device_name}] Temperature: {temperature}°C, Humidity: {humidity}%')
-            
-            # 封装传感器数据
-            data = {
-                'temperature': temperature,
-                'humidity': humidity
-            }
-            
-            # 转换传感器数据格式
-            converter = device_config['converter']
-            converted_data = converter.convert(device_config, data)
-            
-            # 发送数据到ThingsBoard平台
-            self.gateway.send_to_storage(self.getName(), converted_data)
-
-    def run(self):
-        """
-        连接器的主要逻辑,在独立的线程中运行
-        """
-        self._log.info("Dht11 Connector started.")
-        self.gateway.send_connector_status(self.getName(), 'Running')
-        
-        while True:
-            if self.connected:
-                current_time = time.time()
-                
-                # 判断是否达到数据采集的时间间隔
-                if current_time - self.__last_update_time >= self.__update_period:
-                    self.collect_and_send_data()
-                    self.__last_update_time = current_time
-                else:
-                    time.sleep(1)
-            else:
-                time.sleep(1)
+        self._log.debug("Loading converters...")
+        for device in self.devices:
+            try:
+                converter_class = device["converter"]
+                device["converter"] = TBModuleLoader.import_module(self.__connector_type,
+                                                                   converter_class)(device, log=self._log)
+                self._log.debug("Converter %s loaded.", converter_class)
+            except Exception as e:
+                self._log.error("Failed to load converter %s", converter_class)
+                self._log.exception(e)
+        self._log.debug("Converters loading done.")
