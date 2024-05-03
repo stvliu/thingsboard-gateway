@@ -3,34 +3,36 @@
 功能：将DHT11连接器读取到的原始数据转换为ThingsBoard平台要求的格式
 """
 
-from thingsboard_gateway.connectors.converter import Converter, log
+from thingsboard_gateway.connectors.converter import Converter
 
 
 class DHT11Converter(Converter):
     """
-    DHT11转换器类，继承自Converter基类
+    DHT11转换器类,继承自Converter基类
     负责将DHT11连接器读取到的原始数据转换为ThingsBoard平台要求的格式
     """
 
-    def __init__(self, config):
+    def __init__(self, config, log):
         """
         初始化方法
         
         Args:
             config (dict): 转换器配置信息
+            log (TBLogger): 日志对象
         """
         self.__config = config
+        self._log = log
 
     def convert(self, config, data):
         """
-        转换方法，将原始数据转换为ThingsBoard平台要求的格式
+        转换方法,将原始数据转换为ThingsBoard平台要求的格式
         
         Args:
             config (dict): 转换器配置信息
-            data (dict): 原始数据，格式为 {'temperature': xxx, 'humidity': xxx}
+            data (dict): 原始数据,格式为 {'temperature': xxx, 'humidity': xxx}
             
         Returns:
-            dict: 转换后的数据，格式为 {'deviceName': 'xxx', 'deviceType': 'xxx', 'telemetry': [{'temperature': xxx}, {'humidity': xxx}]}
+            dict: 转换后的数据,格式为 {'deviceName': 'xxx', 'deviceType': 'xxx', 'telemetry': [{'temperature': xxx}, {'humidity': xxx}]}
         """
         device_name = self.__config['deviceName']
         device_type = self.__config['deviceType']
@@ -41,7 +43,7 @@ class DHT11Converter(Converter):
             if key in data:
                 telemetry.append({key: data[key]})
             else:
-                log.warning(f'Key "{key}" not found in data: {data}')
+                self._log.warning(f'Key "{key}" not found in data: {data}')
         
         return {
             'deviceName': device_name,

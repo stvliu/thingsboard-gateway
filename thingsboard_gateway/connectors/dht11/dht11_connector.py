@@ -6,8 +6,9 @@
 import Adafruit_DHT
 import time
 
-from thingsboard_gateway.connectors.connector import Connector, log
+from thingsboard_gateway.connectors.connector import Connector
 from thingsboard_gateway.tb_utility.tb_utility import TBUtility
+from thingsboard_gateway.tb_utility.tb_logger import init_logger
 
 
 class Dht11Connector(Connector):
@@ -30,13 +31,14 @@ class Dht11Connector(Connector):
         self.__config = config
         self.__connector_type = connector_type
         self.setName(config.get("name", "DHT11 Connector"))
+        self._log = init_logger(gateway, self.name, config.get('logLevel', 'INFO'))
         
         self.devices = {}
         self.__load_converters()
         self.__last_update_time = 0
         self.__update_period = self.__config['devices'][0].get('updatePeriod', 5)  # 默认更新周期为5秒
         
-        log.info("Dht11 Connector initialized.")
+        self._log.info("Dht11 Connector initialized.")
 
     def __load_converters(self):
         """
@@ -53,20 +55,20 @@ class Dht11Connector(Connector):
                 if converter is not None:
                     # 保存数据转换器实例和传感器引脚
                     self.devices[device_name] = {
-                        'converter': converter(device_config),
+                        'converter': converter(device_config, self._log),
                         'pin': device_config['pinNumber']
                     }
-                    log.info(f'[{device_name}] Data converter {converter_name} loaded.')
+                    self._log.info(f'[{device_name}] Data converter {converter_name} loaded.')
                 else:
-                    log.error(f'[{device_name}] Failed to load data converter {converter_name}.')
+                    self._log.error(f'[{device_name}] Failed to load data converter {converter_name}.')
         else:
-            log.error('No devices found in configuration.')
+            self._log.error('No devices found in configuration.')
 
     def open(self):
         """
         连接器开启方法,开启连接器时被调用
         """
-        log.info("Starting Dht11 Connector...")
+        self._log.info("Starting Dht11 Connector...")
         self.__last_update_time = time.time()
         self.gateway.add_device(self.getName(), {"connector": self})
         self.connected = True
@@ -76,7 +78,7 @@ class Dht11Connector(Connector):
         连接器关闭方法,关闭连接器时被调用
         """
         self.connected = False
-        log.info("Dht11 Connector stopped.")
+        self._log.info("Dht11 Connector stopped.")
         self.gateway.send_connector_status(self.getName(), 'Offline')
 
     def get_name(self):
@@ -104,10 +106,10 @@ class Dht11Connector(Connector):
         Args:
             content (dict): 属性更新请求的内容
         """
-        log.debug(f"Received attributes update request: {content}")
+        self._log.debug(f"Received attributes update request: {content}")
         device_name = content['device']
         for attribute_key, attribute_value in content['data'].items():
-            log.debug(f"Updating attribute for device {device_name}: {attribute_key} = {attribute_value}")
+            self._log.debug(f"Updating attribute for device {device_name}: {attribute_key} = {attribute_value}")
             # 在此处理属性更新请求,比如更新设备的属性值
 
     def server_side_rpc_handler(self, content):
@@ -117,7 +119,7 @@ class Dht11Connector(Connector):
         Args:
             content (dict): RPC请求的内容
         """
-        log.debug(f"Received RPC request: {content}")
+        self._log.debug(f"Received RPC request: {content}")
         device_name = content['device']
         # 在此处理RPC请求,比如调用设备的方法
 
@@ -132,10 +134,10 @@ class Dht11Connector(Connector):
             humidity, temperature = Adafruit_DHT.read_retry(Adafruit_DHT.DHT11, pin)
             
             if humidity is None or temperature is None:
-                log.error(f'[{device_name}] Failed to read data from DHT11 sensor (pin {pin}).')
+                self._log.error(f'[{device_name}] Failed to read data from DHT11 sensor (pin {pin}).')
                 continue
             else:
-                log.debug(f'[{device_name}] Temperature: {temperature}°C, Humidity: {humidity}%')
+                self._log.debug(f'[{device_name}] Temperature: {temperature}°C, Humidity: {humidity}%')
             
             # 封装传感器数据
             data = {
@@ -154,7 +156,7 @@ class Dht11Connector(Connector):
         """
         连接器的主要逻辑,在独立的线程中运行
         """
-        log.info("Dht11 Connector started.")
+        self._log.info("Dht11 Connector started.")
         self.gateway.send_connector_status(self.getName(), 'Running')
         
         while True:
