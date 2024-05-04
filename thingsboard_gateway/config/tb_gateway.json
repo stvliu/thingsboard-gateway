@@ -21,7 +21,7 @@
     "handleDeviceRenaming": true,
     "security": {
       "type": "accessToken",
-      "accessToken": "2VKu5PPEg6ADsMhaGlxh"
+      "accessToken": ""
     },
     "qos": 1,
     "checkingDeviceActivity": {
@@ -54,11 +54,5 @@
     "keepAliveTimeMs": 10000,
     "keepAliveTimeoutMs": 5000
   },
-  "connectors": [
-    {
-      "type": "modbus",
-      "name": "Temperature_Sensor_1",
-      "configuration": "temperatureSensor1.json"
-    }
-  ]
+  "connectors": []
 }
