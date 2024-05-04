@@ -70,8 +70,9 @@ class Dht11Connector(Thread, Connector):
             for device in self.devices:
                 try:
                     # 读取DHT11传感器数据
-                    # self._log.info("pin: %s", device["pin"])
+                    self._log.info("pin: %s", device["pin"])
                     #humidity, temperature = Adafruit_DHT.read_retry(sensor, pin) 
+                    #使用BCM编码的GPIO4
                     humidity, temperature = Adafruit_DHT.read_retry(Adafruit_DHT.DHT11, device["pin"])
 
                     # 转换数据格式
