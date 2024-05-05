@@ -27,8 +27,10 @@ class Dht11Converter(Converter):
         :param config: 转换器配置
         :param log: 日志对象
         """
+        self._log.info("=========Dht11Converter start initializing.===========")
         self.__config = config
         self._log = log
+        self._log.info("=========Dht11Converter initialized.=========")
 
     def convert(self, device, data):
         """
@@ -51,4 +53,5 @@ class Dht11Converter(Converter):
                 self._log.debug("Converted telemetry '%s': %s", key, value)
             else:
                 self._log.error("Telemetry '%s' not found in data: %s", key, data)
+        self._log.info("=========Dht11Converter convert done=======")
         return result

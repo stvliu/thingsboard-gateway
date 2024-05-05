@@ -35,29 +35,35 @@ class Dht11Connector(Thread, Connector):
         :param config: 连接器配置
         :param connector_type: 连接器类型
         """
-        super().__init__()
-        self.__config = config
-        self.__gateway = gateway
-        self.__connector_type = connector_type
+        try:
+            super().__init__()
+            self.__config = config
+            self.__gateway = gateway
+            self.__connector_type = connector_type
 
-        self.statistics = {'MessagesReceived': 0,'MessagesSent': 0} # 初始化统计信息
-        
-        self.name = config.get('name', 'DHT11 Connector')
-        self._log = init_logger(gateway, self.name, config.get('logLevel', 'INFO')) # 初始化日志对象
-        
-        # 加载数据转换器
-        self.devices = self.__config["devices"]
-        self.load_converters()
-        
-        self.stopped = False 
-        self.daemon = True
+            self.statistics = {'MessagesReceived': 0,'MessagesSent': 0} # 初始化统计信息
+            
+            self.name = config.get('name', 'DHT11 Connector')
+            self._log = init_logger(gateway, self.name, config.get('logLevel', 'INFO')) # 初始化日志对象
+            
+            # 加载数据转换器
+            self.devices = self.__config["devices"]
+            self.load_converters()
+            
+            self.stopped = False 
+            self.daemon = True
 
-        self._log.info("Dht11Connector initialized.")
+            self._log.info("Dht11Connector initialized.")
+            self._log.info("=========Dht11Connector initialized.===========")
+        except Exception as e:
+            self._log.exception(e)
+            raise e
         
     def open(self):
         """
         连接器开启方法
         """
+        self._log.info("=========Starting Dht11Connector...===============")
         self._log.info("Starting Dht11Connector...")
         self.start()
         self._log.info("Dht11Connector started.")
@@ -67,14 +73,16 @@ class Dht11Connector(Thread, Connector):
         连接器运行方法
         """
         while not self.stopped:
+            self._log.info("=========== dht11_connector running... ===========")
             for device in self.devices:
                 try:
                     # 读取DHT11传感器数据
-                    self._log.info("##################pin: %s ##################", device["pin"])
+                    self._log.info("=========== pin: %s ===========", device["pin"])
+                    self._log.info("=========== pollPeriod: %s ===========", device["pollPeriod"])
                     #humidity, temperature = Adafruit_DHT.read_retry(sensor, pin) 
                     #使用BCM编码的GPIO4
                     humidity, temperature = Adafruit_DHT.read_retry(Adafruit_DHT.DHT11, device["pin"])
-
+                    self._log.info("=========== temperature: %s , humidity: %s  ===========",temperature, humidity)
                     # 转换数据格式
                     data = {
                         "temperature": temperature,
@@ -155,10 +163,14 @@ class Dht11Connector(Thread, Connector):
         for device in self.devices:
             try:
                 converter_class = device["converter"]
+                self._log.info("=========== connector_type: %s ===========", self.__connector_type)
+                self._log.info("=========== converter_class: %s ===========", converter_class)
                 device["converter"] = TBModuleLoader.import_module(self.__connector_type,
                                                                    converter_class)(device, log=self._log)
                 self._log.debug("Converter %s loaded.", converter_class)
+                self._log.info("=========== converter_class: %s loaded===========", converter_class)
             except Exception as e:
                 self._log.error("Failed to load converter %s", converter_class)
                 self._log.exception(e)
         self._log.debug("Converters loading done.")
+        self._log.info("========Converters loading done.=============")
