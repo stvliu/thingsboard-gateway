@@ -5,7 +5,7 @@ import time
 sensor = Adafruit_DHT.DHT11
 
 # GPIO引脚号
-pin = 17
+pin = 4
 
 while True:
     # 读取温湿度数据
