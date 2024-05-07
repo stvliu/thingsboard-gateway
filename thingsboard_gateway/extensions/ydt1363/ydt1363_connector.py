@@ -1,6 +1,6 @@
 """
 文件: ydt1363_connector.py
-描述: YD/T 1363.3协议连接器,用于通过Thingsboard IoT Gateway采集和控制支持YD/T 1363.3协议的设备。
+描述: YD/T 1363.3-2015协议连接器,用于通过Thingsboard IoT Gateway采集和控制支持YD/T 1363.3-2015协议的设备。
 """
 
 import time
