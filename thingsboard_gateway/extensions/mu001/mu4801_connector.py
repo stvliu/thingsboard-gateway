@@ -1,6 +1,6 @@
 """
-文件: ydt1363_connector.py
-描述: YD/T 1363.3-2015协议连接器,用于通过Thingsboard IoT Gateway采集和控制支持YD/T 1363.3-2015协议的设备。
+文件: mu4801_connector.py
+描述: MU4801协议连接器,用于通过Thingsboard IoT Gateway采集和控制支持MU4801协议的设备。
 """
 
 import time
@@ -12,19 +12,19 @@ from string import ascii_lowercase
 
 from thingsboard_gateway.connectors.connector import Connector
 from thingsboard_gateway.tb_utility.tb_utility import TBUtility
-from ydt1363_uplink_converter import YDT1363UplinkConverter
-from ydt1363_downlink_converter import YDT1363DownlinkConverter
+from mu4801_uplink_converter import MU4801UplinkConverter
+from mu4801_downlink_converter import MU4801DownlinkConverter
 from thingsboard_gateway.tb_utility.tb_logger import init_logger
 
 
-class YDT1363Connector(Thread, Connector):
+class MU4801Connector(Thread, Connector):
     """
-    YDT1363Connector类,继承自Thread和Connector,实现了YD/T 1363.3协议的连接器功能。
+    MU4801Connector类,继承自Thread和Connector,实现了MU4801协议的连接器功能。
     """
 
     def __init__(self, gateway, config, connector_type):
         """
-        初始化YDT1363Connector连接器。
+        初始化MU4801Connector连接器。
         
         参数:
         - gateway: Gateway对象,连接器所属的Gateway实例。
@@ -40,8 +40,8 @@ class YDT1363Connector(Thread, Connector):
         self._connector_type = connector_type
         # 连接器配置信息
         self.__config = config
-        # 连接器名称,默认为"YDT1363 Connector"加上5个随机小写字母
-        self.name = config.get("name", 'YDT1363 Connector ' + ''.join(choice(ascii_lowercase) for _ in range(5)))
+        # 连接器名称,默认为"MU4801 Connector"加上5个随机小写字母
+        self.name = config.get("name", 'MU4801 Connector ' + ''.join(choice(ascii_lowercase) for _ in range(5)))
         # 日志对象,通过init_logger函数初始化
         self._log = init_logger(gateway, self.name, self.__config.get('logLevel', 'INFO'))
         # 需要连接的设备信息列表
@@ -66,7 +66,7 @@ class YDT1363Connector(Thread, Connector):
         self.__stopped = False
         self.start()
         self.__last_reconnect_time = time.time()
-        self._log.info("Starting YDT1363 connector")  
+        self._log.info("Starting MU4801 connector")  
 
     def run(self):
         """
@@ -89,7 +89,7 @@ class YDT1363Connector(Thread, Connector):
         self.__stopped = True
         self._connected = False
         self.__disconnect_from_devices()
-        self._log.info('YDT1363 connector has been stopped.')
+        self._log.info('MU4801 connector has been stopped.')
 
     def get_name(self):
         """
@@ -107,7 +107,7 @@ class YDT1363Connector(Thread, Connector):
         返回:
         - str,连接器ID。
         """
-        return self.__config.get("id", "ydt1363") 
+        return self.__config.get("id", "mu4801") 
     
     def get_type(self):
         """
@@ -160,9 +160,9 @@ class YDT1363Connector(Thread, Connector):
                 # 获取属性名称
                 attribute_key = content['data'].get(attribute_request_config['attributeFilter']) 
                 if attribute_key is not None:
-                    # 使用下行数据转换器将属性值转换为YD/T 1363.3协议要求的格式
-                    data = YDT1363DownlinkConverter.convert(attribute_request_config, attribute_key)
-                    # 构造YD/T 1363.3协议命令  
+                    # 使用下行数据转换器将属性值转换为MU4801协议要求的格式
+                    data = MU4801DownlinkConverter.convert(attribute_request_config, attribute_key)
+                    # 构造MU4801协议命令  
                     request = self.__form_request(attribute_request_config['cid1'], attribute_request_config['command'], data)
                     # 发送命令给设备
                     self.__send_request(device_config['socket'], request)
@@ -186,9 +186,9 @@ class YDT1363Connector(Thread, Connector):
                     # 获取RPC参数
                     data = content['data'].get('params')
                     if data is not None:
-                        # 使用下行数据转换器将RPC参数转换为YD/T 1363.3协议要求的格式
-                        data = YDT1363DownlinkConverter.convert(rpc_request_config, data)
-                    # 构造YD/T 1363.3协议命令
+                        # 使用下行数据转换器将RPC参数转换为MU4801协议要求的格式
+                        data = MU4801DownlinkConverter.convert(rpc_request_config, data)
+                    # 构造MU4801协议命令
                     request = self.__form_request(rpc_request_config['cid1'], rpc_request_config['command'], data)
                     # 发送命令给设备
                     self.__send_request(device_config['socket'], request)
@@ -295,7 +295,7 @@ class YDT1363Connector(Thread, Connector):
                         # 解析设备响应
                         response_data = self.__parse_response(response, attribute)
                         # 将响应数据转换为Thingsboard接受的格式
-                        converted_data = YDT1363UplinkConverter(self._log).convert(device_config, response_data)
+                        converted_data = MU4801UplinkConverter(self._log).convert(device_config, response_data)
                         # 发送数据到Thingsboard
                         self.collect_statistic_and_send(self.get_name(), converted_data)
                     # 遍历设备的遥测配置
@@ -307,7 +307,7 @@ class YDT1363Connector(Thread, Connector):
                         # 解析设备响应
                         response_data = self.__parse_response(response, telemetry)
                         # 将响应数据转换为Thingsboard接受的格式
-                        converted_data = YDT1363UplinkConverter(self._log).convert(device_config, response_data)
+                        converted_data = MU4801UplinkConverter(self._log).convert(device_config, response_data)
                         # 发送数据到Thingsboard
                         self.collect_statistic_and_send(self.get_name(), converted_data)
                     # 更新最后一次活动时间
@@ -316,7 +316,7 @@ class YDT1363Connector(Thread, Connector):
     @staticmethod
     def __form_request(cid1, cid2, data=None):
         """
-        构造YD/T 1363.3协议命令。
+        构造MU4801协议命令。
         
         参数:
         - cid1: str,命令标识1。
@@ -324,7 +324,7 @@ class YDT1363Connector(Thread, Connector):
         - data: bytes,可选,命令数据。
         
         返回:
-        - bytes,YD/T 1363.3协议命令。
+        - bytes,MU4801协议命令。
         """
         request = bytearray([0x68, 0x0D, 0x00, 0x41, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, int(cid1, 16), int(cid2, 16), 0x00, 0x16])
         if data is not None:
@@ -334,11 +334,11 @@ class YDT1363Connector(Thread, Connector):
     @staticmethod
     def __send_request(sock, request):
         """
-        向设备发送YD/T 1363.3协议命令,并接收设备返回的响应数据。
+        向设备发送MU4801协议命令,并接收设备返回的响应数据。
         
         参数:
         - sock: socket.socket,与设备的Socket连接。
-        - request: bytes,YD/T 1363.3协议命令。
+        - request: bytes,MU4801协议命令。
         
         返回:
         - bytes,设备返回的响应数据。
@@ -386,12 +386,12 @@ class YDT1363Connector(Thread, Connector):
                 data_bytes = total_data[data_offset:data_offset+config.get('length', 4)]
                 data_offset += config.get('length', 4)
                 # 将原始字节数据转换为Python数据类型
-                result[key] = YDT1363Connector.__convert_data(data_bytes, config)
+                result[key] = MU4801Connector.__convert_data(data_bytes, config)
         else:
             # 提取数据部分
             data = response[15:-1]
             # 将原始字节数据转换为Python数据类型
-            result[config['key']] = YDT1363Connector.__convert_data(data, config)
+            result[config['key']] = MU4801Connector.__convert_data(data, config)
         return result
 
     @staticmethod

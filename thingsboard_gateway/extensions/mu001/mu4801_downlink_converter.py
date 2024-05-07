@@ -1,14 +1,14 @@
 """
-文件: ydt1363_downlink_converter.py
-描述: YD/T 1363.3协议下行数据转换器,将Thingsboard下发的控制命令转换为设备能识别的原始数据。
+文件: mu4801_downlink_converter.py
+描述: MU4801协议下行数据转换器,将Thingsboard下发的控制命令转换为设备能识别的原始数据。
 """
 
 import struct
 
 
-class YDT1363DownlinkConverter:
+class MU4801DownlinkConverter:
     """
-    YDT1363DownlinkConverter类,实现了将Thingsboard下发的控制命令转换为设备能识别的原始数据的功能。
+    MU4801DownlinkConverter类,实现了将Thingsboard下发的控制命令转换为设备能识别的原始数据的功能。
     """
 
     @staticmethod

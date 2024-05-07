@@ -1,17 +1,17 @@
 """
-文件: ydt1363_uplink_converter.py
-描述: YD/T 1363.3协议上行数据转换器,将设备上报的原始数据转换为Thingsboard接受的数据格式。
+文件: mu4801_uplink_converter.py
+描述: MU4801协议上行数据转换器,将设备上报的原始数据转换为Thingsboard接受的数据格式。
 """
 
 
-class YDT1363UplinkConverter:
+class MU4801UplinkConverter:
     """
-    YDT1363UplinkConverter类,实现了将设备上报的原始数据转换为Thingsboard接受的数据格式的功能。
+    MU4801UplinkConverter类,实现了将设备上报的原始数据转换为Thingsboard接受的数据格式的功能。
     """
 
     def __init__(self, logger):
         """
-        初始化YDT1363UplinkConverter对象。
+        初始化MU4801UplinkConverter对象。
 
         参数:
         - logger: logging.Logger,日志对象。
