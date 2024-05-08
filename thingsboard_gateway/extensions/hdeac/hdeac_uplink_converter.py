@@ -30,7 +30,7 @@ class HdeAcUplinkConverter(Converter):
         返回:
         - 转换后的数据，字典  
         """
-        result = {'deviceName': config['deviceName'], 'deviceType': 'hde-ac', 'attributes': [], 'telemetry': []}
+        result = {'deviceName': config['deviceName'], 'deviceType': config.get('deviceType', 'default'), 'attributes': [], 'telemetry': []}
         
         if 'attributes' in config:
             for attr in config['attributes']:
@@ -39,19 +39,29 @@ class HdeAcUplinkConverter(Converter):
         if 'timeseries' in config:        
             for ts in config['timeseries']:
                 if ts['datatype'] == 'alarms':
+                    # 将告警状态进行特殊处理
                     alarms = {}  
                     for alarm in ts['values']:
                         if alarm['type'] == 'alarm':
                             alarms[alarm['key']] = HdeAcUplinkConverter.__convert_alarm(alarm, data)
+                        elif alarm['type'] == 'value':
+                            alarms[alarm['key']] = HdeAcUplinkConverter.__convert_value(logger, alarm, data)
                     result['telemetry'].append({ts['key']: alarms})
-                elif ts['datatype'] == 'uint8':
-                    values = {}
-                    for value in ts['values']:
-                        values[value['key']] = HdeAcUplinkConverter.__convert_value(logger, value, data) 
-                    result['telemetry'].append({ts['key']: values})
+                elif ts['datatype'] == 'bits':
+                    # 将开关量状态进行特殊处理
+                    bits = {}  
+                    for bit in ts['values']:
+                        if bit['type'] == 'bool':
+                            bits[bit['key']] = HdeAcUplinkConverter.__convert_bool(bit, data) 
+                    result['telemetry'].append({ts['key']: bits})
                 else:
+                    # 其他遥测量直接转换
                     result['telemetry'].append({ts['key']: HdeAcUplinkConverter.__convert_value(logger, ts, data)})
-        
+                
+        if 'attributes_from_response' in config:
+            for attr in config['attributes_from_response']:
+                result['attributes'].append({attr['key']: HdeAcUplinkConverter.__convert_value(logger, attr, data)})
+            
         return result
     
     @staticmethod        
@@ -76,10 +86,26 @@ class HdeAcUplinkConverter(Converter):
         
         try:
             value = int.from_bytes(data[start:start+length], byteorder=byteorder, signed=signed)
-            return value * factor
+            return round(value * factor, 6)
         except Exception as e:
             logger.exception(e)
             return 0
+        
+    @staticmethod
+    def __convert_bool(config, data):
+        """
+        转换布尔值。
+        
+        参数:
+        - config: 布尔值配置，字典
+        - data: 原始数据，字节数组
+        
+        返回:
+        - 转换后的布尔值
+        """
+        start = config.get('start', 0)  
+        on_value = config.get('on_value', 1)
+        return data[start] == on_value
     
     @staticmethod
     def __convert_alarm(config, data):

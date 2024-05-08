@@ -65,24 +65,26 @@ class HdeAcDownlinkConverter(Converter):
         """
         try:
             command = bytearray(HdeAcDownlinkConverter.convert_object(logger, config, 'command'))
-            command.extend(HdeAcDownlinkConverter.__convert_value(data))
+            if 'params' in data:
+                command.extend(HdeAcDownlinkConverter.__convert_value(logger, data))
             return command
         except Exception as e:
             logger.exception(e)
             return b''
     
     @staticmethod    
-    def __convert_value(data):  
+    def __convert_value(logger, data):  
         """
         转换属性或参数的值。
         
         参数:
+        - logger: 日志对象
         - data: 属性或参数的值，字典
         
         返回:  
         - 转换后的值，字节数组
         """
-        value = data.get('params', 0)
+        value = data['params']
         datatype = data.get('datatype', 'int8')
         factor = data.get('factor', 1)
         
