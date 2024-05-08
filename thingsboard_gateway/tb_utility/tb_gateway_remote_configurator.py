@@ -42,7 +42,6 @@ class RemoteConfigurator:
         self.in_process = False
         self._active_connectors = []
         self._handlers = {
-            'general_configuration': self._handle_general_configuration_update,
             'storage_configuration': self._handle_storage_configuration_update,
             'grpc_configuration': self._handle_grpc_configuration_update,
             'logs_configuration': self._handle_logs_configuration_update,
@@ -252,6 +251,10 @@ class RemoteConfigurator:
 
             self.in_process = True
 
+            if 'general_configuration' in config.keys():
+                self._handle_general_configuration_update(config['general_configuration'])
+                config.pop('general_configuration', None)
+
             try:
                 for attr_name in config.keys():
                     if 'deleted' in attr_name:
@@ -423,8 +426,7 @@ class RemoteConfigurator:
         LOG.debug('Processing active connectors configuration update...')
 
         for connector_name in config:
-            if self._gateway.connectors_configs.get(connector_name) is None:
-                self._gateway._check_shared_attributes(shared_keys=[connector_name])
+            self._gateway._check_shared_attributes(shared_keys=[connector_name])
 
         has_changed = False
         for_deletion = []
