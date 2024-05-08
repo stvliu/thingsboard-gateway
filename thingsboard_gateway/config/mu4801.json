@@ -1,0 +1,530 @@
+{
+    "devices": [
+        {
+            "deviceName": "MU4801 Device 1",
+            "deviceType": "mu4801",
+            "host": "192.168.1.100",
+            "port": 4001,
+            "pollingInterval": 5000,
+            "connectTimeout": 5,
+            "reconnectInterval": 30,
+            "attributes": [
+                {
+                    "key": "currentTime",
+                    "cid1": "40",
+                    "cid2": "4D"
+                },
+                {
+                    "key": "protocolVersion",
+                    "cid1": "40",
+                    "cid2": "4F"
+                },
+                {
+                    "key": "deviceAddress",
+                    "cid1": "40",
+                    "cid2": "50"
+                },
+                {
+                    "key": "manufacturerInfo",
+                    "cid1": "40",
+                    "cid2": "51",
+                    "byteOrder": "little",
+                    "dataType": "string",
+                    "length": 32
+                },
+                {
+                    "key": "rectifierModuleGroupQuantity",
+                    "cid1": "41",
+                    "cid2": "41",
+                    "byteOrder": "little",
+                    "dataType": "uint16"
+                },
+                {
+                    "key": "rectifierModuleTotalQuantity",
+                    "cid1": "41",
+                    "cid2": "41",
+                    "command": "multipleFrame",
+                    "byteOrder": "little",
+                    "dataType": "uint16"
+                },
+                {
+                    "key": "rectifierModuleInputVoltage",
+                    "cid1": "41",
+                    "cid2": "41",
+                    "command": "multipleFrame",
+                    "byteOrder": "little",
+                    "dataType": "float32"
+                },
+                {
+                    "key": "rectifierModuleOutputCurrent",
+                    "cid1": "41",
+                    "cid2": "41",
+                    "command": "multipleFrame",
+                    "byteOrder": "little",
+                    "dataType": "float32"
+                },
+                {
+                    "key": "rectifierModuleCurrentLimit",
+                    "cid1": "41",
+                    "cid2": "41",
+                    "command": "multipleFrame",
+                    "byteOrder": "little",
+                    "dataType": "float32"
+                },
+                {
+                    "key": "rectifierModuleOutputVoltage",
+                    "cid1": "41",
+                    "cid2": "41",
+                    "command": "multipleFrame",
+                    "byteOrder": "little",
+                    "dataType": "float32"
+                },
+                {
+                    "key": "rectifierModuleTemperature",
+                    "cid1": "41",
+                    "cid2": "41",
+                    "command": "multipleFrame",
+                    "byteOrder": "little",
+                    "dataType": "float32"
+                },
+                {
+                    "key": "rectifierModuleStatus",
+                    "cid1": "41",
+                    "cid2": "43",
+                    "command": "multipleFrame",
+                    "byteOrder": "little",
+                    "dataType": "uint8"
+                },
+                {
+                    "key": "rectifierModuleInputStatus",
+                    "cid1": "41",
+                    "cid2": "43",
+                    "command": "multipleFrame",
+                    "byteOrder": "little",
+                    "dataType": "uint8"
+                },
+                {
+                    "key": "rectifierModuleWorkStatus",
+                    "cid1": "41",
+                    "cid2": "43",
+                    "command": "multipleFrame",
+                    "byteOrder": "little",
+                    "dataType": "uint8",
+                    "mapping": {
+                        "0": "turnedOn",
+                        "1": "turnedOff"
+                    }
+                },
+                {
+                    "key": "rectifierModuleAlarmStatus",
+                    "cid1": "41",
+                    "cid2": "44",
+                    "command": "multipleFrame",
+                    "byteOrder": "little",
+                    "dataType": "uint8"
+                },
+                {
+                    "key": "systemControlStatus",
+                    "cid1": "81",
+                    "dataType": "uint8",
+                    "mapping": {
+                        "0xE0": "automatic",
+                        "0xE1": "manual"
+                    }
+                },
+                {
+                    "key": "alarmSoundStatus",
+                    "cid1": "84",
+                    "dataType": "uint8",
+                    "mapping": {
+                        "0xE0": "enabled",
+                        "0xE1": "disabled"
+                    }
+                },
+                {
+                    "key": "energySavingParameters",
+                    "cid1": "90",
+                    "items": [
+                        {
+                            "key": "energySavingStatus",
+                            "dataType": "uint8",
+                            "mapping": {
+                                "0": "enabled",
+                                "1": "disabled"
+                            }
+                        },
+                        {
+                            "key": "minWorkingModules",
+                            "dataType": "uint8"
+                        },
+                        {
+                            "key": "moduleSwitchPeriod",
+                            "dataType": "uint16"
+                        },
+                        {
+                            "key": "moduleOptimalEfficiencyPoint",
+                            "dataType": "uint8"
+                        },
+                        {
+                            "key": "moduleRedundancyPoint",
+                            "dataType": "uint8"
+                        }
+                    ]
+                },
+                {
+                    "key": "batteryFloatVoltage",
+                    "cid1": "46",
+                    "dataType": "float32"
+                },
+                {
+                    "key": "batteryEqualizeVoltage",
+                    "cid1": "46",
+                    "dataType": "float32"
+                },
+                {
+                    "key": "batteryTempCompensationCoefficient",
+                    "cid1": "46",
+                    "dataType": "float32"
+                },
+                {
+                    "key": "batteryTempCompensationCenterPoint",
+                    "cid1": "46",
+                    "dataType": "float32"
+                },
+                {
+                    "key": "dcOverVoltageSetPoint",
+                    "cid1": "46",
+                    "dataType": "float32"
+                },
+                {
+                    "key": "dcUnderVoltageSetPoint",
+                    "cid1": "46",
+                    "dataType": "float32"
+                }
+            ],
+            "telemetry": [
+                {
+                    "key": "acInputVoltage",
+                    "cid1": "40",
+                    "cid2": "41",
+                    "command": "multipleFrame",
+                    "dataType": "float32",
+                    "mapping": {
+                        "0": "ABvoltage",
+                        "4": "BCvoltage",
+                        "8": "CAvoltage"
+                    }
+                },
+                {
+                    "key": "acInputFrequency",
+                    "cid1": "40",
+                    "cid2": "41",
+                    "dataType": "float32"
+                },
+                {
+                    "key": "acAlarmStatus",
+                    "cid1": "40",
+                    "cid2": "44",
+                    "dataType": "alarms",
+                    "mapping": {
+                        "0": "acInputOverVoltage",
+                        "1": "acInputUnderVoltage",
+                        "2": "acInputLossOfPhase",
+                        "3": "acFrequencyAbnormal",
+                        "4": "acSurgeProtectionFault",
+                        "5": "acVoltageSampleFault",
+                        "6": "acCurrentSampleFault"
+                    }
+                },
+                {
+                    "key": "dcOutputVoltage",
+                    "cid1": "41",
+                    "cid2": "42",
+                    "dataType": "float32"
+                },
+                {
+                    "key": "dcTotalLoadCurrent",
+                    "cid1": "41",
+                    "cid2": "42",
+                    "dataType": "float32"
+                },
+                {
+                    "key": "batteryGroupVoltage",
+                    "cid1": "41",
+                    "cid2": "42",
+                    "command": "multipleFrame",
+                    "dataType": "float32"
+                },
+                {
+                    "key": "batteryGroupMidpointVoltage",
+                    "cid1": "41",
+                    "cid2": "42",
+                    "command": "multipleFrame",
+                    "dataType": "float32"
+                },
+                {
+                    "key": "batteryGroupTemperature",
+                    "cid1": "41",
+                    "cid2": "42",
+                    "command": "multipleFrame",
+                    "dataType": "float32"
+                },
+                {
+                    "key": "batteryTotalCurrent",
+                    "cid1": "41",
+                    "cid2": "42",
+                    "dataType": "float32"
+                },
+                {
+                    "key": "ambientTemperature",
+                    "cid1": "41",
+                    "cid2": "42",
+                    "command": "multipleFrame",
+                    "dataType": "float32"
+                },
+                {
+                    "key": "ambientHumidity",
+                    "cid1": "41",
+                    "cid2": "42",
+                    "command": "multipleFrame",
+                    "dataType": "float32"
+                },
+                {
+                    "key": "dcLoadBranchCurrent",
+                    "cid1": "41",
+                    "cid2": "42",
+                    "command": "multipleFrame",
+                    "dataType": "float32"
+                },
+                {
+                    "key": "dcTotalLoadPower",
+                    "cid1": "41",
+                    "cid2": "42",
+                    "dataType": "float32"
+                },
+                {
+                    "key": "dcTotalLoadEnergy",
+                    "cid1": "41",
+                    "cid2": "42",
+                    "dataType": "float32"
+                },
+                {
+                    "key": "dcAlarmStatus",
+                    "cid1": "41",
+                    "cid2": "44",
+                    "dataType": "alarms",
+                    "mapping": {
+                        "0": "dcOverVoltage",
+                        "1": "dcUnderVoltage",
+                        "2": "batteryFuseBlown",
+                        "3": "batteryCircuitOpen",
+                        "4": "batteryOverTemperature",
+                        "5": "batteryReversed",
+                        "6": "batteryUnderVoltage",
+                        "7": "loadFuseBlown",
+                        "8": "loadCircuitOpen",
+                        "9": "loadOverCurrent",
+                        "10": "loadEndVoltShort",
+                        "11": "ambientOverTemperature",
+                        "12": "ambientUnderTemperature",
+                        "13": "ambientOverHumidity",
+                        "14": "ambientUnderHumidity",
+                        "15": "doorOpen",
+                        "16": "waterIntrusion",
+                        "17": "smokeAlarm",
+                        "18": "BLVDDisconnectingSoon",
+                        "19": "BLVDDisconnected"
+                    }
+                }
+            ],
+            "attributeUpdateRequests": [
+                {
+                    "attributeFilter": "setTime",
+                    "cid1": "4E",
+                    "dataType": "timestamp"
+                },
+                {
+                    "attributeFilter": "energySavingParameters",
+                    "cid1": "91",
+                    "dataType": "parameters",
+                    "mapping": {
+                        "energySavingStatus": {
+                            "dataType": "uint8",
+                            "mapping": {
+                                "0": "enabled",
+                                "1": "disabled"
+                            }
+                        },
+                        "minWorkingModules": {
+                            "dataType": "uint8"
+                        },
+                        "moduleSwitchPeriod": {
+                            "dataType": "uint16"
+                        },
+                        "moduleOptimalEfficiencyPoint": {
+                            "dataType": "uint8"
+                        },
+                        "moduleRedundancyPoint": {
+                            "dataType": "uint8"
+                        }
+                    }
+                },
+                {
+                    "attributeFilter": "batteryFloatVoltage",
+                    "cid1": "48",
+                    "command": "DB",
+                    "dataType": "float32"
+                },
+                {
+                    "attributeFilter": "batteryEqualizeVoltage",
+                    "cid1": "48",
+                    "command": "DC",
+                    "dataType": "float32"
+                },
+                {
+                    "attributeFilter": "batteryTempCompensationCoefficient",
+                    "cid1": "48",
+                    "command": "EA",
+                    "dataType": "float32"
+                },
+                {
+                    "attributeFilter": "batteryTempCompensationCenterPoint",
+                    "cid1": "48",
+                    "command": "EB",
+                    "dataType": "float32"
+                },
+                {
+                    "attributeFilter": "equalizeChargeInterval",
+                    "cid1": "48",
+                    "command": "C6",
+                    "dataType": "uint16"
+                },
+                {
+                    "attributeFilter": "batteryGroupNumber",
+                    "cid1": "48",
+                    "command": "C7",
+                    "dataType": "uint8"
+                },
+                {
+                    "attributeFilter": "loadDisconnectMode",
+                    "cid1": "48",
+                    "command": "F2",
+                    "dataType": "uint8",
+                    "mapping": {
+                        "0": "voltage",
+                        "1": "time"
+                    }
+                },
+                {
+                    "attributeFilter": "dcOverVoltageSetPoint",
+                    "cid1": "48",
+                    "command": "80",
+                    "dataType": "float32"
+                },
+                {
+                    "attributeFilter": "dcUnderVoltageSetPoint",
+                    "cid1": "48",
+                    "command": "81",
+                    "dataType": "float32"
+                }
+            ],
+            "serverSideRpcRequests": [
+                {
+                    "requestFilter": "restartSystem",
+                    "cid1": "92",
+                    "command": "E1"
+                },
+                {
+                    "requestFilter": "disconnectLoad1",
+                    "cid1": "92",
+                    "command": "E5"
+                },
+                {
+                    "requestFilter": "connectLoad1",
+                    "cid1": "92",
+                    "command": "E6"
+                },
+                {
+                    "requestFilter": "disconnectLoad2",
+                    "cid1": "92",
+                    "command": "E7"
+                },
+                {
+                    "requestFilter": "connectLoad2",
+                    "cid1": "92",
+                    "command": "E8"
+                },
+                {
+                    "requestFilter": "disconnectLoad3",
+                    "cid1": "92",
+                    "command": "E9"
+                },
+                {
+                    "requestFilter": "connectLoad3",
+                    "cid1": "92",
+                    "command": "EA"
+                },
+                {
+                    "requestFilter": "disconnectLoad4",
+                    "cid1": "92",
+                    "command": "EB"
+                },
+                {
+                    "requestFilter": "connectLoad4",
+                    "cid1": "92",
+                    "command": "EC"
+                },
+                {
+                    "requestFilter": "disconnectBattery",
+                    "cid1": "92",
+                    "command": "ED"
+                },
+                {
+                    "requestFilter": "connectBattery",
+                    "cid1": "92",
+                    "command": "EE"
+                },
+                {
+                    "requestFilter": "startRectifierModule",
+                    "cid1": "41",
+                    "command": "20"
+                },
+                {
+                    "requestFilter": "stopRectifierModule",
+                    "cid1": "41",
+                    "command": "2F"
+                },
+                {
+                    "requestFilter": "remoteControlRectifierModule",
+                    "cid1": "45",
+                    "command": "20",
+                    "dataType": "uint8",
+                    "mapping": {
+                        "0": "start",
+                        "1": "stop"
+                    }
+                },
+                {
+                    "requestFilter": "startBatteryTest",
+                    "cid1": "92",
+                    "command": "E0"
+                },
+                {
+                    "requestFilter": "stopBatteryTest",
+                    "cid1": "92",
+                    "command": "EF"
+                },
+                {
+                    "requestFilter": "setSystemAutomatic",
+                    "cid1": "80",
+                    "command": "E0"
+                },
+                {
+                    "requestFilter": "setSystemManual",
+                    "cid1": "80",
+                    "command": "E1"
+                }
+            ]
+        }
+    ]
+}

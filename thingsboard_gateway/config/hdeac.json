@@ -1,0 +1,312 @@
+{
+    "devices": [
+      {
+        "deviceName": "HDE-AC1",
+        "address": 1,
+        "attributes": [
+          {
+            "key": "cur_temp",
+            "command": "0x42",
+            "datatype": "int16",
+            "factor": 0.1
+          },
+          {
+            "key": "ac_voltage", 
+            "command": "0x42",
+            "datatype": "uint16",
+            "factor": 1
+          },
+          {
+            "key": "current",
+            "command": "0x42",
+            "datatype": "uint16",
+            "factor": 0.01
+          }
+        ],
+        "timeseries": [
+          {
+            "key": "power_state",
+            "command": "0x43",
+            "datatype": "bits",
+            "values": [
+              {
+                "key": "ac_state", 
+                "type": "bool",
+                "start": 0,
+                "on_value": 1,  
+                "off_value": 0
+              },
+              {
+                "key": "inner_fan_state",  
+                "type": "bool",
+                "start": 1,
+                "on_value": 1,
+                "off_value": 0
+              },
+              {
+                "key": "outer_fan_state", 
+                "type": "bool",
+                "start": 2, 
+                "on_value": 1,
+                "off_value": 0  
+              },
+              {
+                "key": "heating_state",
+                "type": "bool",
+                "start": 3,
+                "on_value": 1,
+                "off_value": 0
+              }
+            ]
+          },
+          {
+            "key": "alarms",
+            "command": "0x44",
+            "datatype": "alarms",
+            "values": [
+              {
+                "key": "cooling_failure",
+                "type": "alarm", 
+                "start": 0,
+                "normal_value": 0,
+                "alarm_value": 240
+              },
+              {
+                "key": "high_temp", 
+                "type": "alarm",
+                "start": 1, 
+                "normal_value": 0, 
+                "alarm_value": 240
+              },
+              {
+                "key": "low_temp",
+                "type": "alarm",
+                "start": 2,
+                "normal_value": 0,
+                "alarm_value": 240
+              },
+              {
+                "key": "heater_failure",
+                "type": "alarm",
+                "start": 3, 
+                "normal_value": 0,
+                "alarm_value": 240 
+              },
+              {
+                "key": "sensor_failure", 
+                "type": "alarm",
+                "start": 4,
+                "normal_value": 0,
+                "alarm_value": 240
+              },
+              {
+                "key": "overvoltage",
+                "type": "alarm",
+                "start": 5,
+                "normal_value": 0,
+                "alarm_value": 240
+              },
+              {
+                "key": "undervoltage",
+                "type": "alarm",
+                "start": 6, 
+                "normal_value": 0,
+                "alarm_value": 240  
+              },
+              {
+                "key": "reserved",
+                "type": "value",
+                "start": 7
+              }
+            ]  
+          },
+          {
+            "key": "run_time",  
+            "command": "0x42",
+            "start": 8,
+            "length": 6,
+            "datatype": "uint32",
+            "factor": 1
+          }
+        ],  
+        "parameters": [
+          {
+            "key": "start_temp",
+            "get_command": "0x47",  
+            "set_command": "0x49",
+            "start": 0,
+            "length": 2,
+            "datatype": "int16",
+            "factor": 0.1  
+          },
+          {
+            "key": "stop_temp", 
+            "get_command": "0x47", 
+            "set_command": "0x49",
+            "start": 2,
+            "length": 2,
+            "datatype": "int16",
+            "factor": 0.1
+          }, 
+          {
+            "key": "heating_start_temp",
+            "get_command": "0x47",
+            "set_command": "0x49",
+            "start": 4,  
+            "length": 2,
+            "datatype": "int16",
+            "factor": 0.1
+          },
+          {
+            "key": "heating_stop_temp",
+            "get_command": "0x47",
+            "set_command": "0x49",
+            "start": 6,
+            "length": 2,
+            "datatype": "int16",
+            "factor": 0.1 
+          },
+          {
+            "key": "high_temp_alarm",
+            "get_command": "0x47", 
+            "set_command": "0x49",
+            "start": 8,
+            "length": 2,
+            "datatype": "int16",
+            "factor": 0.1
+          },
+          {
+            "key": "low_temp_alarm",
+            "get_command": "0x47",
+            "set_command": "0x49",
+            "start": 10, 
+            "length": 2, 
+            "datatype": "int16", 
+            "factor": 0.1
+          }
+        ],
+        "attribute_updates": [
+          {
+            "attribute": "start_temp",
+            "set_command": "0x49",
+            "datatype": "int16",  
+            "factor": 0.1
+          },
+          {
+            "attribute": "stop_temp",
+            "set_command": "0x49",  
+            "datatype": "int16",
+            "factor": 0.1  
+          }
+        ],
+        "server_side_rpc": [
+          {
+            "method": "setStartTemp",  
+            "set_command": "0x49",
+            "datatype": "int16",
+            "factor": 0.1 
+          },
+          {  
+            "method": "setStopTemp",
+            "set_command": "0x49", 
+            "datatype": "int16", 
+            "factor": 0.1
+          },  
+          {
+            "method": "setHighAlarm", 
+            "set_command": "0x49",
+            "datatype": "int16",
+            "factor": 0.1
+          },
+          { 
+            "method": "setLowAlarm",
+            "set_command": "0x49",
+            "datatype": "int16",  
+            "factor": 0.1
+          },
+          {
+            "method": "turnOn",
+            "set_command": "0x45", 
+            "params": "0x10"
+          },
+          { 
+            "method": "turnOff",
+            "set_command": "0x45",
+            "params": "0x1f"  
+          },
+          {
+            "method": "startCooling",
+            "set_command": "0x45",
+            "params": "0x20" 
+          },
+          {
+            "method": "stopCooling", 
+            "set_command": "0x45",
+            "params": "0x2f"
+          }, 
+          {
+            "method": "startHeating",
+            "set_command": "0x45", 
+            "params": "0x30"
+          },
+          {  
+            "method": "stopHeating",
+            "set_command": "0x45", 
+            "params": "0x3f" 
+          }
+        ],
+        "time": [
+          {
+            "key": "set_time",
+            "command": "0x4d", 
+            "attributes_from_response": [
+              {  
+                "key": "time",
+                "start": 0,
+                "length": 14,
+                "datatype": "time" 
+              } 
+            ]
+          }  
+        ],  
+        "set_time": {
+          "command": "0x4e",  
+          "sync": true
+        },
+        "version": {
+          "command": "0x51",
+          "attributes_from_response": [
+            {
+              "key": "device_name",
+              "start": 0, 
+              "length": 10,
+              "datatype": "string"
+            },
+            {  
+              "key": "sw_version",
+              "start": 10,
+              "length": 2, 
+              "datatype": "bcd"
+            },
+            { 
+              "key": "manufacturer",
+              "start": 12,
+              "length": 20, 
+              "datatype": "string"
+            } 
+          ] 
+        },
+        "response_timeout": 2
+      }
+    ],
+    "port": "/dev/ttyUSB0",
+    "baudrate": 9600,
+    "timeout": 35,
+    "protocol": "rtu", 
+    "stopbits": 1,
+    "bytesize": 8,
+    "parity": "N",
+    "interval": 10,  
+    "reconnect_interval": 10,
+    "log_level": "DEBUG"
+  }

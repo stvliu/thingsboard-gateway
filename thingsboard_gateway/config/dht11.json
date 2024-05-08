@@ -1,0 +1,23 @@
+{
+    "name": "DHT11",
+    "devices": [
+        {
+            "name": "DHT11 Sensor",
+            "pin": 17,
+            "pollPeriod": 5,
+            "converter": "DHT11Converter",
+            "telemetry": [
+                {
+                    "type": "temperature",
+                    "key": "temperature",
+                    "data_type": "float"
+                },
+                {
+                    "type": "humidity",
+                    "key": "humidity",
+                    "data_type": "float"
+                }
+            ]
+        }
+    ]
+}
