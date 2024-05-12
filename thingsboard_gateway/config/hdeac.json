@@ -1,4 +1,18 @@
 {
+    "port": "/dev/ttyUSB0",
+    "address_range": {
+        "start": 1,
+        "end": 254
+    },
+    "baudrate": 9600,
+    "timeout": 35,
+    "protocol": "rtu",
+    "stopbits": 1,
+    "bytesize": 8,
+    "parity": "N",
+    "interval": 10,
+    "reconnect_interval": 10,
+    "log_level": "DEBUG",
     "devices": [
         {
             "deviceName": "HDE-AC1",
@@ -319,19 +333,5 @@
                 "command": "0x80"
             }
         }
-    ],
-    "port": "/dev/ttyUSB0",
-    "address_range": {
-        "start": 1,
-        "end": 254
-    },
-    "baudrate": 9600,
-    "timeout": 35,
-    "protocol": "rtu",
-    "stopbits": 1,
-    "bytesize": 8,
-    "parity": "N",
-    "interval": 10,
-    "reconnect_interval": 10,
-    "log_level": "DEBUG"
+    ]
 }
