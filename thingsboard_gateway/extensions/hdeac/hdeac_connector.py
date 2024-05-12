@@ -3,16 +3,16 @@ HDE-AIR系列机柜空调连接器,用于通过ThingsBoard IoT Gateway采集和�
 """
 
 import time
-import threading  
+from threading import Thread
 import serial
 from thingsboard_gateway.connectors.connector import Connector
 from thingsboard_gateway.tb_utility.tb_utility import TBUtility
-from hdeac_uplink_converter import HdeAcUplinkConverter
-from hdeac_downlink_converter import HdeAcDownlinkConverter
+from thingsboard_gateway.extensions.hdeac.hdeac_uplink_converter import HdeAcUplinkConverter
+from thingsboard_gateway.extensions.hdeac.hdeac_downlink_converter import HdeAcDownlinkConverter
 from thingsboard_gateway.tb_utility.tb_logger import init_logger
 
 
-class HdeAcConnector(Connector):
+class HdeAcConnector(Thread, Connector):
     """
     HDE-AIR系列机柜空调连接器类,继承自Connector基类,实现了黑盾机柜空调的数据采集和控制逻辑。
     """

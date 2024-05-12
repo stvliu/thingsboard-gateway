@@ -12,8 +12,8 @@ from string import ascii_lowercase
 
 from thingsboard_gateway.connectors.connector import Connector  
 from thingsboard_gateway.tb_utility.tb_utility import TBUtility
-from mu4801_uplink_converter import MU4801UplinkConverter
-from mu4801_downlink_converter import MU4801DownlinkConverter
+from thingsboard_gateway.extensions.mu4801.mu4801_uplink_converter import MU4801UplinkConverter
+from thingsboard_gateway.extensions.mu4801.mu4801_downlink_converter import MU4801DownlinkConverter
 from thingsboard_gateway.tb_utility.tb_logger import init_logger
 
 
