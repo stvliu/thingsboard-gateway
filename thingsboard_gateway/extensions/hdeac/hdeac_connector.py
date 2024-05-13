@@ -386,20 +386,21 @@ class HdeAcConnector(Thread, Connector):
         self.log.debug('Read %d bytes from device %s: %s', len(data), device['address'], data.hex())
         return data
     
-    def __set_address(self):  
-        """  
+    def __set_address(self):
+        """
         设置机柜空调的地址。
         """
         for device in self.devices:
             if 'set_address' in device:
                 command = self.downlink_converter.convert_object(self.log, device['set_address'], 'command')
-                command.append(device['address'])
+                addr_cmd = self.downlink_converter.convert_object(self.log, device['address'], 'command')
+                command.extend(addr_cmd)
                 try:
                     self.__serial.write(command)
-                    time.sleep(0.2)  
+                    time.sleep(0.2)
                     # 读取响应数据
                     data = self.__serial.read(self.__serial.inWaiting())
-                    self.log.debug('Set address %s for device %s: %s', device['address'], device['deviceName'], data.hex()) 
+                    self.log.debug('Set address %s for device %s: %s', addr_cmd.hex(), device['deviceName'], data.hex())
                 except Exception as e:
                     self.log.exception(e)
 

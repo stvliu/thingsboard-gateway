@@ -51,20 +51,20 @@ class HdeAcDownlinkConverter(Converter):
         转换配置中的对象类型参数。
         
         参数:
-        - logger: 日志对象
-        - config: 参数配置，字典
+        - logger: 日志对象 
+        - config: 参数配置,字典
         - key: 要转换的参数名称
         
         返回:
-        - 转换后的字节数组
+        - 转换后的字节数组  
         """
         value = config[key]
         if isinstance(value, str) and value.startswith('0x'):
             try:
-                return bytes.fromhex(value[2:])  
+                return bytearray.fromhex(value[2:])  
             except Exception as e:
                 logger.exception(e)
-                return b''
+                return bytearray()
         else:
             return bytearray(value)
         
