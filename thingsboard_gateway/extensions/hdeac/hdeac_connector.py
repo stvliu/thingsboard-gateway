@@ -48,8 +48,8 @@ class HdeAcConnector(Thread, Connector):
         # 读取协议类型，如rtu、ascii        
         self.__protocol = config.get('protocol', 'rtu')
 
-        # 读取数据采集间隔        
-        self.__interval = config.get('interval', 10)
+        # 读取数据采集间隔,默认为5秒        
+        self.__interval = config.get('interval', 5)
 
         # 使用init_logger初始化日志对象        
         self.log = init_logger(gateway, self.name, self.config.get('log_level', 'INFO'))
@@ -153,12 +153,12 @@ class HdeAcConnector(Thread, Connector):
         try:
             device = tuple(filter(lambda d: d['deviceName'] == content['device'], self.devices))[0]  
             for attr_request in device.get('attribute_updates', []):
-                if attr_request['attribute'] == content['data']['attribute']:
-                    ommand = self.downlink_converter.convert(attr_request, content['data'])
-                    self.__write_command(device, command)
+               if attr_request['attribute'] == content['data']['attribute']:
+                   command = self.downlink_converter.convert(attr_request, content['data'])
+                   self.__write_command(device, command)
         except Exception as e:
             self.log.exception(e)
-           
+            
     def server_side_rpc_handler(self, content):
         """
         处理RPC请求。
@@ -178,7 +178,7 @@ class HdeAcConnector(Thread, Connector):
             self.log.exception(e)
             self.gateway.send_rpc_reply(device=content["device"], req_id=content["data"]["id"], success_sent=False)
             
-    def collect_statistic_and_send(self, connector_name, data):  
+    def collect_statistic_and_send(self, connector_name, connector_id, data):  
         """
         发送统计数据。
         
@@ -187,7 +187,7 @@ class HdeAcConnector(Thread, Connector):
         - data: 要发送的数据,字典
         """
         self.__reads += 1  
-        self.gateway.send_to_storage(connector_name, data)
+        self.gateway.send_to_storage(connector_name, connector_id, data)
         self.__writes += 1
         
         self.gateway.add_message_statistics(self.get_name(), 'MessagesReceived', 1)
@@ -293,21 +293,21 @@ class HdeAcConnector(Thread, Connector):
                     command = self.downlink_converter.convert_object(self.log, request, 'command')
                     data = self.__write_command(device, command)
                     converted_data = self.uplink_converter.convert(request, data)
-                    self.collect_statistic_and_send(self.get_name(), converted_data)
+                    self.collect_statistic_and_send(self.get_name(), self.get_id(), converted_data)
             
             # 采集属性数据
             for request in device.get('attributes', []):  
                 command = self.downlink_converter.convert_object(self.log, request, 'command')
                 data = self.__write_command(device, command)
                 converted_data = self.uplink_converter.convert(request, data)   
-                self.collect_statistic_and_send(self.get_name(), converted_data)
+                self.collect_statistic_and_send(self.get_name(), self.get_id(), converted_data)
 
             # 采集配置参数数据
             for request in device.get('parameters', []):
                 get_command = self.downlink_converter.convert_object(self.log, request, 'get_command')
                 data = self.__write_command(device, get_command)
                 converted_data = self.uplink_converter.convert(request, data)
-                self.collect_statistic_and_send(self.get_name(), converted_data)
+                self.collect_statistic_and_send(self.get_name(), self.get_id(), converted_data)
             
             # 获取设备历史数据（浮点数）  
             for request in device.get('history', []):
@@ -315,7 +315,7 @@ class HdeAcConnector(Thread, Connector):
                     get_command = self.downlink_converter.convert_object(self.log, request, 'command')
                     data = self.__write_command(device, get_command)
                     converted_data = self.uplink_converter.convert(request, data)
-                    self.collect_statistic_and_send(self.get_name(), converted_data)
+                    self.collect_statistic_and_send(self.get_name(), self.get_id(), converted_data)
             
             # 获取设备历史数据（定点数）
             for request in device.get('history', []):
@@ -323,7 +323,7 @@ class HdeAcConnector(Thread, Connector):
                     get_command = self.downlink_converter.convert_object(self.log, request, 'command')
                     data = self.__write_command(device, get_command)
                     converted_data = self.uplink_converter.convert(request, data)
-                    self.collect_statistic_and_send(self.get_name(), converted_data)
+                    self.collect_statistic_and_send(self.get_name(), self.get_id(), converted_data)
 
             # 获取历史告警数据
             for request in device.get('history_alarms', []):  
@@ -331,7 +331,7 @@ class HdeAcConnector(Thread, Connector):
                     get_command = self.downlink_converter.convert_object(self.log, request, 'command')
                     data = self.__write_command(device, get_command)
                     converted_data = self.uplink_converter.convert_history_alarms(request, data)
-                    self.collect_statistic_and_send(self.get_name(), converted_data)
+                    self.collect_statistic_and_send(self.get_name(), self.get_id(), converted_data)
 
             # 获取设备系统时间
             for request in device.get('time', []):
@@ -339,14 +339,14 @@ class HdeAcConnector(Thread, Connector):
                     get_command = self.downlink_converter.convert_object(self.log, request['get_time'], 'command')
                     data = self.__write_command(device, get_command)
                     converted_data = self.uplink_converter.convert(request['get_time'], data)
-                    self.collect_statistic_and_send(self.get_name(), converted_data)
+                    self.collect_statistic_and_send(self.get_name(), self.get_id(), converted_data)
 
             # 获取设备厂家信息
             if 'device_info' in device:
                 command = self.downlink_converter.convert_object(self.log, device['device_info'], 'command')
                 data = self.__write_command(device, command)
                 converted_data = self.uplink_converter.convert(device['device_info'], data)
-                self.collect_statistic_and_send(self.get_name(), converted_data)
+                self.collect_statistic_and_send(self.get_name(), self.get_id(), converted_data)
 
         except Exception as e:
             self.log.exception(e)
