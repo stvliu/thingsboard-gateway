@@ -17,7 +17,6 @@ class HdeAcDownlinkConverter(Converter):
         参数:
         - config: 命令配置，字典
         - data: 属性或RPC参数，字典
-        
         返回:
         - 转换后的控制命令，字节数组
         """
@@ -65,8 +64,13 @@ class HdeAcDownlinkConverter(Converter):
             except Exception as e:
                 logger.exception(e)
                 return bytearray()
+        elif isinstance(value, list):
+            return bytearray(value)  
+        elif isinstance(value, bytearray):
+            return value
         else:
-            return bytearray(value)
+            logger.warning('Unsupported config value type: %s', type(value))
+            return bytearray()
         
     @staticmethod    
     def convert_command(logger, config, data):

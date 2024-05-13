@@ -5,6 +5,7 @@ HDE-AIR系列机柜空调连接器,用于通过ThingsBoard IoT Gateway采集和�
 import time
 from threading import Thread
 import serial
+from thingsboard_gateway.gateway.statistics_service import StatisticsService
 from thingsboard_gateway.connectors.connector import Connector
 from thingsboard_gateway.tb_utility.tb_utility import TBUtility
 from thingsboard_gateway.extensions.hdeac.hdeac_uplink_converter import HdeAcUplinkConverter
@@ -178,6 +179,7 @@ class HdeAcConnector(Thread, Connector):
             self.log.exception(e)
             self.gateway.send_rpc_reply(device=content["device"], req_id=content["data"]["id"], success_sent=False)
             
+    @StatisticsService.CollectAllReceivedBytesStatistics(start_stat_type='allReceivedBytesFromDevice')
     def collect_statistic_and_send(self, connector_name, connector_id, data):  
         """
         发送统计数据。
@@ -189,9 +191,6 @@ class HdeAcConnector(Thread, Connector):
         self.__reads += 1  
         self.gateway.send_to_storage(connector_name, connector_id, data)
         self.__writes += 1
-        
-        self.gateway.add_message_statistics(self.get_name(), 'MessagesReceived', 1)
-        self.gateway.add_message_statistics(self.get_name(), 'MessagesSent', 1)
     
     def __run(self):
         """  
@@ -208,7 +207,7 @@ class HdeAcConnector(Thread, Connector):
                         if device:
                             self.__get_data(device)
                         else:
-                            self.log.warning('Device with address %d not found in configuration', address)
+                            self.log.debug('Device with address %d not found in configuration', address)
                             
                     self.__check_status()
                 except Exception as e:
@@ -228,7 +227,12 @@ class HdeAcConnector(Thread, Connector):
         - 设备信息字典,如果找到;否则返回None  
         """
         for device in self.devices:
-            if device.get('address', {}).get('command') == address:
+            command = device.get('address', {}).get('command')
+            if command and isinstance(command, str) and command.startswith('0x'):
+                # 如果command是十六进制字符串,将其转为整数再比较
+                if int(command, 16) == address:
+                    return device
+            elif command == address:
                 return device
         
         return None
@@ -272,6 +276,8 @@ class HdeAcConnector(Thread, Connector):
         - device: 要采集的设备配置,字典
         """ 
         try:
+            self.log.debug('Getting data for device %s', device['deviceName'])
+            
             # 获取通信协议版本号
             if 'version' in device:
                 command = self.downlink_converter.convert_version_command(device['version'])
@@ -290,6 +296,8 @@ class HdeAcConnector(Thread, Connector):
 
             # 采集时间序列数据  
             for request in device.get('timeseries', []):
+                self.log.debug('Getting timeseries data for %s: %s', device['deviceName'], request)
+                
                 if 'command' in request:
                     command = self.downlink_converter.convert_object(self.log, request, 'command')
                     
@@ -306,63 +314,79 @@ class HdeAcConnector(Thread, Connector):
                                 raise e
                                 
                     if data is not None:                
-                        converted_data = self.uplink_converter.convert(request, data)
+                        converted_data = self.uplink_converter.convert(device, data)
                         self.collect_statistic_and_send(self.get_name(), self.get_id(), converted_data)
             
             # 采集属性数据
-            for request in device.get('attributes', []):  
+            for request in device.get('attributes', []):
+                self.log.debug('Getting attribute data for %s: %s', device['deviceName'], request)
+                
                 command = self.downlink_converter.convert_object(self.log, request, 'command')
                 data = self.__write_command(device, command)
-                converted_data = self.uplink_converter.convert(request, data)   
+                converted_data = self.uplink_converter.convert(device, data)   
                 self.collect_statistic_and_send(self.get_name(), self.get_id(), converted_data)
 
             # 采集配置参数数据
             for request in device.get('parameters', []):
+                self.log.debug('Getting parameter data for %s: %s', device['deviceName'], request)
+                
                 get_command = self.downlink_converter.convert_object(self.log, request, 'get_command')
                 data = self.__write_command(device, get_command)
-                converted_data = self.uplink_converter.convert(request, data)
+                converted_data = self.uplink_converter.convert(device, data)
                 self.collect_statistic_and_send(self.get_name(), self.get_id(), converted_data)
             
             # 获取设备历史数据（浮点数）  
             for request in device.get('history', []):
+                self.log.debug('Getting history float data for %s: %s', device['deviceName'], request)
+                
                 if 'command' in request and request['command'] == '0x4A':
                     get_command = self.downlink_converter.convert_object(self.log, request, 'command')
                     data = self.__write_command(device, get_command)
-                    converted_data = self.uplink_converter.convert(request, data)
+                    converted_data = self.uplink_converter.convert(device, data)
                     self.collect_statistic_and_send(self.get_name(), self.get_id(), converted_data)
             
             # 获取设备历史数据（定点数）
             for request in device.get('history', []):
+                self.log.debug('Getting history fixed data for %s: %s', device['deviceName'], request)
+                
                 if 'command' in request and request['command'] == '0x4B':
                     get_command = self.downlink_converter.convert_object(self.log, request, 'command')
                     data = self.__write_command(device, get_command)
-                    converted_data = self.uplink_converter.convert(request, data)
+                    converted_data = self.uplink_converter.convert(device, data)
                     self.collect_statistic_and_send(self.get_name(), self.get_id(), converted_data)
 
             # 获取历史告警数据
-            for request in device.get('history_alarms', []):  
+            for request in device.get('history_alarms', []):
+                self.log.debug('Getting history alarm data for %s: %s', device['deviceName'], request)
+                
                 if 'command' in request:
                     get_command = self.downlink_converter.convert_object(self.log, request, 'command')
                     data = self.__write_command(device, get_command)
-                    converted_data = self.uplink_converter.convert_history_alarms(request, data)
+                    converted_data = self.uplink_converter.convert_history_alarms(device, data)
                     self.collect_statistic_and_send(self.get_name(), self.get_id(), converted_data)
 
             # 获取设备系统时间
             for request in device.get('time', []):
+                self.log.debug('Getting device time for %s: %s', device['deviceName'], request)
+                
                 if 'command' in request and request['command'] == '0x4D':
                     get_command = self.downlink_converter.convert_object(self.log, request['get_time'], 'command')
                     data = self.__write_command(device, get_command)
-                    converted_data = self.uplink_converter.convert(request['get_time'], data)
+                    converted_data = self.uplink_converter.convert(device, data)
                     self.collect_statistic_and_send(self.get_name(), self.get_id(), converted_data)
 
             # 获取设备厂家信息
             if 'device_info' in device:
+                self.log.debug('Getting device info for %s', device['deviceName'])
+                
                 command = self.downlink_converter.convert_object(self.log, device['device_info'], 'command')
                 data = self.__write_command(device, command)
-                converted_data = self.uplink_converter.convert(device['device_info'], data)
+                converted_data = self.uplink_converter.convert(device, data)
                 self.collect_statistic_and_send(self.get_name(), self.get_id(), converted_data)
             
             device['online'] = True
+            self.log.debug('Successfully got data for device %s', device['deviceName'])
+            
         except Exception as e:
             self.log.exception('Error while getting data from device %s', device['deviceName'], exc_info=e)
             device['online'] = False
@@ -381,10 +405,21 @@ class HdeAcConnector(Thread, Connector):
         self.log.debug('Writing command to device %s: %s', device['address']['command'], command.hex())
 
         # 根据设备地址将命令发送给指定设备
-        command[2] = device['address']['command']  
-
+        address_command = device['address']['command']
+        if isinstance(address_command, str) and address_command.startswith('0x'):
+            # 如果address.command是十六进制字符串,将其转为整数  
+            address_value = int(address_command, 16)
+        else:
+            address_value = address_command
+            
+        # 将设备地址插入到命令字节数组的指定位置(假设为第3个字节)  
+        command_with_address = bytearray(command)
+        if len(command_with_address) < 3:
+            command_with_address.extend(bytearray(3 - len(command_with_address)))
+        command_with_address[2] = address_value
+        
         # 发送命令并等待响应
-        self.__serial.write(command)
+        self.__serial.write(command_with_address)
         time.sleep(0.2)
 
         data = b''  

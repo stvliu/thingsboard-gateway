@@ -66,13 +66,15 @@ class HdeAcUplinkConverter(Converter):
         
         参数:
         - logger: 日志对象
-        - config: 数据配置,字典
+        - config: 设备配置,字典
         - data: 原始数据,字节数组
         
         返回:
         - 转换后的数据,字典
         """
-        result = {'deviceName': config['deviceName'], 'deviceType': config.get('deviceType', 'default'), 'attributes': [], 'telemetry': []}
+        device_name = config['deviceName']
+        device_type = config.get('deviceType', 'default')
+        result = {'attributes': [], 'telemetry': []}
         
         if 'attributes_from_response' in config:  
             for attr in config['attributes_from_response']:
@@ -105,7 +107,7 @@ class HdeAcUplinkConverter(Converter):
                 else:
                     result['attributes'].append({attr['key']: HdeAcUplinkConverter.__convert_value(logger, attr, data)})                  
             
-        return result
+        return {'deviceName': device_name, 'deviceType': device_type, **result}
     
     @staticmethod        
     def __convert_value(logger, config, data):  
@@ -178,6 +180,10 @@ class HdeAcUplinkConverter(Converter):
         """
         start = config.get('start', 0)
         on_value = config.get('on_value', 1)
+        
+        if start >= len(data):
+            return False
+        
         return data[start] == on_value
     
     @staticmethod  
@@ -195,4 +201,8 @@ class HdeAcUplinkConverter(Converter):
         start = config.get('start', 0)
         normal_value = config.get('normal_value', 0) 
         alarm_value = config.get('alarm_value', 1)
+        
+        if start >= len(data):
+            return False
+        
         return data[start] == alarm_value
