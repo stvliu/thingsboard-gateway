@@ -199,21 +199,22 @@ class HdeAcConnector(Thread, Connector):
         """
         while not self.__stopped:
             if not self.__connected:
-                if not self.__connecting and time.time() - self.__last_connect_attempt_time >= self.__reconnect_interval:
-                    self.__connecting = True  
-                    self.__connect()
-                else:
-                    time.sleep(1)
-                    continue
-            else:
-                for address in range(self.__address_range['start'], self.__address_range['end']+1):
-                    device = self.__find_device_by_address(address)
-                    if device:
-                        self.__get_data(device)
-                
-                # 设置设备地址
-                self.__set_address()
-            
+                self.__connect()
+                time.sleep(self.__reconnect_interval)
+            else:          
+                try:
+                    for address in range(self.__address_range['start'], self.__address_range['end']+1):
+                        device = self.__find_device_by_address(address)
+                        if device:
+                            self.__get_data(device)
+                        else:
+                            self.log.warning('Device with address %d not found in configuration', address)
+                            
+                    self.__check_status()
+                except Exception as e:
+                    self.log.exception(e)
+                    self.__disconnect()
+                    
             time.sleep(self.__interval)
                         
     def __find_device_by_address(self, address):
@@ -227,7 +228,7 @@ class HdeAcConnector(Thread, Connector):
         - 设备信息字典,如果找到;否则返回None  
         """
         for device in self.devices:
-            if device.get('address') == address:
+            if device.get('address', {}).get('command') == address:
                 return device
         
         return None
@@ -291,9 +292,22 @@ class HdeAcConnector(Thread, Connector):
             for request in device.get('timeseries', []):
                 if 'command' in request:
                     command = self.downlink_converter.convert_object(self.log, request, 'command')
-                    data = self.__write_command(device, command)
-                    converted_data = self.uplink_converter.convert(request, data)
-                    self.collect_statistic_and_send(self.get_name(), self.get_id(), converted_data)
+                    
+                    retry_times = 3
+                    data = None
+                    while retry_times > 0:
+                        try:
+                            data = self.__write_command(device, command)
+                            break
+                        except Exception as e:
+                            retry_times -= 1
+                            self.log.warning('Failed to read data from device %s, remaining retry times: %d', device['deviceName'], retry_times, exc_info=e)
+                            if retry_times == 0:
+                                raise e
+                                
+                    if data is not None:                
+                        converted_data = self.uplink_converter.convert(request, data)
+                        self.collect_statistic_and_send(self.get_name(), self.get_id(), converted_data)
             
             # 采集属性数据
             for request in device.get('attributes', []):  
@@ -347,9 +361,11 @@ class HdeAcConnector(Thread, Connector):
                 data = self.__write_command(device, command)
                 converted_data = self.uplink_converter.convert(device['device_info'], data)
                 self.collect_statistic_and_send(self.get_name(), self.get_id(), converted_data)
-
+            
+            device['online'] = True
         except Exception as e:
-            self.log.exception(e)
+            self.log.exception('Error while getting data from device %s', device['deviceName'], exc_info=e)
+            device['online'] = False
 
     def __write_command(self, device, command):
         """
@@ -362,10 +378,10 @@ class HdeAcConnector(Thread, Connector):
         返回:  
         - 机柜空调返回的数据,字节数组
         """ 
-        self.log.debug('Writing command to device %s: %s', device['address'], command.hex())
+        self.log.debug('Writing command to device %s: %s', device['address']['command'], command.hex())
 
         # 根据设备地址将命令发送给指定设备
-        command[2] = device['address']  
+        command[2] = device['address']['command']  
 
         # 发送命令并等待响应
         self.__serial.write(command)
@@ -383,7 +399,7 @@ class HdeAcConnector(Thread, Connector):
                 if time.time() - start_time > device.get('response_timeout', 2):
                     break
                     
-        self.log.debug('Read %d bytes from device %s: %s', len(data), device['address'], data.hex())
+        self.log.debug('Read %d bytes from device %s: %s', len(data), device['address']['command'], data.hex())
         return data
     
     def __set_address(self):
@@ -403,6 +419,31 @@ class HdeAcConnector(Thread, Connector):
                     self.log.debug('Set address %s for device %s: %s', addr_cmd.hex(), device['deviceName'], data.hex())
                 except Exception as e:
                     self.log.exception(e)
+
+    def __check_status(self):
+        """
+        检查所有设备的在线状态,并发送告警或恢复通知。
+        """
+        offline_devices = []
+        online_devices = []
+
+        for device in self.devices:
+            if not device.get('online', True):
+                offline_devices.append(device)
+            else:
+                online_devices.append(device)
+                
+        if offline_devices:
+            self.log.warning('Devices offline: %s', ', '.join(d['deviceName'] for d in offline_devices))
+            
+            data = {'devices': [{'name': d['deviceName'], 'type': d.get('deviceType', 'default')} for d in offline_devices]}
+            self.gateway.send_to_storage(self.get_name(), self.get_id(), data)
+            
+        if online_devices:
+            self.log.info('Devices online: %s', ', '.join(d['deviceName'] for d in online_devices))
+            
+            data = {'devices': [{'name': d['deviceName'], 'type': d.get('deviceType', 'default')} for d in online_devices]}  
+            self.gateway.send_to_storage(self.get_name(), self.get_id(), data)
 
     def run(self):
         """
