@@ -1,0 +1,104 @@
+{
+    "master": {
+      "slaves": [
+        {
+          "host": "com1",
+          "port": 9600,
+          "type": "serial",
+          "method": "rtu",
+          "byteOrder": "LITTLE", 
+          "wordOrder": "LITTLE",
+          "retries": 3,
+          "retryOnEmpty": true,
+          "retryOnInvalid": true,       
+          "pollPeriod": 10000,
+          "unitId": 1,
+          "deviceName": "air_conditioner_001",
+          "deviceType": "airconditioner",   
+          "sendDataOnlyOnChange": false,
+          "connectAttemptTimeMs": 5000,
+          "connectAttemptCount": 5,
+          "waitAfterFailedAttemptsMs": 300000,
+          
+          "attributes": [
+            {
+              "tag": "runState",
+              "type": "bits",
+              "functionCode": 3,
+              "objectsCount": 1,
+              "address": 1
+            },        
+            {
+              "tag": "ambientTemp",
+              "type": "16int",
+              "functionCode": 3,
+              "objectsCount": 1,
+              "address": 3
+            },
+            {
+              "tag": "supplyTemp",
+              "type": "16int",
+              "functionCode": 3,
+              "objectsCount": 1,
+              "address": 4
+            },      
+            {
+              "tag": "returnTemp",
+              "type": "16int",
+              "functionCode": 3, 
+              "objectsCount": 1,
+              "address": 5
+            },
+            {
+              "tag": "voltage",
+              "type": "16uint",
+              "functionCode": 3,
+              "objectsCount": 1,
+              "address": 6
+            },
+            {
+              "tag": "current",
+              "type": "16uint",
+              "functionCode": 3,
+              "objectsCount": 1,
+              "address": 7
+            }
+          ],
+          
+          "timeseries": [
+            {
+              "tag": "alarmState",
+              "type": "bits",
+              "functionCode": 1,
+              "objectsCount": 2,
+              "address": 1001
+            }       
+          ],
+          
+          "rpc": [
+            {
+              "tag": "setState",
+              "type": "bits",
+              "functionCode": 5,
+              "objectsCount": 1,
+              "address": 2001
+            },
+            {
+              "tag": "setTemp",
+              "type": "16uint",
+              "functionCode": 6,
+              "objectsCount": 1,
+              "address": 2002
+            },
+            {
+              "tag": "setMode",
+              "type": "bits",
+              "functionCode": 5,
+              "objectsCount": 1, 
+              "address": 2003
+            }
+          ]
+        }
+      ]
+    }
+  }

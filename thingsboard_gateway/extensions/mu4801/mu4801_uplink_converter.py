@@ -1,57 +1,87 @@
-"""
-文件: mu4801_uplink_converter.py
-描述: MU4801协议上行数据转换器,将设备上报的原始数据转换为Thingsboard接受的数据格式。  
-"""
-
-import time
+import struct
+from io import BytesIO
+from thingsboard_gateway.connectors.converter import Converter
 
 
-class MU4801UplinkConverter:
-    """
-    MU4801UplinkConverter类,实现了将设备上报的原始数据转换为Thingsboard接受的数据格式的功能。
-    """
+class Mu4801UplinkConverter(Converter):
     
-    def __init__(self, logger):
-        """
-        初始化MU4801UplinkConverter对象。
-        
-        参数:
-        - logger: logging.Logger,日志对象。
-        """
-        # 日志对象
-        self.__logger = logger
-        
-    def convert(self, config, data):
-        """
-        转换数据的方法。
-
-        参数:
-        - config: dict,转换器配置信息。
-        - data: dict,设备上报的原始数据。
-        
-        返回:
-        - dict,转换后的Thingsboard接受的数据格式。
-        """
-        result = {
-            # 设备名称
-            'deviceName': config['deviceName'],
-            # 设备类型
-            'deviceType': config['deviceType'],
-            # 属性数据
-            'attributes': [],
-            # 遥测数据
-            'telemetry': []
+    def __init__(self, connector, log):
+        self.__connector = connector
+        self._log = log
+        self.__datatypes = {
+            'int16': {'size': 2, 'struct': 'h', 'byteorder': 'big'},
+            'uint16': {'size': 2, 'struct': 'H', 'byteorder': 'big'},
+            'int32': {'size': 4, 'struct': 'i', 'byteorder': 'big'},  
+            'uint32': {'size': 4, 'struct': 'I', 'byteorder': 'big'},
+            'uint8': {'size': 1, 'struct': 'B', 'byteorder': 'big'},  
+            'float': {'size': 4, 'struct': 'f', 'byteorder': 'big'}, 
+            'boolean': {'size': 1, 'struct': '?', 'byteorder': 'big'}, 
+            'string': {'size': None, 'struct': None, 'byteorder': None}
         }
+        
+    def parse_attribute(self, config, data, device_name):
         try:
-            # 遍历原始数据中的每一项
-            for item in data:
-                # 判断数据类型是属性数据还是遥测数据
-                data_type = 'attributes' if item in [attr['key'] for attr in config['attributes']] else 'telemetry'
-                # 将转换后的数据添加到对应的数组中
-                result[data_type].append({item: data[item]})
-            # 添加时间戳  
-            result['ts'] = int(time.time() * 1000)
+            value = self.__parse_value(config, data)
+            return {
+                'device': device_name,
+                config['key']: value
+            }
         except Exception as e:
-            # 记录转换数据时发生的异常
-            self.__logger.error('Failed to convert data: %s', str(e))
-        return result
+            self._log.error(f"Failed to parse attribute data for device '{device_name}': {str(e)}")
+        return None
+    
+    def parse_telemetry(self, config, data, device_name):
+        result = {}
+        try:
+            for name, value_config in config['values'].items():
+                value = self.__parse_value(value_config, data)
+                if value is not None:
+                    result[name] = value
+        except Exception as e:
+            self._log.error(f"Failed to parse telemetry data for device '{device_name}': {str(e)}")
+        return {
+            'device': device_name,
+            'ts': int(time.time() * 1000),
+            'values': result
+        } if result else None
+        
+    def parse_rpc_reply(self, data, config, device_name):
+        try:
+            result = {}
+            for param in config['paramsFormat']:
+                value = self.__parse_value(param, data)
+                if value is not None:
+                    result[param['name']] = value
+            
+            return {'success': True, 'params': result}
+        except Exception as e:
+            self._log.error(f"Failed to parse RPC reply data for device '{device_name}': {str(e)}")
+            return {'success': False}
+        
+    def __parse_value(self, config, data):
+        value_type = config['dataType']
+        start_index = config['startPos']
+        
+        datatype_config = self.__datatypes.get(value_type)
+        if not datatype_config:
+            self._log.error(f"Unsupported data type: {value_type}")
+            return None
+        
+        byteorder = datatype_config['byteorder']
+        if datatype_config['size'] is None:
+            # String type
+            value = data[start_index:].decode('ascii').strip('\x00')
+        elif value_type == 'boolean':
+            # Boolean type
+            value = struct.unpack_from(datatype_config['struct'], data, start_index)[0]
+            bool_map = config.get('booleanMap')
+            if bool_map:
+                value = bool_map.get(str(value), value)
+        else:
+            # Numeric types  
+            value = struct.unpack_from(byteorder + datatype_config['struct'], data, start_index)[0] 
+            
+        if config.get('factor'):
+            value *= config['factor']
+            
+        return value

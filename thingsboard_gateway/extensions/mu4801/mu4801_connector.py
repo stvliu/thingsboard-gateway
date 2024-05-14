@@ -1,488 +1,355 @@
 """
-文件: mu4801_connector.py
-描述: MU4801协议连接器,用于通过Thingsboard IoT Gateway采集和控制支持MU4801协议的设备。
+MU4801连接器主程序
+通过RS485连接MU4801监控单元,按照配置的命令表和轮询间隔,周期性采集数据并上报Thingsboard平台,同时接收RPC请求并下发控制命令。
 """
 
 import time
-import socket
-import struct
 from threading import Thread
 from random import choice
 from string import ascii_lowercase
+from queue import Queue
+from copy import deepcopy
 
-from thingsboard_gateway.connectors.connector import Connector  
+import serial
+from thingsboard_gateway.connectors.connector import Connector
 from thingsboard_gateway.tb_utility.tb_utility import TBUtility
-from thingsboard_gateway.extensions.mu4801.mu4801_uplink_converter import MU4801UplinkConverter
-from thingsboard_gateway.extensions.mu4801.mu4801_downlink_converter import MU4801DownlinkConverter
+from thingsboard_gateway.gateway.statistics_service import StatisticsService
 from thingsboard_gateway.tb_utility.tb_logger import init_logger
 
+from thingsboard_gateway.extensions.mu4801.mu4801_uplink_converter import Mu4801UplinkConverter
+from thingsboard_gateway.extensions.mu4801.mu4801_downlink_converter import Mu4801DownlinkConverter
 
-class MU4801Connector(Thread, Connector):
-    """
-    MU4801Connector类,继承自Thread和Connector,实现了MU4801协议的连接器功能。
-    """
+
+class MU4801Connector(Connector, Thread):
     
     def __init__(self, gateway, config, connector_type):
-        """  
-        初始化MU4801Connector连接器。
-        
-        参数:
-        - gateway: Gateway对象,连接器所属的Gateway实例。  
-        - config: dict,连接器配置信息。
-        - connector_type: str,连接器类型。
-        """
-        super().__init__()
-        self.daemon = True
-        
-        # Gateway对象,连接器所属的Gateway实例
-        self.__gateway = gateway
-        # 连接器类型
-        self._connector_type = connector_type
-        # 连接器配置信息
-        self.__config = config
-        # 连接器名称,默认为"MU4801 Connector"加上5个随机小写字母
-        self.name = config.get("name", 'MU4801 Connector ' + ''.join(choice(ascii_lowercase) for _ in range(5))) 
-        # 日志对象,通过init_logger函数初始化
-        self._log = init_logger(gateway, self.name, self.__config.get('logLevel', 'INFO')) 
-        # 需要连接的设备信息列表
-        self.__devices = self.__config["devices"]
-        # 连接器的统计信息
         self.statistics = {'MessagesReceived': 0, 'MessagesSent': 0}
-        # 连接超时时间,默认为30秒
-        self.__connect_timeout = self.__config.get("connectTimeout", 30)
-        # 重连间隔时间,默认为10秒
-        self.__reconnect_interval = self.__config.get("reconnectInterval", 10)
-        # 上次重连时间戳  
-        self.__last_reconnect_time = 0
-        # 连接器是否已停止
-        self.__stopped = True
-        # 连接器是否已连接
-        self._connected = False
+        super().__init__()
+        self.__gateway = gateway
+        self.__connector_type = connector_type
+        self.__config = config
+        self.name = config.get("name", 'MU4801 ' + ''.join(choice(ascii_lowercase) for _ in range(5)))
+
+        self._log = init_logger(gateway, config.get('name', connector_type), config.get('logLevel', 'INFO'))
+        self._log.info("Initializing MU4801 connector")
+
+        self.__connected = False
+        self.__stopped = False
+        self.daemon = True
+
+        self.__parse_config()
         
+        self.__rpc_requests = Queue()
+        self.__attribute_updates = Queue()   
+
+        self.__serial = None
+        self.__reader = None
+        self.__writer = None
+        self.__device_lock = threading.Lock()
+
+        self.__last_poll_time = 0
+        self.__last_heartbeat_time = 0
+
+        self.__convert_frequency = self.__config['polling']['interval'] / 1000
+        self.__command_timeout = self.__config['polling']['commandTimeout'] / 1000
+
+        self._log.info("Config: %s", self.__config)
+        self.__init_converters()
+        
+        self._log.info("[%s] MU4801 connector initialized.", self.get_name())
+
+    def __parse_config(self):
+        default_config = {}
+        device_config = {}
+
+        for device in self.__config.get('devices', []):
+            if 'deviceType' in device and device['deviceType'] == 'default':
+                default_config = device
+            else:
+                device_config[device["deviceName"]] = device
+        
+        self.__config['defaultConfig'] = default_config
+        self.__config['deviceConfig'] = device_config
+        
+    def __init_converters(self):
+        self.__uplink_converter = Mu4801UplinkConverter(self, self._log)
+        self.__downlink_converter = Mu4801DownlinkConverter(self, self._log)
+     
     def open(self):
-        """
-        启动连接器。  
-        """
         self.__stopped = False
         self.start()
-        self.__last_reconnect_time = time.time()
-        self._log.info("Starting MU4801 connector...")
-        self._log.debug("MU4801 connector config: %s", self.__config)
-        
-    def run(self): 
-        """
-        连接器线程的主函数,循环执行以下操作,直到连接器停止:
-        1. 如果连接器未连接,且当前时间距离上次重连时间超过了重连间隔,则尝试连接设备。
-        2. 如果连接器已连接,则轮询设备数据。
-        3. 休眠0.01秒,避免过于频繁地执行循环。
-        """
-        while not self.__stopped:  
-            if not self._connected and time.time() - self.__last_reconnect_time >= self.__reconnect_interval:  
-                self.__connect_to_devices()
-            if self._connected:
-                self.__poll_data()  
-            time.sleep(.01)
-            
-    def close(self):
-        """  
-        停止连接器。
-        """
-        self.__stopped = True
-        self._connected = False
-        self.__disconnect_from_devices()
-        self._log.info('MU4801 connector has been stopped.')
-        
-    def get_name(self):
-        """
-        获取连接器名称。
-        
-        返回:
-        - str,连接器名称。
-        """
-        return self.name
-    
-    def get_id(self):
-        """  
-        获取连接器ID。
-        
-        返回:  
-        - str,连接器ID。
-        """
-        return self.__config.get("id", "mu4801")
-    
-    def get_type(self):
-        """ 
-        获取连接器类型。
-        
-        返回:
-        - str,连接器类型。
-        """
-        return self._connector_type
-        
-    def get_config(self):
-        """
-        获取连接器配置信息。  
-        
-        返回:
-        - dict,连接器配置信息。
-        """
-        return self.__config
-        
-    def is_connected(self):
-        """ 
-        获取连接器的连接状态。
-        
-        返回:
-        - bool,连接器是否已连接。
-        """
-        return self._connected
-        
-    def is_stopped(self):
-        """
-        获取连接器的停止状态。
-        
-        返回:  
-        - bool,连接器是否已停止。  
-        """
-        return self.__stopped
+
+    def run(self):
+        self._log.debug("Starting MU4801 connector thread")
+        self.__connected = True
+
+        while not self.__stopped:
+            if not self.__connected:
+                self.__connect_serial()
+
+            try:
+                for device_name in self.__config['deviceConfig']:
+                    device_config = self.__config['deviceConfig'][device_name]
+                    
+                    # Read attributes  
+                    for attribute in device_config.get('attributes', []):
+                        reply = self.__send_command(attribute['command'], device_config)
+                        if reply:
+                            result = self.__uplink_converter.parse_attribute(attribute, reply, device_name)
+                            if result:
+                                self._log.debug(f'[{self.get_name()}] Attribute reply parsed: {result}')
+                                self.collect_statistic_and_send(self.get_name(), result)
+                    
+                    # Read timeseries  
+                    for ts_key, ts_config in device_config.get('timeseries', {}).items():
+                        reply = self.__send_command(ts_config['command'], device_config)
+                        if reply:
+                            result = self.__uplink_converter.parse_telemetry(ts_config, reply, device_name)
+                            if result:
+                                self._log.debug(f'[{self.get_name()}] Timeseries reply parsed: {result}')
+                                self.collect_statistic_and_send(self.get_name(), result)
                 
-    def on_attributes_update(self, content):  
-        """
-        处理Thingsboard下发的属性更新请求。
-        
-        参数:
-        - content: dict,属性更新请求的内容。
-        """ 
+                # Attribute updates
+                while not self.__attribute_updates.empty():
+                    attribute_update = self.__attribute_updates.get()
+                    try:
+                        device_name = attribute_update['device']
+                        device_config = self.__config['deviceConfig'][device_name]
+                        attribute_updates = deepcopy(device_config['attributeUpdates'])
+                        for attribute_config in attribute_updates:
+                            if attribute_config['attributeOnThingsBoard'] == attribute_update['attribute']:
+                                value = attribute_update['value']
+                                command = self.__downlink_converter.convert({
+                                    **attribute_config,
+                                    "device": device_name,
+                                    "value": value
+                                })
+                                reply = self.__send_command(command, device_config)
+                                if reply:
+                                    self._log.debug(f"[{self.get_name()}] Attribute update reply received: {reply.hex()}")
+                                    self.statistics['MessagesSent'] += 1
+                    except Exception as e:
+                        self._log.exception("Failed to update attribute: %s", e)
+                  
+                # RPC calls      
+                while not self.__rpc_requests.empty():
+                    rpc_request = self.__rpc_requests.get()
+                    try:
+                        device_name = rpc_request['device']
+                        rpc_config = rpc_request['config']
+                        rpc_params = rpc_request['params']
+
+                        method_config = next((m for m in self.__config['serverSideRpc'] if m['name'] == rpc_config['method']), None)
+                        if not method_config:
+                            self._log.error(f"[{self.get_name()}] RPC method '{rpc_config['method']}' not found in configuration.")
+                            continue
+                            
+                        method_params = self.__downlink_converter.config_from_type(method_config['config']['paramsFormat'])
+                        command_config = {
+                            **rpc_config,
+                            "device": device_name,
+                            "value": rpc_params
+                        }
+                                          
+                        commands = self.__downlink_converter.convert(command_config, method_params)
+                        
+                        reply = None
+                        if isinstance(commands, list):
+                            for command in commands:  
+                                reply = self.__send_command(command, device_config)
+                        else:
+                            reply = self.__send_command(commands, device_config)
+                        
+                        if reply is not None:
+                            self._log.debug(f"[{self.get_name()}] RPC reply received: {reply.hex()}")
+                            self.statistics['MessagesSent'] += 1
+                            
+                            if rpc_config['method'] in self.__downlink_converter.unidirectional_methods:
+                                result = {'success': True}
+                            else:
+                                result = self.__uplink_converter.parse_rpc_reply(reply, rpc_config, device_name)
+                            
+                            self.__gateway.send_rpc_reply(device_name, rpc_request['id'], result)
+                        else:
+                            self._log.warning(f"[{self.get_name()}] RPC call '{rpc_config['method']}' failed: no reply from device.")
+                            
+                    except Exception as e:
+                        self._log.exception("Failed to process RPC request: %s", e)
+                        self.__gateway.send_rpc_reply(rpc_request['device'], rpc_request['id'], {
+                            'success': False, 
+                            'error': str(e)
+                        })
+                                                
+                # Send heartbeat
+                current_time = time.time()
+                if self.__last_heartbeat_time + self.__config['heartbeatIntervalMs'] / 1000 < current_time:
+                    self.__last_heartbeat_time = current_time
+                    self.__gateway.send_to_storage(self.name, {
+                        'ts': int(current_time * 1000), 
+                        'values': {
+                            'deviceCount': len(self.__config['deviceConfig']),
+                            'activeConnections': sum(device.get('connected', 0) for device in self.__config['deviceConfig'].values())
+                        }
+                    })
+                
+                time.sleep(self.__convert_frequency)
+                
+            except Exception as e:
+                self._log.exception("Error in polling loop: %s", e)
+                
+                try:
+                    self.__serial.close()
+                except:
+                    pass
+                self.__connected = False
+                
+        self._log.info('[%s] Connector stopped.', self.get_name())
+
+    def close(self):
+        self.__stopped = True
+        self.__disconnect_serial()
+
+    def get_name(self):
+        return self.name
+
+    def is_connected(self):
+        return self.__connected
+    
+    def on_attributes_update(self, content):
         try:
-            # 根据设备名称查找设备配置
-            device_config = tuple(filter(lambda d: d['deviceName'] == content['device'], self.__devices))[0]
-            # 遍历设备的属性更新请求配置
-            for attribute_request_config in device_config['attributeUpdateRequests']:
-                # 获取属性名称
-                attribute_key = content['data'].get(attribute_request_config['attributeFilter']) 
-                if attribute_key is not None:
-                    # 使用下行数据转换器将属性值转换为MU4801协议要求的格式  
-                    data = MU4801DownlinkConverter.convert(attribute_request_config, attribute_key) 
-                    # 构造MU4801协议命令
-                    request = self.__form_request(attribute_request_config['cid1'], attribute_request_config.get('command'), data)
-                    # 发送命令给设备
-                    self.__send_request(device_config['socket'], request)
+            device_name = content['device']
+            for attribute_update in self.__config['deviceConfig'][device_name].get('attributeUpdates', []):
+                if attribute_update['attributeOnThingsBoard'] in content:
+                    self.__attribute_updates.put({
+                        'device': device_name, 
+                        'attribute': attribute_update['attributeOnThingsBoard'],
+                        'value': content[attribute_update['attributeOnThingsBoard']]
+                    })
         except Exception as e:
-            self._log.exception(e)
+            self._log.exception("Failed to process attribute update: %s", e)
 
     def server_side_rpc_handler(self, content):
-        """  
-        处理Thingsboard下发的RPC请求。
-
-        参数:
-        - content: dict,RPC请求的内容。  
-        """
         try:
-            # 根据设备名称查找设备配置 
-            device_config = tuple(filter(lambda d: d['deviceName'] == content['device'], self.__devices))[0]  
-            # 遍历设备的RPC请求配置
-            for rpc_request_config in device_config['serverSideRpcRequests']:
-                # 检查RPC方法名是否匹配  
-                if rpc_request_config['requestFilter'] == content['data']['method']:
-                    # 获取RPC参数
-                    data = content['data'].get('params')
-                    if data is not None:
-                        # 使用下行数据转换器将RPC参数转换为MU4801协议要求的格式
-                        data = MU4801DownlinkConverter.convert(rpc_request_config, data)
-                    # 构造MU4801协议命令
-                    request = self.__form_request(rpc_request_config['cid1'], rpc_request_config['command'], data)
-                    # 发送命令给设备  
-                    self.__send_request(device_config['socket'], request) 
-                    # 发送RPC响应给Thingsboard,表示RPC请求已成功处理
-                    self.__gateway.send_rpc_reply(device=content["device"], req_id=content["data"]["id"], success_sent=True)
+            device_name = content['device']
+            rpc_method = content['data']['method']
+            rpc_params = content['data']['params']
+            rpc_id = content['data']['id']
+            
+            rpc_config = None
+            for rpc in self.__config['deviceConfig'][device_name].get('serverSideRpc', []):
+                if rpc['method'] == rpc_method:
+                    rpc_config = rpc
                     break
-            else:
-                # 如果没有匹配到RPC方法,则发送RPC响应给Thingsboard,表示RPC请求处理失败
-                self.__gateway.send_rpc_reply(device=content["device"], req_id=content["data"]["id"], success_sent=False)
+            
+            if not rpc_config:
+                self._log.error(f"RPC method '{rpc_method}' not found in configuration for device '{device_name}'.")
+                self.__gateway.send_rpc_reply(content['device'], content['data']['id'], {'success': False})
+                return
+            
+            self.__rpc_requests.put({
+                'id': rpc_id,
+                'device': device_name,
+                'params': rpc_params,
+                'config': rpc_config
+            })
         except Exception as e:
-            self._log.exception(e)
-            # 发送RPC响应给Thingsboard,表示RPC请求处理失败  
-            self.__gateway.send_rpc_reply(device=content["device"], req_id=content["data"]["id"], success_sent=False)  
-            
-    def collect_statistic_and_send(self, connector_name, data):  
-        """
-        更新连接器的统计信息,并将采集到的数据发送给Thingsboard。
-        
-        参数:
-        - connector_name: str,连接器名称。
-        - data: dict,采集到的数据。  
-        """
-        self.statistics["MessagesReceived"] = self.statistics["MessagesReceived"] + 1
-        self.__gateway.send_to_storage(connector_name, data)  
-        self.statistics["MessagesSent"] = self.statistics["MessagesSent"] + 1
-        
-    def __connect_to_devices(self):
-        """ 
-        连接所有配置的设备。
-        """
-        for device in self.__devices:
-            try:
-                # 连接设备
-                self.open_device_connection(device)  
-            except Exception as e:
-                self._log.error("Error on connecting to device: %r", e)  
-                self._connected = False
-        # 更新连接器的连接状态
-        self._connected = any([d.get('connected') for d in self.__devices])
-        self.__last_reconnect_time = time.time()
-        
-    def __disconnect_from_devices(self):
-        """
-        断开所有设备的连接。
-        """  
-        for device in self.__devices:
-            try:  
-                # 断开设备连接
-                self.close_device_connection(device)
-            except Exception as e:
-                self._log.error("Error on disconnecting from device: %r", e)
-        self._connected = False
-        
-    def open_device_connection(self, device):
-        """  
-        连接单个设备。
-        
-        参数:
-        - device: dict,设备配置信息。
-        """
-        try:  
-            device_config = self.__get_device_config(device) 
-            # 创建Socket对象
-            device_socket = socket.socket()
-            # 设置连接超时时间
-            device_socket.settimeout(device_config['connectTimeout'])
-            # 连接设备
-            device_socket.connect((device_config['host'], device_config['port']))
-            # 将Socket对象保存到设备配置中
-            device_config['socket'] = device_socket
-            # 更新设备的连接状态
-            device_config['connected'] = True
-            self._log.info('Connected to %s', device_config['deviceName'])
-        except Exception as e:
-            self._log.error('Unable to connect to %s: %s', device_config['deviceName'], str(e))
-            
-    def close_device_connection(self, device):
-        """
-        关闭单个设备的连接。
-        
-        参数:
-        - device: dict,设备配置信息。
-        """
-        device_config = self.__get_device_config(device)
-        if device_config.get('connected'):  
-            # 关闭Socket连接
-            device_config['socket'].close() 
-            # 更新设备的连接状态
-            device_config['connected'] = False
-            self._log.info('Disconnected from %s', device_config['deviceName'])
-            
-    def __poll_data(self): 
-        """
-        轮询设备数据。
-        """
-        for device in self.__devices:
-            device_config = self.__get_device_config(device)
-            if device_config.get('connected'):
-                current_time = time.time()
-                # 检查是否到了轮询时间
-                if current_time - device_config.get('lastActivityTime', 0) >= device_config['pollingInterval'] / 1000:
-                    # 遍历设备的属性配置
-                    for attribute in device_config['attributes']:
-                        # 构造属性读取命令
-                        request = self.__form_request(attribute['cid1'], attribute['cid2'])
-                        # 发送命令给设备
-                        response = self.__send_request(device_config['socket'], request, True)
-                        # 解析设备响应
-                        response_data = self.__parse_response(response, attribute)
-                        # 将响应数据转换为Thingsboard接受的格式
-                        converted_data = MU4801UplinkConverter(self._log).convert(device_config, response_data)
-                        # 发送数据到Thingsboard
-                        self.collect_statistic_and_send(self.get_name(), converted_data)
-                    # 遍历设备的遥测配置
-                    for telemetry in device_config['telemetry']:
-                        # 构造遥测数据读取命令
-                        request = self.__form_request(telemetry['cid1'], telemetry['cid2'])
-                        # 发送命令给设备
-                        response = self.__send_request(device_config['socket'], request, True)
-                        # 解析设备响应
-                        response_data = self.__parse_response(response, telemetry)
-                        # 将响应数据转换为Thingsboard接受的格式
-                        converted_data = MU4801UplinkConverter(self._log).convert(device_config, response_data)
-                        # 发送数据到Thingsboard
-                        self.collect_statistic_and_send(self.get_name(), converted_data)
-                    # 使用44H命令获取直流告警状态
-                    request = self.__form_request('41', '44')
-                    response = self.__send_request(device_config['socket'], request, True)
-                    response_data = self.__parse_response(response, {'key': 'dcAlarmStatus', 'dataType': 'alarms', 'mapping': device_config['dcAlarmMapping']})
-                    converted_data = MU4801UplinkConverter(self._log).convert(device_config, response_data)
-                    self.collect_statistic_and_send(self.get_name(), converted_data)                        
-                    # 更新最后一次活动时间
-                    device_config['lastActivityTime'] = current_time
-             
-    @staticmethod       
-    def __form_request(cid1, cid2, data=None):
-        """
-        构造MU4801协议命令。
-        
-        参数:
-        - cid1: str,命令标识1。
-        - cid2: str,命令标识2。
-        - data: bytes,可选,命令数据。
-        返回:
-        - bytes,MU4801协议命令。
-        """
-        request = bytearray([0x68, 0x0D, 0x00, 0x41, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, int(cid1, 16), int(cid2, 16), 0x00, 0x16])
-        if data is not None:
-            request.extend(data)
-            return request
+            self._log.exception("Failed to process RPC request: %s", e)
+            self.__gateway.send_rpc_reply(content['device'], content['data']['id'], {'success': False, 'error': str(e)})
 
-    @staticmethod
-    def __send_request(sock, request, expect_response=False):
-        """
-        向设备发送MU4801协议命令,并接收设备返回的响应数据。
-        
-        参数:
-        - sock: socket.socket,与设备的Socket连接。
-        - request: bytes,MU4801协议命令。
-        - expect_response: bool,可选,是否需要等待设备响应,默认为False。
-        
-        返回:
-        - bytes,设备返回的响应数据,如果expect_response为False则返回None。
-        """
-        sock.sendall(request)
-        if expect_response:
-            response = sock.recv(1024)
-            if len(response) == 0:
-                raise Exception("Device closed the connection")
-            return response
-        else:
+    @StatisticsService.CollectStatistics(start_stat_type='receivedBytesFromDevices',
+                                         end_stat_type='convertedBytesFromDevice')
+    def collect_statistic_and_send(self, connector_name, data):
+        self.statistics["MessagesReceived"] += 1
+        self.__gateway.send_to_storage(connector_name, data)
+        self.statistics["MessagesSent"] += 1
+
+    def is_stopped(self):
+        return self.__stopped
+
+    def get_config(self):
+        return self.__config
+    
+    def get_config_parameter(self, parameter, default=None):
+        return self.get_config().get(parameter, default)
+
+    def get_type(self):
+        return self.__connector_type
+    
+    def get_gateway(self):
+        return self.__gateway
+    
+    def get_id(self):
+        return self.name
+
+    def __connect_serial(self):
+        connect_attempt_count = 0
+        max_attempts = self.__config['reconnect']['maxAttempts']
+        attempt_period = self.__config['reconnect']['interval'] / 1000
+
+        while connect_attempt_count < max_attempts and not self.__stopped:
+            try:
+                self._log.info(f"[{self.get_name()}] Connecting to serial port {self.__config['configuration']['serialPort']} "
+                         f"(attempt {connect_attempt_count + 1}/{max_attempts})")
+                self.__serial = serial.Serial(
+                    port=self.__config['configuration']['serialPort'],
+                    **self.__config['configuration']['serialParams']  
+                )
+                self.__reader = self.__serial
+                self.__writer = self.__serial
+                self.__connected = True
+                self._log.info(f'[{self.get_name()}] Successfully connected to serial port.')
+                return
+            except serial.SerialException as e:
+                self._log.error(f"[{self.get_name()}] Error connecting to serial port: {str(e)}")
+            connect_attempt_count += 1
+            time.sleep(attempt_period)
+
+        self.__connected = False
+
+    def __disconnect_serial(self):
+        if self.__serial and self.__serial.is_open:  
+            self.__serial.close()
+            self.__connected = False
+            self._log.info(f'[{self.get_name()}] Disconnected from serial port.')
+                   
+    def __send_command(self, command, device_config):
+        if not self.__connected:
             return None
         
-    @staticmethod
-    def __parse_response(response, config):
-        """
-        解析设备返回的响应数据。
+        self._log.debug(f"[{self.get_name()}] Sending command to device '{device_config['name']}': {command}")
+        command_attempt_count = 0
+        attempt_period = self.__config['commandTimeout'] / 1000
+        max_attempts = self.__config['maxCommandAttempts']
         
-        参数:
-        - response: bytes,设备返回的响应数据。
-        - config: dict,命令配置。
-        
-        返回:
-        - dict,解析后的数据。
-        
-        异常:
-        - Exception,如果响应数据格式不正确。
-        """
-        result = {}
-        try:
-            # 检查响应数据的起始标志和结束标志是否正确
-            if response[0] != 0x68 or response[14] != 0x16:
-                raise Exception("Invalid response format")
-                
-            # 提取响应数据的长度
-            data_length = struct.unpack('<H', response[1:3])[0]
-            # 检查响应数据的长度是否与实际长度匹配
-            if data_length + 4 != len(response):
-                raise Exception("Data length does not match response length")
-            
-            # 如果是多帧数据
-            if config.get('command') == 'multipleFrame':
-                # 提取数据部分
-                total_data = response[15:-1] 
-                # 提取数据项的数量
-                items_count = struct.unpack('<H', total_data[:2])[0]
-                data_offset = 2
-                # 循环提取每个数据项
-                for i in range(items_count):
-                    key = config['key']
-                    if config.get('mapping') and str(i) in config['mapping']:
-                        key = f"{key}.{config['mapping'][str(i)]}"
-                    data_bytes = total_data[data_offset:data_offset + config.get('length', 4)]
-                    data_offset += config.get('length', 4)
-                    # 将原始字节数据转换为Python数据类型  
-                    result[key] = MU4801Connector.__convert_data(data_bytes, config)
-            else:
-                # 提取数据部分
-                data = response[15:-1]
-                # 将原始字节数据转换为Python数据类型
-                result[config['key']] = MU4801Connector.__convert_data(data, config)
-        except Exception as e:
-            raise Exception(f"Failed to parse response data: {e}")
-        return result
-        
-    @staticmethod    
-    def __convert_data(data_bytes, config):
-        """
-        将原始字节数据转换为Python数据类型。
-        
-        参数:
-        - data_bytes: bytes,原始字节数据。
-        - config: dict,数据配置。
-        
-        返回:
-        - 转换后的Python数据类型。
-        """
-        # 根据数据类型进行转换
-        if config.get('dataType') == 'uint8':
-            return int.from_bytes(data_bytes, 'big', signed=False)
-        elif config.get('dataType') == 'uint16':
-            return int.from_bytes(data_bytes, config.get('byteOrder', 'little'), signed=False)
-        elif config.get('dataType') == 'int16':
-            return int.from_bytes(data_bytes, config.get('byteOrder', 'little'), signed=True)
-        elif config.get('dataType') == 'uint32':
-            return int.from_bytes(data_bytes, config.get('byteOrder', 'little'), signed=False)
-        elif config.get('dataType') == 'int32':
-            return int.from_bytes(data_bytes, config.get('byteOrder', 'little'), signed=True)
-        elif config.get('dataType') == 'float32':
-            return struct.unpack('>f' if config.get('byteOrder') == 'big' else '<f', data_bytes)[0]
-        elif config.get('dataType') == 'string':
-            return data_bytes.decode('ascii').strip('\x00')
-        elif config.get('dataType') == 'alarms':
-            data = int.from_bytes(data_bytes, 'big', signed=False)
-            alarms = [] 
-            # 根据配置的映射关系,解析出告警信息
-            for i, key in enumerate(sorted(config['mapping'].keys())):
-                if data & (1 << i):
-                    alarms.append(config['mapping'][key])
-            return alarms
-        elif config.get('dataType') == 'parameters':
-            data = data_bytes.decode('ascii')
-            parameters = {}
-            for key, value in config['mapping'].items():
-                if isinstance(value, dict):
-                    parameters[key] = MU4801Connector.__convert_data(struct.pack(f">{'f' if value.get('dataType') == 'float32' else 'I'}", int(data)), value)
-                else:
-                    parameters[key] = MU4801Connector.__convert_data(struct.pack(f">{'B' if value.get('dataType') in ('uint8', 'enum') else 'H'}", int(data)), value)
-            return parameters
-        elif config.get('dataType') == 'timestamp':
+        while command_attempt_count < max_attempts:
             try:
-                year = int.from_bytes(data_bytes[0:2], 'big', signed=False)
-                month = int.from_bytes(data_bytes[2:3], 'big', signed=False)
-                day = int.from_bytes(data_bytes[3:4], 'big', signed=False)
-                hour = int.from_bytes(data_bytes[4:5], 'big', signed=False)
-                minute = int.from_bytes(data_bytes[5:6], 'big', signed=False) 
-                second = int.from_bytes(data_bytes[6:7], 'big', signed=False)
-                timestamp = time.mktime((year, month, day, hour, minute, second, 0, 0, -1))
-                return timestamp
-            except (ValueError, OverflowError):
-                return None
-        else:
-            return data_bytes
+                with self.__device_lock:
+                    self.__writer.write(command)
+                    self.__writer.flush()
+                    if not self.__config['polling']['expectReply']:
+                        return None
+                        
+                    timeout_start = time.time()
+                    reply = b''
+                    
+                    while time.time() - timeout_start < self.__command_timeout:
+                        read_size = self.__reader.in_waiting
+                        if read_size > 0:
+                            chunk = self.__reader.read(read_size)
+                            reply += chunk
+                            if reply.endswith(b'\r'):
+                                self._log.debug(f"[{self.get_name()}] Reply received from device: {reply.hex()}")
+                                return reply
+                            
+                        time.sleep(0.01)
+                        
+                raise TimeoutError(f"[{self.get_name()}] Command timed out after {self.__command_timeout}s")
+
+            except Exception as e:
+                self._log.exception(f"[{self.get_name()}] Error sending command: {str(e)}")
             
-    @staticmethod        
-    def __get_device_config(device):
-        """
-        根据设备名称获取设备的配置信息。
-        
-        参数:
-        - device: dict,设备信息。
-        
-        返回:
-        - dict,设备配置信息。  
-        """
-        return next(d for d in device['devices'] if d['deviceName'] == device['deviceName'])
+            command_attempt_count += 1
+            time.sleep(attempt_period)
+            
+        self._log.warning(f"[{self.get_name()}] Command failed after {max_attempts} attempts.") 
+        return None
