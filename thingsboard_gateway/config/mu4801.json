@@ -6,523 +6,795 @@
     "timeout": 1000,
     "bytesize": 8,
     "parity": "N",
-    "stopbits": 1,  
+    "stopbits": 1,
     "pollInterval": 1000,
     "reconnectInterval": 10000,
     "commandTimeout": 500,
     "maxCommandAttempts": 3,
     "logLevel": "DEBUG",
-    
     "devices": [
-      {
-        "name": "MU4801_DEFAULT",
-  
-        "attributes": [
-          {
-            "key": "address",
-            "command": "0x50"
-          },
-          {
-            "key": "manufacturer",
-            "command": "0x51",
-            "startPos": 12,
-            "length": 20,
-            "dataType": "string"  
-          },
-          {
-            "key": "model",
-            "command": "0x51", 
-            "startPos": 0,
-            "length": 10,
-            "dataType": "string"
-          },
-          {
-            "key": "hardwareVersion",
-            "command": "0x51",
-            "startPos": 10,
-            "length": 2,
-            "dataType": "bcd"
-          }
-        ],
-        
-        "timeseries": [
-          {
-            "key": "acVolts",
-            "command": "0x41",
-            "values": [
-              {
-                "key": "a",
-                "dataType": "float",
-                "startPos": 5
-              },
-              {
-                "key": "b", 
-                "dataType": "float",
-                "startPos": 9
-              },
-              {  
-                "key": "c",
-                "dataType": "float",
-                "startPos": 13
-              }
-            ]  
-          },
-          {
-            "key": "acFrequency",
-            "command": "0x41",
-            "values": [
-              {
-                "key": "frequency",
-                "dataType": "float",
-                "startPos": 17    
-              }
-            ]
-          },
-          {
-            "key": "dcVoltage",
-            "command": "0x42",
-            "values": [
-              {
-                "key": "volts",
-                "dataType": "float", 
-                "startPos": 5
-              }
-            ]  
-          },
-          {
-            "key": "dcCurrent",
-            "command": "0x42", 
-            "values": [
-              {
-                "key": "total",
-                "dataType": "float",
-                "startPos": 9
-              },
-              {
-                "key": "battery1",
-                "dataType": "float", 
-                "startPos": 14
-              }
-            ]
-          },
-          {
-            "key": "dcPower",
-            "command": "0x42",
-            "values": [
-              {
-                "key": "total", 
-                "dataType": "float",
-                "startPos": 211
-              }
-            ]
-          },
-          {
-            "key": "dcEnergy",
-            "command": "0x42",
-            "values": [
-              {
-                "key": "total",
-                "dataType": "float",
-                "startPos": 215    
-              }
-            ]
-          },
-          {
-            "key": "batteryCapacity",
-            "command": "0x42", 
-            "values": [  
-              {
-                "key": "battery1",
-                "dataType": "float",
-                "startPos": 30
-              }
-            ]
-          },
-          {
-            "key": "temperatures",
-            "command": "0x42",
-            "values": [
-              {
-                "key": "t1",
-                "dataType": "float",
-                "startPos": 163
-              },
-              {
-                "key": "t2",
-                "dataType": "float", 
-                "startPos": 167  
-              }
-            ]
-          },
-          {  
-            "key": "humidity",
-            "command": "0x42",
-            "values": [
-              {  
-                "key": "h1", 
-                "dataType": "float",
-                "startPos": 171
-              }
-            ]
-          },
-          {
-            "key": "acAlarms",
-            "command": "0x44",
-            "values": [
-              {
-                "key": "overVoltageA",
-                "dataType": "boolean",
-                "startPos": 5,
-                "booleanMap": {
-                  "0": false,
-                  "2": true
+        {
+            "deviceType": "MU4801_DEFAULT",
+            "attributes": [
+                {
+                    "key": "address",
+                    "command": "0x50"
+                },
+                {
+                    "key": "manufacturer",
+                    "command": "0x51",
+                    "startPos": 12,
+                    "length": 20,
+                    "dataType": "string"
+                },
+                {
+                    "key": "model",
+                    "command": "0x51",
+                    "startPos": 0,
+                    "length": 10,
+                    "dataType": "string"
+                },
+                {
+                    "key": "hardwareVersion",
+                    "command": "0x51",
+                    "startPos": 10,
+                    "length": 2,
+                    "dataType": "bcd"
                 }
-              },
-              {
-                "key": "underVoltageA",
-                "dataType": "boolean",
-                "startPos": 5,
-                "booleanMap": {
-                  "0": false,
-                  "1": true
+            ],
+            "timeseries": [
+                {
+                    "key": "acVolts",
+                    "command": "0x41",
+                    "values": [
+                        {
+                            "key": "a",
+                            "dataType": "float",
+                            "startPos": 5
+                        },
+                        {
+                            "key": "b",
+                            "dataType": "float",
+                            "startPos": 9
+                        },
+                        {
+                            "key": "c",
+                            "dataType": "float",
+                            "startPos": 13
+                        }
+                    ]
+                },
+                {
+                    "key": "acFrequency",
+                    "command": "0x41",
+                    "values": [
+                        {
+                            "key": "frequency",
+                            "dataType": "float",
+                            "startPos": 17
+                        }
+                    ]
+                },
+                {
+                    "key": "dcVoltage",
+                    "command": "0x42",
+                    "values": [
+                        {
+                            "key": "volts",
+                            "dataType": "float",
+                            "startPos": 5
+                        }
+                    ]
+                },
+                {
+                    "key": "dcCurrent",
+                    "command": "0x42",
+                    "values": [
+                        {
+                            "key": "total",
+                            "dataType": "float",
+                            "startPos": 9
+                        },
+                        {
+                            "key": "battery1",
+                            "dataType": "float",
+                            "startPos": 14
+                        }
+                    ]
+                },
+                {
+                    "key": "batteryGroup",
+                    "command": "0x42",
+                    "values": [
+                        {
+                            "key": "number1",
+                            "dataType": "uint8",
+                            "startPos": 13
+                        },
+                        {
+                            "key": "voltage1",
+                            "dataType": "float",
+                            "startPos": 63
+                        },
+                        {
+                            "key": "midVolatge1",
+                            "dataType": "float",
+                            "startPos": 71
+                        },
+                        {
+                            "key": "temperature1",
+                            "dataType": "float",
+                            "startPos": 163
+                        },
+                        {
+                            "key": "number2",
+                            "dataType": "uint8",
+                            "startPos": 18
+                        },
+                        {
+                            "key": "midVolatge2",
+                            "dataType": "float",
+                            "startPos": 75
+                        },
+                        {
+                            "key": "number3",
+                            "dataType": "uint8",
+                            "startPos": 19
+                        },
+                        {
+                            "key": "midVolatge3",
+                            "dataType": "float",
+                            "startPos": 79
+                        },
+                        {
+                            "key": "number4",
+                            "dataType": "uint8",
+                            "startPos": 20
+                        },
+                        {
+                            "key": "midVolatge4",
+                            "dataType": "float",
+                            "startPos": 83
+                        }
+                    ]
+                },
+                {
+                    "key": "batteryCapacity",
+                    "command": "0x42",
+                    "values": [
+                        {
+                            "key": "battery1",
+                            "dataType": "float",
+                            "startPos": 30
+                        }
+                    ]
+                },
+                {
+                    "key": "temperatures",
+                    "command": "0x42",
+                    "values": [
+                        {
+                            "key": "t1",
+                            "dataType": "float",
+                            "startPos": 163
+                        },
+                        {
+                            "key": "t2",
+                            "dataType": "float",
+                            "startPos": 167
+                        }
+                    ]
+                },
+                {
+                    "key": "humidity",
+                    "command": "0x42",
+                    "values": [
+                        {
+                            "key": "h1",
+                            "dataType": "float",
+                            "startPos": 171
+                        }
+                    ]
+                },
+                {
+                    "key": "loadPower",
+                    "command": "0x42",
+                    "values": [
+                        {
+                            "key": "total",
+                            "dataType": "float",
+                            "startPos": 175
+                        },
+                        {
+                            "key": "load1",
+                            "dataType": "float",
+                            "startPos": 179
+                        },
+                        {
+                            "key": "load2",
+                            "dataType": "float",
+                            "startPos": 183
+                        },
+                        {
+                            "key": "load3",
+                            "dataType": "float",
+                            "startPos": 187
+                        },
+                        {
+                            "key": "load4",
+                            "dataType": "float",
+                            "startPos": 191
+                        }
+                    ]
+                },
+                {
+                    "key": "loadEnergy",
+                    "command": "0x42",
+                    "values": [
+                        {
+                            "key": "total",
+                            "dataType": "float",
+                            "startPos": 195
+                        },
+                        {
+                            "key": "load1",
+                            "dataType": "float",
+                            "startPos": 199
+                        },
+                        {
+                            "key": "load2",
+                            "dataType": "float",
+                            "startPos": 203
+                        },
+                        {
+                            "key": "load3",
+                            "dataType": "float",
+                            "startPos": 207
+                        },
+                        {
+                            "key": "load4",
+                            "dataType": "float",
+                            "startPos": 211
+                        }
+                    ]
+                },
+                {
+                    "key": "llvdDowntimes",
+                    "command": "0x48",
+                    "values": [
+                        {
+                            "key": "llvd1DownTime",
+                            "dataType": "float",
+                            "startPos": 152
+                        },
+                        {
+                            "key": "llvd2DownTime",
+                            "dataType": "float",
+                            "startPos": 156
+                        },
+                        {
+                            "key": "llvd3DownTime",
+                            "dataType": "float",
+                            "startPos": 160
+                        },
+                        {
+                            "key": "llvd4DownTime",
+                            "dataType": "float",
+                            "startPos": 164
+                        }
+                    ]
                 }
-              },
-              {
-                "key": "overVoltageB", 
-                "dataType": "boolean",
-                "startPos": 6,
-                "booleanMap": {
-                  "0": false, 
-                  "2": true
+            ],
+            "alarms": [
+                {
+                    "key": "acAlarms",
+                    "command": "0x44",
+                    "values": [
+                        {
+                            "key": "overVoltageA",
+                            "dataType": "boolean",
+                            "startPos": 5,
+                            "booleanMap": {
+                                "0": false,
+                                "2": true
+                            }
+                        },
+                        {
+                            "key": "underVoltageA",
+                            "dataType": "boolean",
+                            "startPos": 5,
+                            "booleanMap": {
+                                "0": false,
+                                "1": true
+                            }
+                        },
+                        {
+                            "key": "overVoltageB",
+                            "dataType": "boolean",
+                            "startPos": 6,
+                            "booleanMap": {
+                                "0": false,
+                                "2": true
+                            }
+                        },
+                        {
+                            "key": "underVoltageB",
+                            "dataType": "boolean",
+                            "startPos": 6,
+                            "booleanMap": {
+                                "0": false,
+                                "1": true
+                            }
+                        },
+                        {
+                            "key": "overVoltageC",
+                            "dataType": "boolean",
+                            "startPos": 7,
+                            "booleanMap": {
+                                "0": false,
+                                "2": true
+                            }
+                        },
+                        {
+                            "key": "underVoltageC",
+                            "dataType": "boolean",
+                            "startPos": 7,
+                            "booleanMap": {
+                                "0": false,
+                                "1": true
+                            }
+                        },
+                        {
+                            "key": "acArresterBroken",
+                            "dataType": "boolean",
+                            "startPos": 11,
+                            "booleanMap": {
+                                "0": false,
+                                "0x81": true
+                            }
+                        },
+                        {
+                            "key": "acPowerDown",
+                            "dataType": "boolean",
+                            "startPos": 14,
+                            "booleanMap": {
+                                "0": false,
+                                "0x84": true
+                            }
+                        }
+                    ]
+                },
+                {
+                    "key": "dcAlarms",
+                    "command": "0x44",
+                    "values": [
+                        {
+                            "key": "overVoltage",
+                            "dataType": "boolean",
+                            "startPos": 4,
+                            "booleanMap": {
+                                "0": false,
+                                "2": true
+                            }
+                        },
+                        {
+                            "key": "underVoltage",
+                            "dataType": "boolean",
+                            "startPos": 4,
+                            "booleanMap": {
+                                "0": false,
+                                "1": true
+                            }
+                        },
+                        {
+                            "key": "batteryOverTemp",
+                            "dataType": "boolean",
+                            "startPos": -24,
+                            "booleanMap": {
+                                "0": false,
+                                "0xb0": true
+                            }
+                        },
+                        {
+                            "key": "batteryUnderTemp",
+                            "dataType": "boolean",
+                            "startPos": -24,
+                            "booleanMap": {
+                                "0": false,
+                                "0xb1": true
+                            }
+                        },
+                        {
+                            "key": "batteryMidVoltageDiff",
+                            "dataType": "boolean",
+                            "startPos": -16,
+                            "booleanMap": {
+                                "0": false,
+                                "0xc8": true
+                            }
+                        },
+                        {
+                            "key": "batteryGroupLost1",
+                            "dataType": "boolean",
+                            "startPos": -19,
+                            "booleanMap": {
+                                "0": false,
+                                "0x95": true
+                            }
+                        },
+                        {
+                            "key": "batteryGroupLost2",
+                            "dataType": "boolean",
+                            "startPos": -18,
+                            "booleanMap": {
+                                "0": false,
+                                "0x96": true
+                            }
+                        },
+                        {
+                            "key": "batteryGroupLost3",
+                            "dataType": "boolean",
+                            "startPos": -17,
+                            "booleanMap": {
+                                "0": false,
+                                "0x97": true
+                            }
+                        },
+                        {
+                            "key": "batteryGroupLost4",
+                            "dataType": "boolean",
+                            "startPos": -16,
+                            "booleanMap": {
+                                "0": false,
+                                "0x98": true
+                            }
+                        },
+                        {
+                            "key": "envOverTemp",
+                            "dataType": "boolean",
+                            "startPos": -21,
+                            "booleanMap": {
+                                "0": false,
+                                "0xbe": true
+                            }
+                        },
+                        {
+                            "key": "envUnderTemp",
+                            "dataType": "boolean",
+                            "startPos": -21,
+                            "booleanMap": {
+                                "0": false,
+                                "0xbf": true
+                            }
+                        },
+                        {
+                            "key": "envOverHumidity",
+                            "dataType": "boolean",
+                            "startPos": -18,
+                            "booleanMap": {
+                                "0": false,
+                                "0xc6": true
+                            }
+                        },
+                        {
+                            "key": "envUnderHumidity",
+                            "dataType": "boolean",
+                            "startPos": -18,
+                            "booleanMap": {
+                                "0": false,
+                                "0xc7": true
+                            }
+                        },
+                        {
+                            "key": "doorOpen",
+                            "dataType": "boolean",
+                            "startPos": -50,
+                            "booleanMap": {
+                                "0": false,
+                                "0xce": true
+                            }
+                        },
+                        {
+                            "key": "waterAlarm",
+                            "dataType": "boolean",
+                            "startPos": -49,
+                            "booleanMap": {
+                                "0": false,
+                                "0xcf": true
+                            }
+                        },
+                        {
+                            "key": "smokeAlarm",
+                            "dataType": "boolean",
+                            "startPos": -48,
+                            "booleanMap": {
+                                "0": false,
+                                "0xd0": true
+                            }
+                        },
+                        {
+                            "key": "digitalInput1",
+                            "dataType": "boolean",
+                            "startPos": -46,
+                            "booleanMap": {
+                                "0": false,
+                                "0xd2": true
+                            }
+                        },
+                        {
+                            "key": "digitalInput2",
+                            "dataType": "boolean",
+                            "startPos": -45,
+                            "booleanMap": {
+                                "0": false,
+                                "0xd3": true
+                            }
+                        },
+                        {
+                            "key": "digitalInput3",
+                            "dataType": "boolean",
+                            "startPos": -44,
+                            "booleanMap": {
+                                "0": false,
+                                "0xd4": true
+                            }
+                        },
+                        {
+                            "key": "digitalInput4",
+                            "dataType": "boolean",
+                            "startPos": -43,
+                            "booleanMap": {
+                                "0": false,
+                                "0xd5": true
+                            }
+                        },
+                        {
+                            "key": "digitalInput5",
+                            "dataType": "boolean",
+                            "startPos": -42,
+                            "booleanMap": {
+                                "0": false,
+                                "0xd6": true
+                            }
+                        },
+                        {
+                            "key": "digitalInput6",
+                            "dataType": "boolean",
+                            "startPos": -41,
+                            "booleanMap": {
+                                "0": false,
+                                "0xd7": true
+                            }
+                        }
+                    ]
                 }
-              },
-              {
-                "key": "underVoltageB",
-                "dataType": "boolean", 
-                "startPos": 6,
-                "booleanMap": {
-                  "0": false,
-                  "1": true  
+            ],
+            "loadSwitchControl": {
+                "loadNO": [
+                    1,
+                    2,
+                    3,
+                    4
+                ],
+                "read": {
+                    "command": "0x44",
+                    "startPos": 1,
+                    "booleanMap": {
+                        "0": true,
+                        "1": false
+                    }
+                },
+                "on": {
+                    "command": "0x92 0x{loadNO} 0x01",
+                    "confirm": false
+                },
+                "off": {
+                    "command": "0x92 0x{loadNO} 0x00",
+                    "confirm": false
                 }
-              },
-              {
-                "key": "overVoltageC",
-                "dataType": "boolean", 
-                "startPos": 7,
-                "booleanMap": {
-                  "0": false,
-                  "2": true
-                }  
-              },
-              {
-                "key": "underVoltageC",
-                "dataType": "boolean",
-                "startPos": 7, 
-                "booleanMap": {
-                  "0": false,
-                  "1": true
-                }
-              },
-              {
-                "key": "surgeProtection",
-                "dataType": "boolean",
-                "startPos": -7,
-                "booleanMap": {
-                  "0": false, 
-                  "0x81": true
-                }
-              },
-              { 
-                "key": "powerDown",
-                "dataType": "boolean",
-                "startPos": -5,
-                "booleanMap": {
-                  "0": false,
-                  "0x84": true  
-                }
-              }
-            ]
-          },
-          {
-            "key": "dcAlarms",
-            "command": "0x44",
-            "values": [
-              {
-                "key": "overVoltage",
-                "dataType": "boolean", 
-                "startPos": 4,
-                "booleanMap": { 
-                  "0": false,
-                  "2": true
-                }
-              },
-              {
-                "key": "underVoltage",
-                "dataType": "boolean",
-                "startPos": 4, 
-                "booleanMap": {
-                  "0": false,
-                  "1": true 
-                }
-              },
-              {
-                "key": "batteryOverTemp",
-                "dataType": "boolean",
-                "startPos": -24,
-                "booleanMap": {
-                  "0": false,
-                  "0xb0": true
-                }
-              },
-              {
-                "key": "batteryUnderTemp",
-                "dataType": "boolean",
-                "startPos": -24,
-                "booleanMap": {
-                  "0": false, 
-                  "0xb1": true
-                }  
-              },
-              {
-                "key": "envOverTemp",
-                "dataType": "boolean",
-                "startPos": -21,
-                "booleanMap": {
-                  "0": false,
-                  "0xbe": true
-                }
-              },
-              {
-                "key": "envUnderTemp",
-                "dataType": "boolean",
-                "startPos": -21,
-                "booleanMap": {
-                  "0": false,
-                  "0xbf": true  
-                }
-              },
-              {  
-                "key": "envOverHumidity",
-                "dataType": "boolean", 
-                "startPos": -18,
-                "booleanMap": {
-                  "0": false,
-                  "0xc6": true
-                }
-              },
-              {
-                "key": "envUnderHumidity", 
-                "dataType": "boolean",
-                "startPos": -18,
-                "booleanMap": {  
-                  "0": false,
-                  "0xc7": true
-                }
-              }
-            ]
-          }
-        ],
-        
-        "attribute_updates": [
-          {
-            "attributeOnThingsBoard": "acVoltageUpperLimit",
-            "command": "0x48",  
-            "dataType": "float",
-            "startPos": 0
-          },  
-          {
-            "attributeOnThingsBoard": "acVoltageLowerLimit", 
-            "command": "0x48",
-            "dataType": "float",
-            "startPos": 4
-          },
-          {
-            "attributeOnThingsBoard": "batteryCapacityAH",
-            "command": "0x48",
-            "dataType": "float",
-            "startPos": 158  
-          },
-          {
-            "attributeOnThingsBoard": "batteryOverTemp",
-            "command": "0x48", 
-            "dataType": "float",
-            "startPos": 130
-          },
-          {
-            "attributeOnThingsBoard": "batteryUnderTemp",
-            "command": "0x48",
-            "dataType": "float", 
-            "startPos": 134
-          }
-        ],
-        
-        "server_side_rpc": [
-          {
-            "method": "setDcVoltageLimit",
-            "command": "0x48", 
-            "params": {
-              "upperLimit": "float",
-              "lowerLimit": "float"  
             },
-            "frame_template": [  
-              {
-                "name": "upperLimit",
-                "dataType": "float",
-                "startPos": 0
-              },
-              {
-                "name": "lowerLimit",
-                "dataType": "float",
-                "startPos": 4
-              }
+            "serverSideRpc": [
+                {
+                    "method": "setDcVoltageLimit",
+                    "command": "0x48",
+                    "paramsFormat": {
+                        "upperLimit": "float",
+                        "lowerLimit": "float"
+                    },
+                    "frame_template": [
+                        {
+                            "name": "lowerLimit",
+                            "dataType": "float",
+                            "startPos": 4
+                        },
+                        {
+                            "name": "lowerLimit",
+                            "dataType": "float",
+                            "startPos": 4
+                        }
+                    ]
+                },
+                {
+                    "method": "setAcVoltageLimit",
+                    "command": "0x48",
+                    "paramsFormat": {
+                        "upperLimit": "float",
+                        "lowerLimit": "float"
+                    },
+                    "frame_template": [
+                        {
+                            "name": "upperLimit",
+                            "dataType": "float",
+                            "startPos": 0
+                        },
+                        {
+                            "name": "lowerLimit",
+                            "dataType": "float",
+                            "startPos": 4
+                        }
+                    ]
+                },
+                {
+                    "method": "setEqualizedCharge",
+                    "command": "0x48",
+                    "paramsFormat": {
+                        "enable": "boolean",
+                        "interval": "uint16",
+                        "duration": "uint8"
+                    },
+                    "frame_template": [
+                        {
+                            "name": "enable",
+                            "dataType": "uint8",
+                            "startPos": 12,
+                            "booleanMap": {
+                                "true": 1,
+                                "false": 0
+                            }
+                        },
+                        {
+                            "name": "interval",
+                            "dataType": "uint16",
+                            "startPos": 22
+                        },
+                        {
+                            "name": "duration",
+                            "dataType": "uint8",
+                            "startPos": 21
+                        }
+                    ]
+                },
+                {
+                    "method": "setBatteryCapacity",
+                    "command": "0x48",
+                    "paramsFormat": {
+                        "capacityAH": "float"
+                    },
+                    "frame_template": [
+                        {
+                            "name": "capacityAH",
+                            "dataType": "float",
+                            "startPos": 158
+                        }
+                    ]
+                },
+                {
+                    "method": "setBatteryTempLimit",
+                    "command": "0x48",
+                    "paramsFormat": {
+                        "overTemp": "float",
+                        "underTemp": "float"
+                    },
+                    "frame_template": [
+                        {
+                            "name": "overTemp",
+                            "dataType": "float",
+                            "startPos": 130
+                        },
+                        {
+                            "name": "underTemp",
+                            "dataType": "float",
+                            "startPos": 134
+                        }
+                    ]
+                },
+                {
+                    "method": "setEnvTempLimit",
+                    "command": "0x48",
+                    "paramsFormat": {
+                        "overTemp": "float",
+                        "underTemp": "float"
+                    },
+                    "frame_template": [
+                        {
+                            "name": "overTemp",
+                            "dataType": "float",
+                            "startPos": 138
+                        },
+                        {
+                            "name": "underTemp",
+                            "dataType": "float",
+                            "startPos": 142
+                        }
+                    ]
+                },
+                {
+                    "method": "setEnvHumidityLimit",
+                    "command": "0x48",
+                    "paramsFormat": {
+                        "overHumidity": "float",
+                        "underHumidity": "float"
+                    },
+                    "frame_template": [
+                        {
+                            "name": "overHumidity",
+                            "dataType": "float",
+                            "startPos": 146
+                        },
+                        {
+                            "name": "underHumidity",
+                            "dataType": "float",
+                            "startPos": 150
+                        }
+                    ]
+                },
+                {
+                    "method": "setRectifierModule",
+                    "command": "0x80",
+                    "paramsFormat": {
+                        "moduleNO": "uint8",
+                        "dcOutputVoltage": "float",
+                        "ocpVoltage": "float",
+                        "currentLimit": "float"
+                    },
+                    "frame_template": [
+                        {
+                            "name": "moduleNO",
+                            "dataType": "uint8",
+                            "startPos": 0
+                        },
+                        {
+                            "name": "dcOutputVoltage",
+                            "dataType": "float",
+                            "startPos": 1
+                        },
+                        {
+                            "name": "ocpVoltage",
+                            "dataType": "float",
+                            "startPos": 5
+                        },
+                        {
+                            "name": "currentLimit",
+                            "dataType": "float",
+                            "startPos": 9
+                        }
+                    ]
+                },
+                {
+                    "method": "setBatterySwitch",
+                    "command": "0x92",
+                    "paramsFormat": {
+                        "onOff": "uint8"
+                    },
+                    "frame_template": [
+                        {
+                            "name": "onOff",
+                            "dataType": "uint8",
+                            "startPos": 1,
+                            "booleanMap": {
+                                "on": "0xee",
+                                "off": "0xed"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "method": "resetSystem",
+                    "command": "0x92 0xe1",
+                    "paramsFormat": {},
+                    "frame_template": []
+                }
             ]
-          },
-          {
-            "method": "setAcVoltageLimit",
-            "command": "0x48",
-            "params": {
-              "upperLimit": "float",
-              "lowerLimit": "float"
-            },
-            "frame_template": [
-              {
-                "name": "upperLimit", 
-                "dataType": "float",
-                "startPos": 0
-              },
-              {
-                "name": "lowerLimit",
-                "dataType": "float",
-                "startPos": 4
-              }
-            ]  
-          },
-          {  
-            "method": "setEqualizedCharge",
-            "command": "0x48",
-            "params": {
-              "enable": "boolean", 
-              "interval": "uint16",
-              "duration": "uint8" 
-            },
-            "frame_template": [
-              {
-                "name": "enable",
-                "dataType": "uint8",
-                "startPos": 12,  
-                "booleanMap": {
-                  "true": 1,
-                  "false": 0
-                }  
-              },
-              {
-                "name": "interval",
-                "dataType": "uint16", 
-                "startPos": 22
-              },  
-              {
-                "name": "duration",
-                "dataType": "uint8",
-                "startPos": 21
-              }
-            ] 
-          },
-          {
-            "method": "setBatteryCapacity",
-            "command": "0x48",
-            "params": {
-              "capacityAH": "float"  
-            },
-            "frame_template": [
-              {
-                "name": "capacityAH",
-                "dataType": "float", 
-                "startPos": 158
-              }
-            ]
-          },
-          {
-            "method": "setBatteryTempLimit",
-            "command": "0x48", 
-            "params": {
-              "overTemp": "float",
-              "underTemp": "float"
-            },
-            "frame_template": [
-              {
-                "name": "overTemp",
-                "dataType": "float",
-                "startPos": 130
-              },
-              {
-                "name": "underTemp",
-                "dataType": "float",
-                "startPos": 134
-              }
-            ]
-          },
-          {
-            "method": "setEnvTempLimit",
-            "command": "0x48",
-            "params": {
-              "overTemp": "float", 
-              "underTemp": "float"
-            },
-            "frame_template": [
-              {
-                "name": "overTemp",
-                "dataType": "float",
-                "startPos": 138
-              },
-              {  
-                "name": "underTemp",
-                "dataType": "float",
-                "startPos": 142
-              }
-            ]
-          },
-          {
-            "method": "setEnvHumidityLimit",
-            "command": "0x48", 
-            "params": {
-              "overHumidity": "float",
-              "underHumidity": "float"
-            },
-            "frame_template": [
-              {  
-                "name": "overHumidity",
-                "dataType": "float",
-                "startPos": 146
-              },
-              {
-                "name": "underHumidity",
-                "dataType": "float", 
-                "startPos": 150
-              }
-            ]
-          },
-          {
-            "method": "setBatteryVoltageLimit",  
-            "command": "0x48",
-            "params": {
-              "lvdVoltage": "float",
-              "lvrVoltage": "float"  
-            },
-            "frame_template": [
-              {
-                "name": "lvdVoltage",
-                "dataType": "float",
-                "startPos": 150
-              },
-              {
-                "name": "lvrVoltage",
-                "dataType": "float",
-                "startPos": 154
-              }  
-            ]  
-          }
-        ]
-      }
+        }
     ]
-  }
-  
+}
