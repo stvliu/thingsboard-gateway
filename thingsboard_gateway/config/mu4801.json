@@ -1,5 +1,5 @@
 {
-    "name": "MU4801",
+    "name": "Mu4801",
     "type": "serial",
     "port": "/dev/ttyS0",
     "baudrate": 9600,
@@ -8,13 +8,11 @@
     "parity": "N",
     "stopbits": 1,
     "pollInterval": 1000,
-    "reconnectInterval": 10000,
-    "commandTimeout": 500,
-    "maxCommandAttempts": 3,
+    "heartbeatIntervalMs": 5000,
     "logLevel": "DEBUG",
     "devices": [
         {
-            "deviceType": "MU4801_DEFAULT",
+            "deviceName": "Mu4801 #1",
             "attributes": [
                 {
                     "key": "address",
@@ -40,6 +38,48 @@
                     "startPos": 10,
                     "length": 2,
                     "dataType": "bcd"
+                },
+                {
+                    "key": "protocolVersion",
+                    "command": "0x4F",
+                    "length": 4,
+                    "dataType": "string"
+                },
+                {
+                    "key": "currentTime",
+                    "command": "0x4d",
+                    "values": [
+                        {
+                            "key": "year",
+                            "dataType": "uint16",
+                            "startPos": 0
+                        },
+                        {
+                            "key": "month",
+                            "dataType": "uint8",
+                            "startPos": 2
+                        },
+                        {
+                            "key": "day",
+                            "dataType": "uint8",
+                            "startPos": 3
+                        },
+                        {
+                            "key": "hour",
+                            "dataType": "uint8",
+                            "startPos": 4
+                        },
+                        {
+                            "key": "minute",
+                            "dataType": "uint8",
+                            "startPos": 5
+                        },
+                        {
+                            "key": "second",
+                            "dataType": "uint8",
+                            "startPos": 6
+                        }
+                    ]
                 }
             ],
             "timeseries": [
@@ -361,6 +401,51 @@
                                 "0": false,
                                 "0x84": true
                             }
+                        },
+                        {
+                            "key": "frequencyAlarmH",
+                            "dataType": "boolean",
+                            "startPos": 10,
+                            "booleanMap": {
+                                "0": false,
+                                "2": true
+                            }
+                        },
+                        {
+                            "key": "frequencyAlarmL",
+                            "dataType": "boolean",
+                            "startPos": 10,
+                            "booleanMap": {
+                                "0": false,
+                                "1": true
+                            }
+                        },
+                        {
+                            "key": "currentAlarmA",
+                            "dataType": "boolean",
+                            "startPos": -24,
+                            "booleanMap": {
+                                "0": false,
+                                "2": true
+                            }
+                        },
+                        {
+                            "key": "currentAlarmB",
+                            "dataType": "boolean",
+                            "startPos": -23,
+                            "booleanMap": {
+                                "0": false,
+                                "2": true
+                            }
+                        },
+                        {
+                            "key": "currentAlarmC",
+                            "dataType": "boolean",
+                            "startPos": -22,
+                            "booleanMap": {
+                                "0": false,
+                                "2": true
+                            }
                         }
                     ]
                 },
@@ -531,39 +616,57 @@
                             }
                         },
                         {
-                            "key": "digitalInput3",
+                            "key": "lLVDGoingDown",
                             "dataType": "boolean",
-                            "startPos": -44,
+                            "startPos": -4,
                             "booleanMap": {
                                 "0": false,
-                                "0xd4": true
+                                "0x9b": true
                             }
                         },
                         {
-                            "key": "digitalInput4",
+                            "key": "bLVDGoingDown",
                             "dataType": "boolean",
-                            "startPos": -43,
+                            "startPos": -8,
                             "booleanMap": {
                                 "0": false,
-                                "0xd5": true
+                                "0x9c": true
                             }
                         },
                         {
-                            "key": "digitalInput5",
+                            "key": "lLVD1GoingDown",
                             "dataType": "boolean",
-                            "startPos": -42,
+                            "startPos": -3,
                             "booleanMap": {
                                 "0": false,
-                                "0xd6": true
+                                "0x9d": true
                             }
                         },
                         {
-                            "key": "digitalInput6",
+                            "key": "lLVD2GoingDown",
                             "dataType": "boolean",
-                            "startPos": -41,
+                            "startPos": -2,
                             "booleanMap": {
                                 "0": false,
-                                "0xd7": true
+                                "0x9f": true
+                            }
+                        },
+                        {
+                            "key": "lLVD3GoingDown",
+                            "dataType": "boolean",
+                            "startPos": -1,
+                            "booleanMap": {
+                                "0": false,
+                                "0xa1": true
+                            }
+                        },
+                        {
+                            "key": "lLVD4GoingDown",
+                            "dataType": "boolean",
+                            "startPos": 0,
+                            "booleanMap": {
+                                "0": false,
+                                "0xa3": true
                             }
                         }
                     ]
@@ -719,58 +822,6 @@
                     ]
                 },
                 {
-                    "method": "setEnvHumidityLimit",
-                    "command": "0x48",
-                    "paramsFormat": {
-                        "overHumidity": "float",
-                        "underHumidity": "float"
-                    },
-                    "frame_template": [
-                        {
-                            "name": "overHumidity",
-                            "dataType": "float",
-                            "startPos": 146
-                        },
-                        {
-                            "name": "underHumidity",
-                            "dataType": "float",
-                            "startPos": 150
-                        }
-                    ]
-                },
-                {
-                    "method": "setRectifierModule",
-                    "command": "0x80",
-                    "paramsFormat": {
-                        "moduleNO": "uint8",
-                        "dcOutputVoltage": "float",
-                        "ocpVoltage": "float",
-                        "currentLimit": "float"
-                    },
-                    "frame_template": [
-                        {
-                            "name": "moduleNO",
-                            "dataType": "uint8",
-                            "startPos": 0
-                        },
-                        {
-                            "name": "dcOutputVoltage",
-                            "dataType": "float",
-                            "startPos": 1
-                        },
-                        {
-                            "name": "ocpVoltage",
-                            "dataType": "float",
-                            "startPos": 5
-                        },
-                        {
-                            "name": "currentLimit",
-                            "dataType": "float",
-                            "startPos": 9
-                        }
-                    ]
-                },
-                {
                     "method": "setBatterySwitch",
                     "command": "0x92",
                     "paramsFormat": {
@@ -793,6 +844,204 @@
                     "command": "0x92 0xe1",
                     "paramsFormat": {},
                     "frame_template": []
+                },
+                {
+                    "method": "setAutoChargeEnable",
+                    "command": "0x48",
+                    "paramsFormat": {
+                        "enable": "uint8"
+                    },
+                    "frame_template": [
+                        {
+                            "name": "enable",
+                            "dataType": "uint8",
+                            "startPos": 13,
+                            "booleanMap": {
+                                "true": 1,
+                                "false": 0
+                            }
+                        }
+                    ]
+                },
+                {
+                    "method": "setCustomTestEnable",
+                    "command": "0x48",
+                    "paramsFormat": {
+                        "enable": "uint8"
+                    },
+                    "frame_template": [
+                        {
+                            "name": "enable",
+                            "dataType": "uint8",
+                            "startPos": 14,
+                            "booleanMap": {
+                                "true": 1,
+                                "false": 0
+                            }
+                        }
+                    ]
+                },
+                {
+                    "method": "setCustomTestParam",
+                    "command": "0x48",
+                    "paramsFormat": {
+                        "interval": "uint16",
+                        "duration": "uint16",
+                        "endVoltage": "float",
+                        "endCapacity": "float"
+                    },
+                    "frame_template": [
+                        {
+                            "name": "interval",
+                            "dataType": "uint16",
+                            "startPos": 20
+                        },
+                        {
+                            "name": "duration",
+                            "dataType": "uint16",
+                            "startPos": 22
+                        },
+                        {
+                            "name": "endVoltage",
+                            "dataType": "float",
+                            "startPos": 96
+                        },
+                        {
+                            "name": "endCapacity",
+                            "dataType": "float",
+                            "startPos": 100
+                        }
+                    ]
+                },
+                {
+                    "method": "setBatteryAlarmVoltage",
+                    "command": "0x48",
+                    "paramsFormat": {
+                        "overVoltage": "float",
+                        "underVoltage": "float",
+                        "overCurrent": "float"
+                    },
+                    "frame_template": [
+                        {
+                            "name": "overVoltage",
+                            "dataType": "float",
+                            "startPos": 48
+                        },
+                        {
+                            "name": "underVoltage",
+                            "dataType": "float",
+                            "startPos": 52
+                        },
+                        {
+                            "name": "overCurrent",
+                            "dataType": "float",
+                            "startPos": 56
+                        }
+                    ]
+                },
+                {
+                    "method": "setRectifierBoostVoltage",
+                    "command": "0x80",
+                    "paramsFormat": {
+                        "voltage": "float"
+                    },
+                    "frame_template": [
+                        {
+                            "name": "voltage",
+                            "dataType": "float",
+                            "startPos": 0,
+                            "parameter": "E1"
+                        }
+                    ]
+                },
+                {
+                    "method": "setRectifierFloat",
+                    "command": "0x80",
+                    "paramsFormat": {
+                        "voltage": "float"
+                    },
+                    "frame_template": [
+                        {
+                            "name": "voltage",
+                            "dataType": "float",
+                            "startPos": 0,
+                            "parameter": "E0"
+                        }
+                    ]
+                },
+                {
+                    "method": "setRectifierOverVoltProtect",
+                    "command": "0x80",
+                    "paramsFormat": {
+                        "voltage": "float"
+                    },
+                    "frame_template": [
+                        {
+                            "name": "voltage",
+                            "dataType": "float",
+                            "startPos": 0,
+                            "parameter": "E2"
+                        }
+                    ]
+                },
+                {
+                    "method": "setRectifierCurrentLimit",
+                    "command": "0x80",
+                    "paramsFormat": {
+                        "current": "float"
+                    },
+                    "frame_template": [
+                        {
+                            "name": "current",
+                            "dataType": "float",
+                            "startPos": 0,
+                            "parameter": "E0"
+                        }
+                    ]
+                },
+                {
+                    "method": "setDateTime",
+                    "command": "0x4e",
+                    "paramsFormat": {
+                        "year": "uint16",
+                        "month": "uint8",
+                        "day": "uint8",
+                        "hour": "uint8",
+                        "minute": "uint8",
+                        "second": "uint8"
+                    },
+                    "frame_template": [
+                        {
+                            "name": "year",
+                            "dataType": "uint16",
+                            "startPos": 0
+                        },
+                        {
+                            "name": "month",
+                            "dataType": "uint8",
+                            "startPos": 2
+                        },
+                        {
+                            "name": "day",
+                            "dataType": "uint8",
+                            "startPos": 3
+                        },
+                        {
+                            "name": "hour",
+                            "dataType": "uint8",
+                            "startPos": 4
+                        },
+                        {
+                            "name": "minute",
+                            "dataType": "uint8",
+                            "startPos": 5
+                        },
+                        {
+                            "name": "second",
+                            "dataType": "uint8",
+                            "startPos": 6
+                        }
+                    ]
                 }
             ]
         }

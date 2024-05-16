@@ -4,7 +4,7 @@ MU4801上行数据转换器
 """
 
 import struct
-import time 
+import time
 from io import BytesIO
 from thingsboard_gateway.connectors.converter import Converter
 
@@ -12,7 +12,7 @@ from thingsboard_gateway.connectors.converter import Converter
 class Mu4801UplinkConverter(Converter):
     """
     MU4801上行数据转换器类
-    继承自Converter基类  
+    继承自Converter基类
     """
     
     def __init__(self, connector, log):
@@ -21,22 +21,26 @@ class Mu4801UplinkConverter(Converter):
         
         参数:
         connector: 连接器对象
-        log: 日志对象  
+        log: 日志对象
         """
         self.__connector = connector
         self._log = log
         # 数据类型配置
         self.__datatypes = {
             'int16': {'size': 2, 'struct': 'h'},
-            'uint16': {'size': 2, 'struct': 'H'}, 
+            'uint16': {'size': 2, 'struct': 'H'},
             'int32': {'size': 4, 'struct': 'i'},
             'uint32': {'size': 4, 'struct': 'I'},
-            'uint8': {'size': 1, 'struct': 'B'}, 
+            'uint8': {'size': 1, 'struct': 'B'},
             'float': {'size': 4, 'struct': 'f'},
             'boolean': {'size': 1, 'struct': '?'},
-            'string': {'size': None, 'struct': None}  
+            'string': {'size': None, 'struct': None}
         }
-        
+
+    def convert(self, config, data):
+        # 将Thingsboard下发的控制命令转换为MU4801设备的Modbus命令
+        pass
+
     def parse_attribute(self, config, data, device_name):
         """
         解析属性数据
@@ -46,19 +50,38 @@ class Mu4801UplinkConverter(Converter):
         data: 属性数据(字节串)
         device_name: 设备名称
         
-        返回:
+        返回:  
         解析后的属性数据(dict)
         """
+        result = {}
         try:
-            # 根据配置解析数据
-            value = self.__parse_value(config, data)
-            return {
-                'device': device_name,
-                config['key']: value
-            }  
+            timestamp = int(time.time() * 1000)
+            
+            if config['key'] == 'currentTime':
+                # 解析当前时间
+                values_config = config['values']
+                for value_config in values_config:
+                    name = value_config['key']
+                    value = self.__parse_value(value_config, data)
+                    if value is not None:
+                        result[name] = value
+            else:
+                # 解析其他属性
+                value = self.__parse_value(config, data)
+                if value is not None:
+                    result[config['key']] = value
+                            
         except Exception as e:
             self._log.debug(f"Failed to parse attribute data for device '{device_name}': {str(e)}")
-        return None
+        
+        if result:
+            return {
+                'device': device_name,
+                'ts': timestamp,
+                'values': result
+            }
+        else:
+            return None
     
     def parse_telemetry(self, config, data, device_name):
         """
@@ -73,7 +96,7 @@ class Mu4801UplinkConverter(Converter):
         解析后的遥测数据(dict)
         """
         result = {}
-        try:  
+        try:
             # 遍历配置的遥测值,逐个解析
             for name, value_config in config['values'].items():
                 value = self.__parse_value(value_config, data)
@@ -83,7 +106,7 @@ class Mu4801UplinkConverter(Converter):
             self._log.debug(f"Failed to parse telemetry data for device '{device_name}': {str(e)}")
         return {
             'device': device_name,
-            'ts': int(time.time() * 1000),  
+            'ts': int(time.time() * 1000),
             'values': result
         } if result else None
         
@@ -98,19 +121,19 @@ class Mu4801UplinkConverter(Converter):
         
         返回:
         解析后的告警数据(dict)
-        """ 
-        result = {} 
+        """
+        result = {}
         try:
             # 遍历配置的告警值,逐个解析
             for name, value_config in config['values'].items():
                 value = self.__parse_value(value_config, data)
                 if value is not None:
-                    result[name] = value  
+                    result[name] = value
         except Exception as e:
             self._log.debug(f"Failed to parse alarm data for device '{device_name}': {str(e)}")
         return {
             'device': device_name,
-            **result  
+            **result
         } if result else None
         
     def parse_rectifier_telemetry(self, data, device_name):
@@ -121,7 +144,7 @@ class Mu4801UplinkConverter(Converter):
         data: 遥测数据(字节串)
         device_name: 设备名称
         
-        返回:  
+        返回:
         解析后的整流模块遥测数据(dict)
         """
         result = {}
@@ -142,7 +165,7 @@ class Mu4801UplinkConverter(Converter):
             # 解析各整流模块的输出电流和电压
             for i in range(num_modules):
                 idx = 7 + 8*i
-                module_current = struct.unpack_from('>f', data, idx)[0]  
+                module_current = struct.unpack_from('>f', data, idx)[0]
                 result[f'module{i+1}Current'] = module_current
                 
                 idx += 4
@@ -164,7 +187,7 @@ class Mu4801UplinkConverter(Converter):
                 elif param_type == 0xE1:
                     result[f'module{i+1}Temperature'] = value
                 else:
-                    self._log.debug(f"Unknown custom param type: {hex(param_type)}")  
+                    self._log.debug(f"Unknown custom param type: {hex(param_type)}")
                                         
                 idx += 4
             
@@ -172,7 +195,7 @@ class Mu4801UplinkConverter(Converter):
             self._log.debug(f"Failed to parse rectifier telemetry data for device '{device_name}': {str(e)}")
         
         return {
-            'device': device_name, 
+            'device': device_name,
             'ts': int(time.time() * 1000),
             'values': result
         } if result else None
@@ -182,7 +205,7 @@ class Mu4801UplinkConverter(Converter):
         解析整流模块告警数据
         
         参数:
-        data: 告警数据(字节串)  
+        data: 告警数据(字节串)
         device_name: 设备名称
         
         返回:
@@ -202,9 +225,14 @@ class Mu4801UplinkConverter(Converter):
             for i in range(num_modules):
                 module_alarms = data[2+i]
                 result[f'module{i+1}Fault'] = bool(module_alarms & 0x01)
+                result[f'module{i+1}ACFault'] = bool(module_alarms & 0x02)
+                result[f'module{i+1}PhaseLoss'] = bool(module_alarms & 0x04)
+                result[f'module{i+1}DCFault'] = bool(module_alarms & 0x08)
+                result[f'module{i+1}OverTemp'] = bool(module_alarms & 0x10)
+                result[f'module{i+1}FanFault'] = bool(module_alarms & 0x20)
                 
             # 解析自定义告警
-            idx = 2 + num_modules 
+            idx = 2 + num_modules
             num_custom = data[idx]
             
             for i in range(num_custom):

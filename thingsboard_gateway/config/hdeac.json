@@ -15,7 +15,7 @@
     "log_level": "DEBUG",
     "devices": [
       {
-        "deviceName": "HDE-AC1",
+        "deviceName": "HDE-AC #2",
         "address": {
           "command": "0x50"
         },
@@ -314,6 +314,5 @@
       }
     ],
     "logLevel": "INFO",  
-    "name": "hdeac",
-    "id": "07eaa199-6fd3-4bbe-8098-b30d192784e6"  
+    "name": "hdeac"
   }
