@@ -51,7 +51,8 @@ class Mu4801Connector(Thread, Connector):
         self.__connecting = False
         self.__stopped = False
         self.daemon = True
-        
+        self.__device_lock = threading.Lock()
+
         self.__parse_config()
 
         self.__rpc_requests = Queue()
@@ -61,7 +62,7 @@ class Mu4801Connector(Thread, Connector):
         self.__last_connect_attempt_time = 0
         self.__reconnect_interval = config.get('reconnect_interval', 10)
 
-        self.__convert_frequency = self.__config['pollInterval'] / 1000
+        self.__pollInterval = self.__config['pollInterval'] / 1000
         self.__command_timeout = self.__config['commandTimeout'] / 1000
         
         self._log.info("Config: %s", self.__config)
@@ -92,7 +93,6 @@ class Mu4801Connector(Thread, Connector):
         
     def __run(self):
         self._log.debug("Starting MU4801 connector thread")
-        self.__connected = True
 
         while not self.__stopped:
             if not self.__connected:
@@ -111,7 +111,7 @@ class Mu4801Connector(Thread, Connector):
                                     self._log.debug(f'[{self.get_name()}] Attribute reply parsed: {result}')
                                     self.collect_statistic_and_send(self.get_name(), result)
                                     
-                        for ts_key, ts_config in device_config.get('timeseries', {}).items():
+                        for ts_config in device_config.get('timeseries', []):
                             reply = self.__send_command(ts_config['command'], device_config)
                             if reply:
                                 result = self.__uplink_converter.parse_telemetry(ts_config, reply, device_name)
@@ -119,7 +119,7 @@ class Mu4801Connector(Thread, Connector):
                                     self._log.debug(f'[{self.get_name()}] Timeseries reply parsed: {result}')
                                     self.collect_statistic_and_send(self.get_name(), result)
                                     
-                        for alarm_key, alarm_config in device_config.get('alarms', {}).items():
+                        for alarm_config in device_config.get('alarms', []):
                             reply = self.__send_command(alarm_config['command'], device_config)
                             if reply:
                                 result = self.__uplink_converter.parse_alarm(alarm_config, reply, device_name)
@@ -203,15 +203,15 @@ class Mu4801Connector(Thread, Connector):
                     current_time = time.time()
                     if self.__last_heartbeat_time + self.__config['heartbeatIntervalMs'] / 1000 < current_time:
                         self.__last_heartbeat_time = current_time
-                        self.__gateway.send_to_storage(self.name, {
+                        self.__gateway.send_to_storage(self.name,self.get_id(), {
                             'ts': int(current_time * 1000),
                             'values': {
                                 'deviceCount': len(self.__config['deviceConfig']),
                                 'activeConnections': sum(device.get('connected', 0) for device in self.__config['deviceConfig'].values())
                             }
                         })
-                    
-                    time.sleep(self.__convert_frequency)
+
+                    time.sleep(self.__pollInterval)
                     
                 except Exception as e:
                     self._log.exception("Error in polling loop: %s", e)
@@ -322,6 +322,7 @@ class Mu4801Connector(Thread, Connector):
     def collect_statistic_and_send(self, connector_name, data):
         self.statistics["MessagesReceived"] += 1
         self.__gateway.send_to_storage(connector_name, data)
+        self._log.exception("=====Sent data to thingsboard=====")
         self.statistics["MessagesSent"] += 1
     
     def is_stopped(self):
@@ -356,12 +357,15 @@ class Mu4801Connector(Thread, Connector):
             self.__reader = self.__serial
             self.__writer = self.__serial
 
-            reply = self.__send_command("0x50", self.__config)
-            if reply is not None:
-                self._log.info(f'[{self.get_name()}] Successfully connected to serial port, test command replied: {reply.hex()}')
-                self.__connected = True
-            else:
-                raise serial.SerialException(f"Test command failed on serial port {self.__config['port']}")
+            self.__connected = True
+            
+            # reply = self.__send_command("0x50", self.__config)
+            # if reply is not None:
+            #     self._log.info(f'[{self.get_name()}] Successfully connected to serial port, test command replied: {reply.hex()}')
+            #     self.__connected = True
+            # else:
+            #     self.__connected = False
+            #     raise serial.SerialException(f"Test command failed on serial port {self.__config['port']}")
 
         except serial.SerialException as e:
             self.__connected = False

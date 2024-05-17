@@ -7,8 +7,10 @@
     "bytesize": 8,
     "parity": "N",
     "stopbits": 1,
-    "pollInterval": 1000,
-    "heartbeatIntervalMs": 5000,
+    "pollInterval": 2000,
+    "heartbeatIntervalMs": 10000,
+    "maxCommandAttempts": 3,
+    "commandTimeout": 5000,
     "logLevel": "DEBUG",
     "devices": [
         {
