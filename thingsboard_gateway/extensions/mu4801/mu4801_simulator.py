@@ -8,7 +8,10 @@ class MU4801Simulator:
     def __init__(self):
         self.FRAME_HEADER = b'~'
         self.FRAME_FOOTER = b'\r'
-
+        self.SOI_LENGTH = 1
+        self.FIXED_FIELDS_LENGTH = 6
+        self.CHKSUM_LENGTH = 2
+        self.EOI_LENGTH = 1
         # MU4801模拟器参数
         self.device_addr = 0x01
         self.protocol_version = 0x21
@@ -62,12 +65,9 @@ class MU4801Simulator:
             
         return length
 
-    def calc_chksum(self, frame):
+    def calc_chksum(self, data_for_checksum):
         """计算校验和"""
-        data = frame[1:-4]  # 提取需要计算校验和的字段,排除SOI、EOI和CHKSUM
-        logging.debug(f"Data for checksum calculation: {data.hex()}")
-
-        ascii_str = ''.join(f'{byte:02X}' for byte in data)  # 将字节数组转换为ASCII码字符串
+        ascii_str = ''.join(f'{byte:02X}' for byte in data_for_checksum)  # 将字节数组转换为ASCII码字符串
         logging.debug(f"ASCII string: {ascii_str}")
 
         ascii_sum = sum(ord(c) for c in ascii_str)  # 求ASCII码之和
@@ -133,7 +133,7 @@ class MU4801Simulator:
         # 验证校验和
         received_chksum = frame[-3:-1]
         #received_chksum = frame[-4:-2]
-        calculated_chksum = self.calc_chksum(frame)
+        calculated_chksum = self.calc_chksum(frame[1:-3])
         if calculated_chksum != received_chksum:
             logging.error(f"Checksum verification failed: received={received_chksum.hex()}, calculated={calculated_chksum.hex()}")
             return False
@@ -143,10 +143,12 @@ class MU4801Simulator:
         lenid_low = frame[6]
         lenid_high = frame[5] & 0x0F
         frame_length = (lenid_high << 8) | lenid_low
-        if frame_length + 2 != len(frame) - 9:
-            logging.error(f"Data length verification failed: LENID={frame_length}, actual={len(frame)-11}")
+        other_fields_length = self.SOI_LENGTH + self.FIXED_FIELDS_LENGTH + self.CHKSUM_LENGTH + self.EOI_LENGTH
+        if frame_length != len(frame) - other_fields_length:
+            logging.error(f"Data length verification failed: LENID={frame_length}, actual={len(frame)-other_fields_length}")
             return False
-        logging.debug(f"Data length verification passed: LENID={frame_length}, actual={len(frame)-11}")
+        logging.debug(f"Data length verification passed: LENID={frame_length}, actual={len(frame)-other_fields_length}")
+
 
         logging.debug("Frame check passed")
         return True

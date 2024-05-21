@@ -38,12 +38,9 @@ class MU4801Monitor:
             
         return length
         
-    def calc_chksum(self, frame):
+    def calc_chksum(self, data_for_checksum):
         """计算校验和"""
-        data = frame[1:-4]  # 提取需要计算校验和的字段,排除SOI、EOI和CHKSUM
-        logging.debug(f"Data for checksum calculation: {data.hex()}")
-
-        ascii_str = ''.join(f'{byte:02X}' for byte in data)  # 将字节数组转换为ASCII码字符串
+        ascii_str = ''.join(f'{byte:02X}' for byte in data_for_checksum)  # 将字节数组转换为ASCII码字符串
         logging.debug(f"ASCII string: {ascii_str}")
 
         ascii_sum = sum(ord(c) for c in ascii_str)  # 求ASCII码之和
@@ -70,13 +67,15 @@ class MU4801Monitor:
         # frame = self.FRAME_HEADER + frame_data + self.FRAME_FOOTER
         # chksum = self.calc_chksum(frame)
         # frame = frame[:-1] + chksum + self.FRAME_FOOTER
-        # 构造发送帧  
-        frame_data = struct.pack('>BBBB', self.FRAME_VERSION, self.device_addr, cid1, cid2)
-        frame_data += self.get_length(data)
-
-        frame = self.FRAME_HEADER + frame_data + data + self.FRAME_FOOTER
-        chksum = self.calc_chksum(frame)
-        frame = frame[:-1] + chksum + self.FRAME_FOOTER
+        # 构造校验和计算数据  
+        data_for_checksum = struct.pack('>BBBB', self.FRAME_VERSION, self.device_addr, cid1, cid2)
+        data_for_checksum += self.get_length(data)
+        data_for_checksum += data
+        # 校验和计算
+        chksum = self.calc_chksum(data_for_checksum)
+        #构造发送的完整帧
+        frame = self.FRAME_HEADER + data_for_checksum + chksum + self.FRAME_FOOTER
+        #frame = frame[:-1] + chksum + self.FRAME_FOOTER
         
         ser.write(frame)  # 发送命令帧
         logging.debug(f"Sent command: {frame.hex()}")  
