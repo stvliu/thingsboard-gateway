@@ -23,32 +23,60 @@ class MU4801Monitor:
     def get_length(self, data):
         """计算LENGTH字段的值"""
         data_len = len(data)
-        lenid = data_len // 2  # 当data为空时,lenid为0
+        lenid = data_len // 2
         
         lenid_low = lenid & 0xFF
         lenid_high = (lenid >> 8) & 0x0F
         
-        lchksum = lenid_low + lenid_high + lenid
-        lchksum = ((~lchksum) + 1) & 0x0F
+        lchksum = (lenid_low + lenid_high + lenid) % 16
+        lchksum = (~lchksum + 1) & 0x0F
         
         length = struct.pack('>BB', (lchksum << 4) | lenid_high, lenid_low)
+        
+        if data_len == 0:
+            length = b'\x00\x00'  # 当data为空时,LENGTH字段填充0000
+            
         return length
         
-    def calc_chksum(self, data):
+    def calc_chksum(self, frame):
         """计算校验和"""
-        chksum = sum(data) % 65536
-        chksum = struct.pack('>H', chksum ^ 0xFFFF)  # 取反
-        return chksum
+        data = frame[1:-4]  # 提取需要计算校验和的字段,排除SOI、EOI和CHKSUM
+        logging.debug(f"Data for checksum calculation: {data.hex()}")
+
+        ascii_str = ''.join(f'{byte:02X}' for byte in data)  # 将字节数组转换为ASCII码字符串
+        logging.debug(f"ASCII string: {ascii_str}")
+
+        ascii_sum = sum(ord(c) for c in ascii_str)  # 求ASCII码之和
+        logging.debug(f"ASCII sum: {ascii_sum}")
+
+        chksum = ascii_sum % 65536  # 求和结果模65536
+        logging.debug(f"Checksum modulo 65536: {chksum:04X}")
+
+        chksum = (~chksum + 1) & 0xFFFF  # 取反加1,确保结果为16位无符号整数
+        logging.debug(f"Checksum after inversion and increment: {chksum:04X}")
+
+        chksum_bytes = struct.pack('>H', chksum)  # 打包为两个字节,大端序
+        logging.debug(f"Checksum bytes: {chksum_bytes.hex()}")
+
+        return chksum_bytes
         
     def send_command(self, ser, cid1, cid2, data=b''):
         """发送命令并获取响应数据"""
+        # # 构造发送帧  
+        # frame_data = struct.pack('>BBBB', self.FRAME_VERSION, self.device_addr, cid1, cid2)
+        # frame_data += self.get_length(data)
+        # frame_data += data  
+        
+        # frame = self.FRAME_HEADER + frame_data + self.FRAME_FOOTER
+        # chksum = self.calc_chksum(frame)
+        # frame = frame[:-1] + chksum + self.FRAME_FOOTER
         # 构造发送帧  
         frame_data = struct.pack('>BBBB', self.FRAME_VERSION, self.device_addr, cid1, cid2)
         frame_data += self.get_length(data)
-        frame_data += data  
-        
-        chksum = self.calc_chksum(frame_data)
-        frame = self.FRAME_HEADER + frame_data + chksum + self.FRAME_FOOTER
+
+        frame = self.FRAME_HEADER + frame_data + data + self.FRAME_FOOTER
+        chksum = self.calc_chksum(frame)
+        frame = frame[:-1] + chksum + self.FRAME_FOOTER
         
         ser.write(frame)  # 发送命令帧
         logging.debug(f"Sent command: {frame.hex()}")  
@@ -124,21 +152,32 @@ class MU4801Monitor:
         
     def check_frame(self, frame):
         """校验帧数据的合法性"""
+        logging.debug(f"Checking frame: {frame.hex()}")
+
         # 验证帧同步字符
         if frame[0] != ord(self.FRAME_HEADER) or frame[-1] != ord(self.FRAME_FOOTER):
+            logging.error(f"Invalid frame synchronization characters: SOI={frame[0]:02X}, EOI={frame[-1]:02X}")
             return False
-        
+        logging.debug(f"Frame synchronization characters check passed: SOI={frame[0]:02X}, EOI={frame[-1]:02X}")
+
         # 验证校验和
-        if self.calc_chksum(frame[1:-3]) != frame[-3:-1]:
+        received_chksum = frame[-3:-1]
+        calculated_chksum = self.calc_chksum(frame)
+        if calculated_chksum != received_chksum:
+            logging.error(f"Checksum verification failed: received={received_chksum.hex()}, calculated={calculated_chksum.hex()}")
             return False
+        logging.debug(f"Checksum verification passed: {received_chksum.hex()}")
         
         # 验证数据长度
         lenid_low = frame[6]
         lenid_high = frame[5] & 0x0F
         frame_length = (lenid_high << 8) | lenid_low
-        if frame_length != len(frame) - 11:
+        if frame_length + 2 != len(frame) - 9:
+            logging.error(f"Data length verification failed: LENID={frame_length}, actual={len(frame)-11}")
             return False
-        
+        logging.debug(f"Data length verification passed: LENID={frame_length}, actual={len(frame)-11}")
+
+        logging.debug("Frame check passed")
         return True
         
     def show_menu(self):
