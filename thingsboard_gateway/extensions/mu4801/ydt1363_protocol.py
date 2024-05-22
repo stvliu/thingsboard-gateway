@@ -1,78 +1,245 @@
 import struct
+import logging
 import serial
 from serial.serialutil import SerialException
 from collections import namedtuple
 import datetime
 
-class FrameEncoder:
-    SOI = 0x7E  # 起始位标志
-    VER = 0x21  # 协议版本号
-    EOI = 0x0D  # 结束码
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+
+FrameStruct = namedtuple('FrameStruct', [
+    'soi', 'ver', 'adr', 'cid1', 'cid2', 'length', 'info', 'chksum', 'eoi'
+])
+
+class FrameUtils:
+    @staticmethod
+    def calc_checksum(data_for_checksum):
+        logging.debug(f"Calculating checksum: data={data_for_checksum.hex()}")
+        ascii_str = ''.join(f'{byte:02X}' for byte in data_for_checksum)
+        logging.debug(f"ASCII string for checksum: {ascii_str}")
+        ascii_sum = sum(ord(c) for c in ascii_str)
+        logging.debug(f"ASCII sum: {ascii_sum}")
+        chksum = ascii_sum % 65536
+        logging.debug(f"Checksum (modulo 65536): {chksum}")
+        chksum = (~chksum + 1) & 0xFFFF
+        logging.debug(f"Checksum (inverted): {chksum}")
+        chksum_bytes = struct.pack('>H', chksum)
+        logging.debug(f"Checksum bytes: {chksum_bytes.hex()}")
+        return chksum_bytes
 
     @staticmethod
-    def encode_frame(device_addr, cid1, cid2, info):
+    def extract_data_for_checksum(frame: FrameStruct) -> bytes:
+        return struct.pack('>BBB', frame.ver, frame.adr, frame.cid1) + struct.pack('>B', frame.cid2) + frame.length.to_bytes(2, 'big') + frame.info
+
+class FrameEncoder:
+    SOI = b'~'  # 起始位标志
+    EOI = b'\r'  # 结束码
+
+    @staticmethod
+    def encode_frame(ver, adr, cid1, cid2, info):
+        logging.debug(f"Encoding frame: ver={ver:02X}, adr={adr:02X}, cid1={cid1:02X}, cid2={cid2:02X}, info={info.hex()}")
         frame_bytes = bytearray()
-        frame_bytes.append(FrameEncoder.SOI)
-        frame_bytes.extend(FrameEncoder.encode_byte(FrameEncoder.VER))
-        frame_bytes.extend(FrameEncoder.encode_byte(device_addr))
-        frame_bytes.extend(FrameEncoder.encode_byte(cid1))
-        frame_bytes.extend(FrameEncoder.encode_byte(cid2))
-        
-        length_bytes = FrameEncoder.encode_word(len(info))
-        length_checksum = FrameEncoder.calc_length_checksum(length_bytes)
-        frame_bytes.extend(FrameEncoder.encode_byte(length_checksum))
+        logging.debug(f"Adding SOI to frame: {FrameEncoder.SOI.hex()}")
+        frame_bytes.extend(FrameEncoder.SOI)
+        logging.debug(f"Adding ver, adr, cid1 to frame: {struct.pack('>BBB', ver, adr, cid1).hex()}")
+        frame_bytes.extend(struct.pack('>BBB', ver, adr, cid1))
+        logging.debug(f"Adding cid2 to frame: {struct.pack('>B', cid2).hex()}")
+        frame_bytes.extend(struct.pack('>B', cid2))
+        length_bytes = FrameEncoder.encode_length(info)
+        logging.debug(f"Adding length to frame: {length_bytes.hex()}")
         frame_bytes.extend(length_bytes)
-        
+        logging.debug(f"Adding info to frame: {info.hex()}")
         frame_bytes.extend(info)
 
-        chksum = FrameEncoder.calc_checksum(frame_bytes[1:])
-        frame_bytes.extend(FrameEncoder.encode_word(chksum))
+        data_for_checksum = FrameUtils.extract_data_for_checksum(FrameStruct(
+            soi=FrameEncoder.SOI,
+            ver=ver,
+            adr=adr,
+            cid1=cid1,
+            cid2=cid2,
+            length=len(info),
+            info=info,
+            chksum=b'',
+            eoi=FrameEncoder.EOI
+        ))
+        chksum = FrameUtils.calc_checksum(data_for_checksum)
+        logging.debug(f"Adding checksum to frame: {chksum.hex()}")
+        frame_bytes.extend(chksum)
 
-        frame_bytes.append(FrameEncoder.EOI)
+        logging.debug(f"Adding EOI to frame: {FrameEncoder.EOI.hex()}")
+        frame_bytes.extend(FrameEncoder.EOI)
 
+        logging.debug(f"Encoded frame: {bytes(frame_bytes).hex()}")
         return bytes(frame_bytes)
 
     @staticmethod
-    def encode_byte(value):
-        return [value // 16, value % 16]
+    def encode_length(data):
+        logging.debug(f"Encoding length: data_len={len(data)}")
+        data_len = len(data)
+        
+        if data_len == 0:
+            lenid = 0
+        else:
+            lenid = data_len
+        
+        lenid_low = lenid & 0xFF
+        lenid_high = (lenid >> 8) & 0x0F
+        
+        lchksum = (lenid_low + lenid_high + lenid) % 16
+        lchksum = (~lchksum + 1) & 0x0F
+        
+        length = struct.pack('>BB', (lchksum << 4) | lenid_high, lenid_low)
+        
+        logging.debug(f"Encoded length: {length.hex()}")
+        return length
+
+class FrameDecoder:
+    @staticmethod
+    def decode_length(length_bytes):
+        lenid_low = length_bytes[1]
+        lenid_high = length_bytes[0] & 0x0F
+        lchksum = (length_bytes[0] >> 4) & 0x0F
+
+        lenid = (lenid_high << 8) | lenid_low
+
+        if lenid == 0:
+            info_length = 0
+        else:
+            calculated_lchksum = (lenid_low + lenid_high + lenid) % 16
+            calculated_lchksum = (~calculated_lchksum + 1) & 0x0F
+            if lchksum != calculated_lchksum:
+                raise ValueError(f"Invalid LCHKSUM: received={lchksum:X}, calculated={calculated_lchksum:X}")
+            info_length = lenid
+            # if info_length % 2 == 1:
+            #     info_length += 1
+        return info_length
 
     @staticmethod
-    def encode_word(value):
-        return [value // 256 // 16, value // 256 % 16, value % 256 // 16, value % 256 % 16]
+    def validate_frame(frame):
+        logging.debug(f"Validating frame: {frame}")
+        
+        # 检查帧的实际长度是否与长度字段匹配
+        if frame.length != len(frame.info):
+            logging.warning(f"Invalid frame: length mismatch (expected: {frame.length}, received: {len(frame.info)})")
+            return False
+        
+        data_for_checksum = FrameUtils.extract_data_for_checksum(frame)
+        logging.debug(f"Data for checksum calculation: {data_for_checksum.hex()}")
+        expected_checksum = FrameUtils.calc_checksum(data_for_checksum)
+        logging.debug(f"Expected checksum: {expected_checksum.hex()}, received checksum: {frame.chksum.hex()}")
+        
+        if expected_checksum != frame.chksum:
+            logging.warning("Invalid frame: checksum mismatch")
+            return False
+    
+        return True
 
     @staticmethod
-    def calc_length_checksum(length_bytes):
-        checksum = sum(length_bytes) % 16
-        checksum = (~checksum + 1) & 0xF
-        return checksum
+    def recv_frame(serial, timeout=None):
+        logging.debug(f"Receiving frame with timeout={timeout}")
 
-    @staticmethod
-    def calc_checksum(frame_bytes):
-        checksum = sum(frame_bytes) % 65536
-        checksum = (~checksum + 1) & 0xFFFF
-        return checksum
+        if timeout is not None:
+            serial.timeout = timeout
+
+        try:
+            # 等待数据可读
+            while True:
+                if serial.in_waiting > 0:
+                    logging.debug(f"Data available, bytes in buffer: {serial.in_waiting}")
+                    break
+                #logging.debug("No data available, waiting...")
+
+            soi = serial.read(1)
+            logging.debug(f"Received SOI: {soi.hex()}")
+            if len(soi) == 0:
+                logging.warning("No data received, timeout occurred")
+                return None
+
+            if soi != FrameEncoder.SOI:
+                logging.warning(f"Invalid frame: SOI not found (received: {soi.hex()})")
+                return None
+
+            ver = serial.read(1)[0]
+            logging.debug(f"Received VER: {ver:02X}")
+            adr = serial.read(1)[0]
+            logging.debug(f"Received ADR: {adr:02X}")
+            cid1 = serial.read(1)[0]
+            logging.debug(f"Received CID1: {cid1:02X}")
+            cid2 = serial.read(1)[0]
+            logging.debug(f"Received CID2: {cid2:02X}")
+            length_bytes = serial.read(2)
+            logging.debug(f"Received LENGTH bytes: {length_bytes.hex()}")
+
+            length = FrameDecoder.decode_length(length_bytes)
+            logging.debug(f"Decoded LENGTH: {length}")
+            info = serial.read(length)
+            logging.debug(f"Received INFO: {info.hex()}")
+
+            chksum_bytes = serial.read(2)
+            logging.debug(f"Received CHKSUM bytes: {chksum_bytes.hex()}")
+            eoi = serial.read(1)
+            logging.debug(f"Received EOI: {eoi.hex()}")
+            if len(eoi) == 0:
+                logging.warning("Incomplete frame received, EOI not found")
+                return None
+
+            if eoi != FrameEncoder.EOI:
+                logging.warning(f"Invalid frame: EOI not found (received: {eoi.hex()})")
+                return None
+
+            frame = FrameStruct(
+                soi=soi,
+                ver=ver,
+                adr=adr,
+                cid1=cid1,
+                cid2=cid2,
+                length=length,
+                info=info,
+                chksum=chksum_bytes,
+                eoi=eoi
+            )
+            logging.debug(f"Received frame: {frame}")
+
+            if not FrameDecoder.validate_frame(frame):
+                logging.warning("Invalid frame: checksum mismatch")
+                return None
+
+            return frame
+        except Exception as e:
+            logging.exception(f"Error receiving frame: {e}")
+            return None
 
 class InfoEncoder:
+    # 定义编码函数字典
+    ENCODE_FUNCS = {
+        float: lambda x: struct.pack('>f', x),
+        int: lambda x: struct.pack('>h', x),
+        datetime.datetime: lambda x: InfoEncoder.encode_datetime(x),
+        bytes: lambda x: x,
+        type(None): lambda x: b'',  # 添加None类型的处理
+    }
+
     @staticmethod
-    def encode_info(cid1, cid2, info_data):
+    def encode_info(info_data):
         info_bytes = InfoEncoder.encode_data(info_data)
-        return cid1, cid2, info_bytes
+        return info_bytes
 
     @staticmethod
     def encode_data(data):
-        if isinstance(data, float):
-            return struct.pack('>f', data)
-        elif isinstance(data, int):
-            return struct.pack('>h', data)
-        elif isinstance(data, datetime.datetime):
-            return InfoEncoder.encode_datetime(data)
-        elif isinstance(data, int) and 0 <= data <= 255:
+        # 检查data是否为整数且在0到255之间
+        if isinstance(data, int) and 0 <= data <= 255:
             return struct.pack('>B', data)
+        
+        # 使用字典映射数据类型到编码函数
+        encode_func = InfoEncoder.ENCODE_FUNCS.get(type(data))
+        if encode_func:
+            return encode_func(data)
         else:
-            raise ValueError("Invalid data type")
+            raise ValueError(f"Invalid data type: {type(data)}")
 
     @staticmethod
     def encode_datetime(dt):
+        # datetime编码逻辑保持不变
         year = struct.pack('>H', dt.year)
         month = struct.pack('>B', dt.month)
         day = struct.pack('>B', dt.day)
@@ -98,6 +265,9 @@ class InfoDecoder:
         elif len(info_bytes) == 1:
             info_type = int
             info_value = struct.unpack('>B', info_bytes)[0]
+        elif len(info_bytes) > 0:
+            info_type = bytes
+            info_value = info_bytes
         return info_type, info_value
 
     @staticmethod
@@ -110,7 +280,7 @@ class InfoDecoder:
         second = struct.unpack('>B', bytes_data[6:7])[0]
         return datetime.datetime(year, month, day, hour, minute, second)
 
-class YDT1363Protocol:
+class Protocol:
     def __init__(self, device_addr, port=None, baudrate=9600, bytesize=8, parity='N', stopbits=1, timeout=0.5):
         self.device_addr = device_addr
         self.serial = None
@@ -120,6 +290,7 @@ class YDT1363Protocol:
         self.parity = parity
         self.stopbits = stopbits
         self.timeout = timeout
+        self.protocol_version = 0x21
 
     def open(self):
         try:
@@ -148,118 +319,62 @@ class YDT1363Protocol:
 
     def send_command(self, cid1, cid2, info_data, response_timeout=0.5):
         if not self.is_connected():
-            print("Serial port is not connected")
-            return None, None
+            logging.warning("Serial port is not connected")
+            return None
 
         try:
-            cid1, cid2, info = InfoEncoder.encode_info(cid1, cid2, info_data)
-            frame = FrameEncoder.encode_frame(self.device_addr, cid1, cid2, info)
+            info = InfoEncoder.encode_info(info_data)
+            logging.debug(f"Encoded info: {info.hex()}")
+            frame = FrameEncoder.encode_frame(self.protocol_version, self.device_addr, cid1, cid2, info)
+            logging.debug(f"Encoded frame: {frame.hex()}")
             if frame is not None:
+                logging.debug(f"Sending command: cid1={cid1:02X}, cid2={cid2:02X}, info={info.hex()}")
                 self.serial.write(frame)
                 response_frame = self.recv_response(response_timeout)
                 if response_frame is not None:
-                    if self.validate_response(response_frame):
-                        return InfoDecoder.decode_info(response_frame.info)
-                    else:
-                        print("Invalid response: checksum mismatch")
+                    logging.debug(f"Received response frame: {response_frame}")  # 修改此行
+                    return InfoDecoder.decode_info(response_frame.info)
         except Exception as e:
-            print(f"Error sending command or receiving response: {e}")
-        return None, None
+            logging.exception(f"Error sending command or receiving response: {e}")
+        return None
+
+    def send_response(self, cid1, cid2, info):
+        if not self.is_connected():
+            logging.warning("Serial port is not connected")
+            return False
+
+        try:
+            response_frame = FrameEncoder.encode_frame(self.protocol_version, self.device_addr, cid1, cid2, info)
+            logging.debug(f"Sending response frame: {response_frame.hex()}")
+            self.serial.write(response_frame)
+            return True
+        except Exception as e:
+            logging.exception(f"Error sending response frame: {e}")
+            return False
+    
+    def recv_command(self, timeout=0.5):
+        #logging.debug(f"Receiving command frame with timeout={timeout}")
+        if not self.is_connected():
+            logging.warning("Serial port is not connected")
+            return None
+
+        command_frame = FrameDecoder.recv_frame(self.serial, timeout)
+        if command_frame is None:
+            logging.warning("Received invalid command frame")
+            return None
+
+        logging.debug(f"Received command frame: {command_frame}")
+        return command_frame
 
     def recv_response(self, response_timeout=0.5):
         if not self.is_connected():
-            print("Serial port is not connected")
+            logging.warning("Serial port is not connected")
             return None
 
-        try:
-            self.serial.timeout = response_timeout
-            soi = self.read_byte()
-            if soi != FrameEncoder.SOI:
-                print("Invalid response: SOI not found")
-                return None
-
-            ver = self.decode_byte(self.read_bytes(2))
-            adr = self.decode_byte(self.read_bytes(2))
-            cid1 = self.decode_byte(self.read_bytes(2))
-            cid2 = self.decode_byte(self.read_bytes(2))
-            length_checksum = self.decode_byte(self.read_bytes(2))
-            length_bytes = self.read_bytes(4)
-            length = self.decode_word(length_bytes)
-            info = self.read_bytes(length * 2)
-
-            chksum_bytes = self.read_bytes(4)
-            eoi = self.read_byte()
-            if eoi != FrameEncoder.EOI:
-                print("Invalid response: EOI not found")
-                return None
-
-            # 校验LENGTH字段校验和
-            expected_length_checksum = FrameEncoder.calc_length_checksum(length_bytes)
-            if length_checksum != expected_length_checksum:
-                print("Invalid response: length checksum mismatch")
-                return None
-
-            # 校验和比对
-            expected_checksum = FrameEncoder.calc_checksum(
-                FrameEncoder.encode_byte(ver) +
-                FrameEncoder.encode_byte(adr) +
-                FrameEncoder.encode_byte(cid1) +
-                FrameEncoder.encode_byte(cid2) +
-                FrameEncoder.encode_byte(length_checksum) +
-                length_bytes +
-                info
-            )
-            received_checksum = self.decode_word(chksum_bytes)
-            if expected_checksum != received_checksum:
-                print("Invalid response: checksum mismatch")
-                return None
-
-            return FrameStruct(
-                soi=soi,
-                ver=ver,
-                adr=adr,
-                cid1=cid1,
-                cid2=cid2,
-                length=length,
-                info=info,
-                chksum=received_checksum,
-                eoi=eoi
-            )
-        except Exception as e:
-            print(f"Error receiving response: {e}")
+        response_frame = FrameDecoder.recv_frame(self.serial, response_timeout)
+        if response_frame is None:
+            logging.warning("Received invalid response frame")
             return None
 
-    def read_byte(self):
-        byte_data = self.serial.read(1)
-        if len(byte_data) != 1:
-            raise Exception("Read timeout")
-        return byte_data[0]
-
-    def read_bytes(self, num_bytes):
-        bytes_data = self.serial.read(num_bytes)
-        if len(bytes_data) != num_bytes:
-            raise Exception("Read timeout")
-        return bytes_data
-
-    def decode_byte(self, bytes_data):
-        return bytes_data[0] * 16 + bytes_data[1]
-
-    def decode_word(self, bytes_data):
-        return (bytes_data[0] * 16 + bytes_data[1]) * 256 + (bytes_data[2] * 16 + bytes_data[3])
-
-    def validate_response(self, response_frame):
-        frame_bytes = bytearray()
-        frame_bytes.extend(FrameEncoder.encode_byte(response_frame.ver))
-        frame_bytes.extend(FrameEncoder.encode_byte(response_frame.adr))
-        frame_bytes.extend(FrameEncoder.encode_byte(response_frame.cid1))
-        frame_bytes.extend(FrameEncoder.encode_byte(response_frame.cid2))
-        frame_bytes.extend(FrameEncoder.encode_byte(FrameEncoder.calc_length_checksum(FrameEncoder.encode_word(response_frame.length))))
-        frame_bytes.extend(FrameEncoder.encode_word(response_frame.length))
-        frame_bytes.extend(response_frame.info)
-
-        expected_checksum = FrameEncoder.calc_checksum(frame_bytes)
-        return expected_checksum == response_frame.chksum
-
-FrameStruct = namedtuple('FrameStruct', [
-    'soi', 'ver', 'adr', 'cid1', 'cid2', 'length', 'info', 'chksum', 'eoi'
-])
+        logging.debug(f"Received response frame: {response_frame}")
+        return response_frame
