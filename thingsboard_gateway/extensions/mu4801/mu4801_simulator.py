@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime
-from ydt1363_protocol import Protocol, InfoEncoder
+from ydt1363_3_2005_protocol import Protocol, InfoEncoder
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
@@ -83,9 +83,8 @@ class MU4801Simulator:
                 response = self.handle_command(frame.cid1, frame.cid2, frame.info)
                 if response is not None:
                     logging.debug(f"Sending response frame: cid1={frame.cid1:02X}, cid2=00, info={response.hex()}")
-                    logging.debug(f"=======================")
                     self.protocol.send_response(frame.cid1, 0x00, response)
-
+                    logging.debug(f"====================================================")
                 else:
                     logging.warning(f"Unsupported command, sending error response: cid1={frame.cid1:02X}, cid2=04")
                     self.protocol.send_response(frame.cid1, 0x04, b'')

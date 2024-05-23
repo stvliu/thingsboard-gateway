@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime
-from ydt1363_protocol import Protocol, InfoEncoder, InfoDecoder
+from ydt1363_3_2005_protocol import Protocol, InfoEncoder, InfoDecoder
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
@@ -37,13 +37,15 @@ class MU4801Monitor:
                 elif choice == '1':  # 读取当前时间
                     logging.info("Reading current time")
                     response = self.protocol.send_command(0x40, 0x4D, None)
-                    if response:
+                    if response is not None:
                         info_type, info_value = response
                         if info_type == datetime:
                             current_time = info_value.strftime("%Y-%m-%d %H:%M:%S")
                             logging.info(f"Current time: {current_time}")
                         else:
                             logging.warning(f"Unexpected response type: {info_type}")
+                    else:
+                        logging.warning("Failed to read current time")
                 elif choice == '2':  # 设置当前时间
                     logging.info("Setting current time")
                     time_str = input("请输入设置的时间(格式:YY-MM-DD hh:mm:ss): ")
@@ -51,32 +53,38 @@ class MU4801Monitor:
                     time_data = InfoEncoder.encode_datetime(datetime.strptime(time_str, "%Y-%m-%d %H:%M:%S"))
                     logging.debug(f"Encoded time data: {time_data.hex()}")
                     response = self.protocol.send_command(0x40, 0x4E, time_data)
-                    if response:
+                    if response is None:
                         logging.info("Time set successfully")
+                    else:
+                        logging.warning("Failed to set time")
                 elif choice == '3':  # 读取协议版本号
                     logging.info("Reading protocol version")
                     response = self.protocol.send_command(0x40, 0x4F, None)
-                    if response:
+                    if response is not None:
                         info_type, info_value = response
                         if info_type == int:
                             ver = info_value
                             logging.info(f"Protocol version: {ver>>4}.{ver&0x0F}")
                         else:
                             logging.warning(f"Unexpected response type: {info_type}")
+                    else:
+                        logging.warning("Failed to read protocol version")
                 elif choice == '4':  # 读取设备地址
                     logging.info("Reading device address")
                     response = self.protocol.send_command(0x40, 0x50, None)
-                    if response:
+                    if response is not None:
                         info_type, info_value = response
                         if info_type == int:
                             device_addr = info_value
                             logging.info(f"Device address: {device_addr}")
                         else:
                             logging.warning(f"Unexpected response type: {info_type}")
+                    else:
+                        logging.warning("Failed to read device address")
                 elif choice == '5':  # 读取厂家信息
                     logging.info("Reading manufacturer info")
                     response = self.protocol.send_command(0x40, 0x51, None)
-                    if response:
+                    if response is not None:
                         info_type, info_value = response
                         if info_type == bytes:
                             device_name = info_value[:10].decode('ascii').rstrip()
@@ -87,26 +95,32 @@ class MU4801Monitor:
                             logging.info(f"Manufacturer: {manufacturer}")
                         else:
                             logging.warning(f"Unexpected response type: {info_type}")
+                    else:
+                        logging.warning("Failed to read manufacturer info")
                 elif choice == '6':  # 读取交流电压
                     logging.info("Reading AC voltage")
                     response = self.protocol.send_command(0x40, 0x41, None)
-                    if response:
+                    if response is not None:
                         info_type, info_value = response
                         if info_type == bytes:
                             # TODO: 解析交流电压数据
                             pass
                         else:
                             logging.warning(f"Unexpected response type: {info_type}")
+                    else:
+                        logging.warning("Failed to read AC voltage")
                 elif choice == '7':  # 读取直流电压电流
                     logging.info("Reading DC voltage and current")
                     response = self.protocol.send_command(0x41, 0x41, None)
-                    if response:
+                    if response is not None:
                         info_type, info_value = response
                         if info_type == bytes:
                             # TODO: 解析直流电压电流数据
                             pass
                         else:
                             logging.warning(f"Unexpected response type: {info_type}")
+                    else:
+                        logging.warning("Failed to read DC voltage and current")
                 else:
                     logging.warning(f"Invalid choice: {choice}")
 
