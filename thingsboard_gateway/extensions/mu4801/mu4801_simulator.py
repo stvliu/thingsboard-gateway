@@ -1,108 +1,216 @@
-import logging
+from mu4801_constants import *
+from mu4801_data_structs import *
+from ydt1363_3_2005_protocol import MU4801Protocol 
 from datetime import datetime
-from ydt1363_3_2005_protocol import Protocol, InfoEncoder
+import logging
+import random
+import time
 
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s',datefmt='%Y-%m-%d %H:%M:%S')
 
 class MU4801Simulator:
     def __init__(self, device_addr, port):
-        self.protocol = Protocol(device_addr, port)
+        self.protocol = MU4801Protocol(device_addr, port)
         logging.debug(f"Initialized MU4801Protocol with device_addr={device_addr}, port={port}")
-        self.device_name = 'MU4801    '
-        self.software_version = '10'
-        self.manufacturer = 'Harbin Segu Electric Technology Co., Ltd.'
-        self.current_time = InfoEncoder.encode_datetime(datetime.strptime("2023-05-24 14:25:00", "%Y-%m-%d %H:%M:%S"))
-        logging.debug(f"Initialized MU4801Simulator with device_name={self.device_name}, software_version={self.software_version}, manufacturer={self.manufacturer}, current_time={self.current_time.hex()}")
+        self.device_name = 'MU4801 SIMULATOR'
+        self.software_version = '01'
+        self.manufacturer = 'ABC Technologies Ltd.'
+        
+        self.ac_voltage = 220.0
+        self.ac_over_voltage = 260.0
+        self.ac_under_voltage = 160.0
 
+        self.rect_module_count = 3
+        self.rect_output_voltage = 53.5
+        self.rect_module_currents = [30.2, 28.5, 29.7]
+        self.rect_module_status = [0x00] * 3
+        self.rect_module_alarm = [0x00] * 3  
+        self.load_current = 65.8
+        self.battery_current = 11.2
+        self.battery_voltage = 55.1
+
+    # CID2=0x4D/0x4E
     def handle_get_time(self):
-        logging.debug("Handling get time command")
-        return self.current_time
+        return datetime.now()
+    
+    def handle_set_time(self, data):        
+        # log info, but make no actual change
+        logging.info(f"Time set to: {DateTimeStruct.from_bytes(data)}")
 
-    def handle_set_time(self, data):
-        logging.debug(f"Handling set time command with data={data.hex()}")
-        self.current_time = data
-        return None
-
+    # CID2=0x4F  
     def handle_get_version(self):
-        logging.debug("Handling get version command")
-        return InfoEncoder.encode_data(self.protocol.protocol_version)
+        return self.protocol.protocol_version
 
+    # CID2=0x50
     def handle_get_address(self):
-        logging.debug("Handling get address command")
-        return InfoEncoder.encode_data(self.protocol.device_addr)
+        return self.protocol.device_addr
 
+    # CID2=0x51
     def handle_get_info(self):
-        logging.debug("Handling get info command")
+        return InfoStruct(self.device_name, self.software_version, self.manufacturer)
+
+    # CID1=0x40, CID2=0x41
+    def handle_get_ac_analog(self):
+        # 模拟交流数据
+        ac_freq = 50.2
+        ac_current = 10.5
+        return AcAnalogStruct(ac_voltage=self.ac_voltage, ac_freq=ac_freq, 
+                              ac_current=ac_current)
+    
+    # CID1=0x40, CID2=0x44
+    def handle_get_ac_alarm(self):  
+        alarm = AcAlarmStruct()
+        if self.ac_voltage > self.ac_over_voltage:
+            alarm.over_voltage = 0x02
+        elif self.ac_voltage < self.ac_under_voltage:  
+            alarm.under_voltage = 0x01
         
-        # 设备名称:10字节,不足部分以空格填充
-        device_name = self.device_name.ljust(10)[:10].encode('ascii')
+        # 随机模拟其他告警
+        alarm.spd_alarm = random.randint(0, 1)
+        alarm.ph1_under_voltage = random.choice([0x00, 0x01])
+        return alarm
+
+    # CID1=0x40, CID2=0x46 
+    def handle_get_ac_config(self):
+        return AcConfigStruct(
+            ac_over_voltage=self.ac_over_voltage, 
+            ac_under_voltage=self.ac_under_voltage
+        )
+    
+    # CID1=0x40, CID2=0x48
+    def handle_set_ac_config(self, data): 
+        config = AcConfigStruct.from_bytes(data)
+        self.ac_over_voltage = config.ac_over_voltage
+        self.ac_under_voltage = config.ac_under_voltage
+        logging.info(f"AC config updated: over_volt={self.ac_over_voltage}, under_volt={self.ac_under_voltage}")
+
+    # CID1=0x41, CID2=0x41 
+    def handle_get_rect_analog(self, module_count):
+        return RectAnalogStruct(
+            output_voltage=self.rect_output_voltage,
+            module_count=module_count,
+            module_currents=self.rect_module_currents[:module_count]
+        )
+    
+    # CID1=0x41, CID2=0x43
+    def handle_get_rect_status(self, module_count): 
+        # 模拟整流模块状态,偶尔切换状态
+        for i in range(module_count):
+            self.rect_module_status[i] = random.choice([0x00, 0x01]) 
         
-        # 软件版本:2字节,不足部分以空格填充
-        software_version = self.software_version.ljust(2)[:2].encode('ascii')
+        return RectStatusStruct(
+            module_count=module_count,
+            status_list=self.rect_module_status[:module_count]  
+        )
+
+    # CID1=0x41, CID2=0x44
+    def handle_get_rect_alarm(self, module_count):
+        # 模拟整流模块告警
+        for i in range(module_count):
+            self.rect_module_alarm[i] = random.choice([0x00, 0x01, 0x80, 0x88])
+
+        return RectAlarmStruct(
+            module_count=module_count, 
+            alarm_list=self.rect_module_alarm[:module_count]
+        ) 
+
+    # CID1=0x41, CID2=0x45/0x80   
+    def handle_control_rect(self, module_id, control_type):  
+        if control_type == 0x20:
+            logging.info(f"Rectifier module {module_id} turned on")
+        elif control_type == 0x2F:  
+            logging.info(f"Rectifier module {module_id} turned off")
+        else:
+            logging.warning(f"Unsupported control type: {control_type:02X}")
+
+    # CID1=0x42, CID2=0x41
+    def handle_get_dc_analog(self): 
+        # 模拟负载分路电流
+        load_branch_currents = [random.uniform(1, 10) for _ in range(4)]
+        return DcAnalogStruct(
+            voltage=self.battery_voltage,
+            total_current=self.load_current,
+            battery_current=self.battery_current, 
+            load_branch_currents=load_branch_currents
+        ) 
+    
+    # CID1=0x42, CID2=0x44
+    def handle_get_dc_alarm(self):
+        dc_alarm = DcAlarmStruct()
+
+        if self.battery_voltage > 57.6:  # 假设57.6为过压告警点
+            dc_alarm.over_voltage = 1
+        elif self.battery_voltage < 43.2:  # 假设43.2为欠压告警点  
+            dc_alarm.under_voltage = 1
         
-        # 厂商名称:20字节,超出部分截断
-        manufacturer = self.manufacturer[:20].ljust(20)[:20].encode('ascii')
-        
-        response = device_name + software_version + manufacturer
-        logging.debug(f"Responding with device info: {response.decode('ascii')}")
-        return response
+        # 其他告警随机模拟
+        dc_alarm.fuse1_alarm = random.randint(0, 1) 
+        dc_alarm.spd_alarm = random.randint(0, 1)
+        return dc_alarm
 
-    def handle_command(self, cid1, cid2, data):
-        logging.debug(f"Received command: cid1={cid1:02X}, cid2={cid2:02X}, data={data.hex()}")
+    # CID1=0x42, CID2=0x46
+    def handle_get_dc_config(self):
+        return DcConfigStruct(
+            voltage_upper_limit=57.6,
+            voltage_lower_limit=43.2   
+        )
 
-        if cid1 == 0x40:
-            if cid2 == 0x4D:  # 获取当前时间
-                return self.handle_get_time()
-            elif cid2 == 0x4E:  # 设置当前时间
-                return self.handle_set_time(data)
-            elif cid2 == 0x4F:  # 获取通信协议版本号
-                return self.handle_get_version()
-            elif cid2 == 0x50:  # 获取本机地址
-                return self.handle_get_address()
-            elif cid2 == 0x51:  # 获取厂家信息
-                return self.handle_get_info()
+    # CID1=0x42, CID2=0x48
+    def handle_set_dc_config(self, data):
+        dc_config = DcConfigStruct.from_bytes(data) 
+        # 实际应用中需要更新配置,此处仅示例
+        logging.info(f"DC configuration updated: upper={dc_config.voltage_upper_limit}, lower={dc_config.voltage_lower_limit}")
 
-        logging.warning(f"Unsupported command: CID2={cid2:02X}")
-        return None
+    # CID1=0x42, CID2=0x92  
+    def handle_control_system(self, control_type):
+        # 模拟系统控制
+        if control_type == 0xE1:
+            logging.info("System reset")
+        elif control_type == 0xE5:  
+            logging.info("Load 1 off")
+        elif control_type == 0xE6:
+            logging.info("Load 1 on")
+        elif control_type == 0xED:  
+            logging.info("Battery off")
+        elif control_type == 0xEE:
+            logging.info("Battery on")  
+        else:
+            logging.warning(f"Unsupported control type: {control_type:02X}")
 
-    def main(self):
-        if not self.protocol.open():
-            logging.error("Failed to open serial port")
-            return
+    def run(self):
+        while True:
+            try:
+                if not self.protocol.is_connected():
+                    logging.info("Connecting to serial port...")
+                    if not self.protocol.open():
+                        time.sleep(1)
+                        continue
 
-        logging.info("MU4801 simulator started")
-        try:
-            while True:
-                #logging.debug("Waiting for command frame...")
                 frame = self.protocol.recv_command()
                 if frame is None:
-                    logging.warning("Received invalid frame, skipping")
                     continue
 
                 logging.info(f"Received command frame: cid1={frame.cid1:02X}, cid2={frame.cid2:02X}, info={frame.info.hex()}")
-                response = self.handle_command(frame.cid1, frame.cid2, frame.info)
+                response = self.protocol.handle_command(frame.cid1, frame.cid2, frame.info)
                 if response is not None:
-                    logging.debug(f"Sending response frame: cid1={frame.cid1:02X}, cid2=00, info={response.hex()}")
+                    logging.debug(f"Sending response frame: cid1={frame.cid1:02X}, cid2=00, info={response}")
                     self.protocol.send_response(frame.cid1, 0x00, response)
                     logging.debug(f"====================================================")
                 else:
                     logging.warning(f"Unsupported command, sending error response: cid1={frame.cid1:02X}, cid2=04")
                     self.protocol.send_response(frame.cid1, 0x04, b'')
 
-        except KeyboardInterrupt:
-            logging.info("MU4801 simulator terminated by user")
-        finally:
-            self.protocol.close()
-            logging.info("Serial port closed")
+            except Exception as e:
+                logging.exception(f"Unexpected error occurred: {e}")
+                self.protocol.close()
+                time.sleep(1)  # wait before attempting to reconnect
 
 if __name__ == '__main__':
     device_addr = 1
-    
     default_port = '/dev/ttyS3'
     port = input(f'请输入串口号(默认为{default_port}): ')
     if not port:
         port = default_port
-    logging.info(f"Using serial port: {port}")
-
+    logging.info(f"Using serial port: {port}") 
     simulator = MU4801Simulator(device_addr, port)
-    simulator.main()
+    simulator.run()

@@ -4,30 +4,12 @@ import serial
 from serial.serialutil import SerialException
 from collections import namedtuple
 import datetime
+from typing import Union
 
-# 常量定义
-PROTOCOL_VERSION = 0x21
-SOI = 0x7E  # 起始位标志
-EOI = 0x0D  # 结束码
+from mu4801_constants import *
+from mu4801_data_structs import *
 
-# 帧结构常量
-SOI_INDEX = 0
-VER_INDEX = 1
-ADR_INDEX = 2
-CID1_INDEX = 3
-CID2_INDEX = 4
-LENGTH_INDEX = 5
-INFO_INDEX = 7
-CHKSUM_INDEX = -3
-EOI_INDEX = -1
-
-# 帧长度编码常量
-LENID_ZERO = 0
-LENID_LOW_MASK = 0xFF
-LENID_HIGH_MASK = 0x0F
-LCHKSUM_MASK = 0xF0
-LCHKSUM_SHIFT = 4
-
+# 定义帧结构
 FrameStruct = namedtuple('FrameStruct', [
     'soi', 'ver', 'adr', 'cid1', 'cid2', 'length', 'info', 'chksum', 'eoi'
 ])
@@ -56,7 +38,7 @@ class FrameUtils:
 class FrameEncoder:
     @staticmethod
     def encode_frame(ver, adr, cid1, cid2, info):
-        logging.debug(f"Encoding frame: ver={ver:02X}, adr={adr:02X}, cid1={cid1:02X}, cid2={cid2:02X}, info={info.hex()}")
+        logging.debug(f"Encoding frame: ver={ver:02X}, adr={adr:02X}, cid1={cid1:02X}, cid2={cid2:02X}, info={info}")
         frame_bytes = bytearray()
         logging.debug(f"Adding SOI to frame: {SOI:02X}")
         frame_bytes.extend(struct.pack('>B', SOI))
@@ -64,6 +46,11 @@ class FrameEncoder:
         frame_bytes.extend(struct.pack('>BBB', ver, adr, cid1))
         logging.debug(f"Adding cid2 to frame: {struct.pack('>B', cid2).hex()}")
         frame_bytes.extend(struct.pack('>B', cid2))
+
+        logging.debug(f"Before encoding data: info={info}, type={type(info)}")
+        info = DataEncoder.encode_data(info)
+        logging.debug(f"After encoding data: info={info}, type={type(info)}")
+
         length_bytes = FrameEncoder.encode_length(info)
         logging.debug(f"Adding length to frame: {length_bytes.hex()}")
         frame_bytes.extend(length_bytes)
@@ -95,12 +82,7 @@ class FrameEncoder:
     def encode_length(data):
         logging.debug(f"Encoding length: data_len={len(data)}")
         data_len = len(data)
-        
-        if data_len == LENID_ZERO:
-            lenid = LENID_ZERO
-        else:
-            lenid = data_len
-        
+        lenid = data_len
         lenid_low = lenid & LENID_LOW_MASK
         lenid_high = (lenid >> 8) & LENID_HIGH_MASK
         
@@ -120,15 +102,13 @@ class FrameDecoder:
         lchksum = (length_bytes[0] >> LCHKSUM_SHIFT) & 0x0F
 
         lenid = (lenid_high << 8) | lenid_low
+        info_length = lenid
 
-        if lenid == LENID_ZERO:
-            info_length = LENID_ZERO
-        else:
-            calculated_lchksum = (lenid_low + lenid_high + lenid) % 16
-            calculated_lchksum = (~calculated_lchksum + 1) & 0x0F
-            if lchksum != calculated_lchksum:
-                raise ValueError(f"Invalid LCHKSUM: received={lchksum:X}, calculated={calculated_lchksum:X}")
-            info_length = lenid
+        calculated_lchksum = (lenid_low + lenid_high + lenid) % 16
+        calculated_lchksum = (~calculated_lchksum + 1) & 0x0F
+        if lchksum != calculated_lchksum:
+            raise ValueError(f"Invalid LCHKSUM: received={lchksum:X}, calculated={calculated_lchksum:X}")
+
         return info_length
 
     @staticmethod
@@ -226,77 +206,65 @@ class FrameDecoder:
             logging.exception(f"Error receiving frame: {e}")
             return None
 
-class InfoEncoder:
-    # 定义编码函数字典
-    ENCODE_FUNCS = {
-        float: lambda x: struct.pack('>f', x),
-        int: lambda x: struct.pack('>h', x),
-        datetime.datetime: lambda x: InfoEncoder.encode_datetime(x),
-        bytes: lambda x: x,
-        type(None): lambda x: b'',  # 添加None类型的处理
-    }
-
-    @staticmethod
-    def encode_info(info_data):
-        info_bytes = InfoEncoder.encode_data(info_data)
-        return info_bytes
-
+class DataEncoder:
     @staticmethod
     def encode_data(data):
-        # 检查data是否为整数且在0到255之间
-        if isinstance(data, int) and 0 <= data <= 255:
-            return struct.pack('>B', data)
-        
-        # 使用字典映射数据类型到编码函数
-        encode_func = InfoEncoder.ENCODE_FUNCS.get(type(data))
-        if encode_func:
-            return encode_func(data)
+        if data is None:
+            return b''
+        elif isinstance(data, bytes):
+            return data
+        elif isinstance(data, int):
+            return struct.pack('<B', data)
+        elif isinstance(data, float):
+            return struct.pack('<f', data)
+        elif isinstance(data, str):
+            return data.encode('ascii')
+        elif isinstance(data, (InfoStruct, AcAnalogStruct, AcAlarmStruct, AcConfigStruct,
+                            RectAnalogStruct, RectStatusStruct, RectAlarmStruct,
+                            DcAnalogStruct, DcAlarmStruct, DcConfigStruct, DateTimeStruct)):
+            return data.to_bytes()
+        elif isinstance(data, (list, tuple)):
+            return b''.join(FrameEncoder.encode_length(item) for item in data)
         else:
-            raise ValueError(f"Invalid data type: {type(data)}")
+            raise ValueError(f"Unsupported data type: {type(data)}")
 
+class DataDecoder:
     @staticmethod
-    def encode_datetime(dt):
-        # datetime编码逻辑保持不变
-        year = struct.pack('>H', dt.year)
-        month = struct.pack('>B', dt.month)
-        day = struct.pack('>B', dt.day)
-        hour = struct.pack('>B', dt.hour)
-        minute = struct.pack('>B', dt.minute)
-        second = struct.pack('>B', dt.second)
-        return year + month + day + hour + minute + second
-
-class InfoDecoder:
-    @staticmethod
-    def decode_info(info_bytes):
-        info_type = None
-        info_value = None
-        if len(info_bytes) == 4:
-            info_type = float
-            info_value = struct.unpack('>f', info_bytes)[0]
-        elif len(info_bytes) == 2:
-            info_type = int
-            info_value = struct.unpack('>h', info_bytes)[0]
-        elif len(info_bytes) == 7:
-            info_type = datetime.datetime
-            info_value = InfoDecoder.decode_datetime(info_bytes)
-        elif len(info_bytes) == 1:
-            info_type = int
-            info_value = struct.unpack('>B', info_bytes)[0]
-        elif len(info_bytes) > 0:
-            info_type = bytes
-            info_value = info_bytes
-        return info_type, info_value
-
-    @staticmethod
-    def decode_datetime(bytes_data):
-        year = struct.unpack('>H', bytes_data[:2])[0]
-        month = struct.unpack('>B', bytes_data[2:3])[0]
-        day = struct.unpack('>B', bytes_data[3:4])[0]
-        hour = struct.unpack('>B', bytes_data[4:5])[0]
-        minute = struct.unpack('>B', bytes_data[5:6])[0]
-        second = struct.unpack('>B', bytes_data[6:7])[0]
-        return datetime.datetime(year, month, day, hour, minute, second)
-
+    def decode_data(cid1, cid2, data):
+        if cid1 == CID1_DC_POWER:
+            if cid2 == CID2_GET_ANALOG_FLOAT:
+                return AcAnalogStruct.from_bytes(data)
+            elif cid2 == CID2_GET_ALARM:
+                return AcAlarmStruct.from_bytes(data)
+            elif cid2 == CID2_GET_CONFIG_FLOAT:
+                return AcConfigStruct.from_bytes(data)
+        elif cid1 == CID1_RECT:
+            if cid2 == CID2_GET_ANALOG_FLOAT:
+                return RectAnalogStruct.from_bytes(data)
+            elif cid2 == CID2_GET_STATUS:
+                return RectStatusStruct.from_bytes(data)
+            elif cid2 == CID2_GET_ALARM:
+                return RectAlarmStruct.from_bytes(data)
+        elif cid1 == CID1_DC_DIST:
+            if cid2 == CID2_GET_ANALOG_FLOAT:
+                return DcAnalogStruct.from_bytes(data)
+            elif cid2 == CID2_GET_ALARM:
+                return DcAlarmStruct.from_bytes(data)
+            elif cid2 == CID2_GET_CONFIG_FLOAT:
+                return DcConfigStruct.from_bytes(data)
+        elif cid1 == CID1_SYS_CONTROL:
+            if cid2 == CID2_GET_TIME:
+                return DateTimeStruct.from_bytes(data)
+            elif cid2 == CID2_GET_VERSION:
+                return data[0]  # 版本号是单字节整数
+            elif cid2 == CID2_GET_ADDR:
+                return data[0]  # 地址是单字节整数
+            elif cid2 == CID2_GET_MFR_INFO:
+                return InfoStruct.from_bytes(data)
+            elif cid2 == CID2_GET_SYS_STATUS:
+                return data[0]  # 系统状态是单字节整数
+        return data  # 如果不能解码,就原样返回数据
+    
 class Protocol:
     def __init__(self, device_addr, port=None, baudrate=9600, bytesize=8, parity='N', stopbits=1, timeout=0.5):
         self.device_addr = device_addr
@@ -340,7 +308,7 @@ class Protocol:
             return None
 
         try:
-            info = InfoEncoder.encode_info(info_data)
+            info = DataEncoder.encode_data(info_data)
             logging.debug(f"Encoded info: {info.hex()}")
             frame = FrameEncoder.encode_frame(self.protocol_version, self.device_addr, cid1, cid2, info)
             logging.debug(f"Encoded frame: {frame.hex()}")
@@ -350,7 +318,7 @@ class Protocol:
                 response_frame = self.recv_response(response_timeout)
                 if response_frame is not None:
                     logging.debug(f"Received response frame: {response_frame}")
-                    return InfoDecoder.decode_info(response_frame.info)
+                    return DataDecoder.decode_data(cid1, response_frame.cid2, response_frame.info)
         except Exception as e:
             logging.exception(f"Error sending command or receiving response: {e}")
             return None
@@ -394,3 +362,219 @@ class Protocol:
 
         logging.debug(f"Received response frame: {response_frame}")
         return response_frame
+
+class MU4801Protocol(Protocol):
+    
+    def handle_get_time(self):
+        return DateTimeStruct.from_datetime(datetime.now())
+        
+    def handle_set_time(self, data):
+        time_struct = DateTimeStruct.from_bytes(data)
+        logging.info(f"Time set to: {time_struct}")
+        # TODO: 实际设置时间的逻辑
+        
+    def handle_get_version(self):
+        return self.protocol_version
+        
+    def handle_get_address(self):
+        return self.device_addr
+        
+    def handle_get_info(self):
+        return InfoStruct(
+            device_name='MU4801',
+            software_version='01', 
+            manufacturer='ABC Technologies Ltd.'
+        )
+        
+    def handle_get_ac_analog(self):
+        # TODO: 实际获取交流模拟量的逻辑
+        return AcAnalogStruct(
+            voltage_ph_a=220.1,
+            voltage_ph_b=220.5,
+            voltage_ph_c=221.0, 
+            ac_freq=50.0,
+            ac_current=10.0
+        )
+        
+    def handle_get_ac_alarm(self):
+        # TODO: 实际获取交流告警状态的逻辑  
+        return AcAlarmStruct(
+            spd_alarm=0,
+            over_voltage_ph_a=0,
+            over_voltage_ph_b=0,
+            over_voltage_ph_c=0,
+            under_voltage_ph_a=0, 
+            under_voltage_ph_b=0,
+            under_voltage_ph_c=0 
+        )
+        
+    def handle_get_ac_config(self):
+        # TODO: 实际获取交流配置参数的逻辑
+        return AcConfigStruct(
+            ac_over_voltage=260.0, 
+            ac_under_voltage=160.0
+        )
+        
+    def handle_set_ac_config(self, config_data):
+        config = AcConfigStruct.from_bytes(config_data)
+        logging.info(f"AC config updated: over_volt={config.ac_over_voltage}, under_volt={config.ac_under_voltage}")
+        # TODO: 实际设置交流配置参数的逻辑
+
+    def handle_get_rect_analog(self, module_count):
+        # TODO: 实际获取整流模块模拟量的逻辑
+        return RectAnalogStruct(
+            output_voltage=53.5,
+            module_count=module_count,
+            module_currents=[30.0, 29.5, 28.8][:module_count] 
+        )
+    
+    def handle_get_rect_status(self, module_count):
+        # TODO: 实际获取整流模块状态的逻辑
+        return RectStatusStruct(
+            module_count=module_count,
+            status_list=[0x00, 0x01, 0x00][:module_count]
+        )
+
+    def handle_get_rect_alarm(self, module_count):
+        # TODO: 实际获取整流模块告警状态的逻辑 
+        return RectAlarmStruct(
+            module_count=module_count,
+            alarm_list=[0x00, 0x00, 0x01][:module_count] 
+        )
+
+    def handle_control_rect(self, module_id, control_type):
+        logging.info(f"Rectifier module {module_id} control: {'enable' if control_type == 0x20 else 'disable'}")
+        # TODO: 实际控制整流模块的逻辑
+
+    def handle_set_rect_param(self, param_data):  
+        # TODO: 实际设置整流模块参数的逻辑
+        logging.info(f"Rectifier module parameter set: {param_data.hex()}")
+
+    def handle_get_dc_analog(self):
+        # TODO: 实际获取直流模拟量的逻辑
+        return DcAnalogStruct(
+            voltage=53.5,  
+            total_current=88.2,
+            battery_current=10.5, 
+            load_branch_currents=[20.1, 22.3, 19.8, 21.5]  
+        )
+
+    def handle_get_dc_alarm(self):  
+        # TODO: 实际获取直流告警状态的逻辑
+        return DcAlarmStruct(
+            over_voltage=0,  
+            under_voltage=0,
+            spd_alarm=0,
+            fuse1_alarm=0,
+            fuse2_alarm=0, 
+            fuse3_alarm=0,
+            fuse4_alarm=0
+        )
+
+    def handle_get_dc_config(self):
+        # TODO: 实际获取直流配置参数的逻辑 
+        return DcConfigStruct(
+            voltage_upper_limit=57.6,  
+            voltage_lower_limit=43.2,
+            current_limit=100.0 
+        )
+
+    def handle_set_dc_config(self, config_data): 
+        config = DcConfigStruct.from_bytes(config_data)
+        logging.info(f"DC config updated: upper={config.voltage_upper_limit}, lower={config.voltage_lower_limit}")
+        # TODO: 实际设置直流配置参数的逻辑
+
+    def handle_control_system(self, control_type):
+        # TODO: 实际系统控制命令的逻辑
+        if control_type == 0xE1:  
+            logging.info("System reset")
+        elif control_type in [0xE5, 0xE6, 0xED, 0xEE]:
+            load_id = (control_type - 0xE5) // 2 + 1 
+            action = 'off' if control_type % 2 else 'on'
+            logging.info(f"Load {load_id} turned {action}")
+        else:
+            logging.warning(f"Unsupported control type: {control_type:02X}")
+
+    def handle_get_system_status(self):
+        # TODO: 实际获取系统状态的逻辑
+        return 0x00  # 占位,返回状态码
+
+    def handle_set_system_status(self, control_value):
+        logging.info(f"System status set to: {control_value}")
+        # TODO: 实际设置系统状态的逻辑
+
+    def handle_set_buzzer(self, enable):
+        logging.info(f"Buzzer {'enabled' if enable else 'disabled'}") 
+        # TODO: 实际设置蜂鸣器的逻辑
+
+    def handle_get_power_saving_params(self):
+        # TODO: 实际获取节能参数的逻辑
+        return struct.pack('<BBBBB', 0x00, 1, 0x00, 30, 95, 75)
+
+    def handle_set_power_saving_params(self, param_data):
+        logging.info(f"Power saving parameters set: {param_data.hex()}")
+        # TODO: 实际设置节能参数的逻辑
+
+    def handle_command(self, cid1, cid2, data):
+        logging.debug(f"Received command: cid1={cid1:02X}, cid2={cid2:02X}, data={data.hex()}")
+        
+        if cid1 == CID1_DC_POWER:
+            if cid2 == CID2_GET_ANALOG_FLOAT:
+                return self.handle_get_ac_analog()
+            elif cid2 == CID2_GET_ALARM:
+                return self.handle_get_ac_alarm()
+            elif cid2 == CID2_GET_CONFIG_FLOAT:
+                return self.handle_get_ac_config()
+            elif cid2 == CID2_SET_CONFIG_FLOAT:
+                return self.handle_set_ac_config(data)
+        
+        elif cid1 == CID1_RECT:
+            if cid2 == CID2_GET_ANALOG_FLOAT:
+                return self.handle_get_rect_analog(data[0])  # 第一个字节表示整流模块数量
+            elif cid2 == CID2_GET_STATUS:
+                return self.handle_get_rect_status(data[0]) 
+            elif cid2 == CID2_GET_ALARM:
+                return self.handle_get_rect_alarm(data[0])
+            elif cid2 == CID2_CONTROL:  
+                return self.handle_control_rect(data[0], data[1])  # 第一个字节表示模块ID,第二个字节表示控制类型
+            elif cid2 == CID2_REMOTE_SET_FLOAT:
+                return self.handle_set_rect_param(data)
+
+        elif cid1 == CID1_DC_DIST:
+            if cid2 == CID2_GET_ANALOG_FLOAT:
+                return self.handle_get_dc_analog() 
+            elif cid2 == CID2_GET_ALARM:
+                return self.handle_get_dc_alarm()
+            elif cid2 == CID2_GET_CONFIG_FLOAT:
+                return self.handle_get_dc_config()
+            elif cid2 == CID2_SET_CONFIG_FLOAT:
+                return self.handle_set_dc_config(data)
+
+        elif cid1 == CID1_SYS_CONTROL:
+            if cid2 == CID2_CONTROL_SYSTEM:
+                return self.handle_control_system(data[0])  # data[0]表示控制类型
+            elif cid2 == CID2_GET_SYS_STATUS:
+                return self.handle_get_system_status()
+            elif cid2 == CID2_SET_SYS_STATUS:
+                return self.handle_set_system_status(data[0])  # data[0]为控制值
+            elif cid2 == CID2_BUZZER_CONTROL:
+                return self.handle_set_buzzer(data[0]) 
+            elif cid2 == CID2_GET_POWER_SAVING:
+                return self.handle_get_power_saving_params()
+            elif cid2 == CID2_SET_POWER_SAVING:
+                return self.handle_set_power_saving_params(data)
+
+        # 通用命令处理
+        if cid2 == CID2_GET_TIME:
+            return self.handle_get_time()
+        elif cid2 == CID2_SET_TIME:
+            return self.handle_set_time(data) 
+        elif cid2 == CID2_GET_VERSION:
+            return self.handle_get_version()
+        elif cid2 == CID2_GET_ADDR:
+            return self.handle_get_address()
+        elif cid2 == CID2_GET_MFR_INFO:
+            return self.handle_get_info()
+
+        logging.warning(f"Unsupported command: CID2={cid2:02X}")
+        return None
