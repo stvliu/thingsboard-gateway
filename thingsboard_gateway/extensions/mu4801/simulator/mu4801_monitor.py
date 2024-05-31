@@ -1,6 +1,6 @@
 from mu4801_protocol import MU4801Protocol
 import logging
-import datetime
+from datetime import datetime
 
 # 日志配置
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(name)s %(levelname)s %(message)s')
@@ -46,7 +46,9 @@ class MU4801Monitor:
             elif choice == '1':  # 读取当前时间
                 print("读取当前时间:")
                 dt = self.protocol.send_command('getDateTime')
-                print(f"当前时间: {dt}")
+                device_datetime = datetime(year=dt['year'], month=dt['month'], day=dt['day'],
+                    hour=dt['hour'], minute=dt['minute'], second=dt['second'])
+                print(f"设备时间: {device_datetime}")
             elif choice == '2':  # 设置当前时间
                 print("设置当前时间:")
                 try:
@@ -74,9 +76,9 @@ class MU4801Monitor:
             elif choice == '5':  # 读取厂家信息
                 print("读取厂家信息:")
                 info = self.protocol.send_command('getManufacturerInfo')
-                print(f"设备名称: {info['collectorName']}")
-                print(f"软件版本: {info['softwareVersion']}")
-                print(f"制造商: {info['manufacturer']}")
+                print(f"采集器名称: {info['collectorName'].strip()}")
+                print(f"厂商软件版本: {info['softwareVersion'].strip()}")
+                print(f"制造商: {info['manufacturer'].strip()}")
             elif choice == '6':  # 读取交流数据
                 print("读取交流数据:")
                 ac_data = self.protocol.send_command('getAcAnalogData')

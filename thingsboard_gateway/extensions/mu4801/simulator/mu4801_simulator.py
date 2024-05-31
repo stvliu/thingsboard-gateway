@@ -16,8 +16,8 @@ class MU4801Simulator:
         self.serial = self.protocol._serial
         
         self.device_info = {
-            'collector_name': 'MU4801A',
-            'software_version': '1.0',
+            'collectorName': 'MU4801A',
+            'softwareVersion': '10',
             'manufacturer': 'Virtual Inc.'
         }
         
@@ -220,10 +220,14 @@ class MU4801Simulator:
         return {'version': 'V2.1'}
         
     def handle_get_device_address(self):
-        return {'address': self.protocol.device_addr}
+        return {'address': self.protocol.get_device_addr()}
         
-    def handle_get_manufacturer_info(self):
-        return self.device_info
+    def handle_get_manufacturer_info(self): 
+        return {
+            'collectorName': self.device_info['collectorName'].ljust(10)[:10],
+            'softwareVersion': self.device_info['softwareVersion'].ljust(2)[:2],
+            'manufacturer': self.device_info['manufacturer'].ljust(20)[:20]
+        }
         
     def handle_get_ac_analog_data(self):
         # simulate some random fluctuations
@@ -319,72 +323,72 @@ class MU4801Simulator:
     def run(self):
         while True:
             try:
-                command = self.protocol.recv_command()
+                command,command_data = self.protocol.receive_command()
                 if not command:
                     continue
                 
-                response = None
+                response_data = None
                 
                 if command.cid1 == '0x40':
                     if command.cid2 == '0x4D':  # 获取当前时间
-                        response = self.handle_get_time()
+                        response_data = self.handle_get_time()
                     elif command.cid2 == '0x4E':  # 设置当前时间
                         self.handle_set_time(command.data)  
                     elif command.cid2 == '0x4F':  # 获取协议版本号
-                        response = self.handle_get_protocol_version()
+                        response_data = self.handle_get_protocol_version()
                     elif command.cid2 == '0x50':  # 获取本机地址 
-                        response = self.handle_get_device_address()
+                        response_data = self.handle_get_device_address()
                     elif command.cid2 == '0x51':  # 获取厂家信息
-                        response = self.handle_get_manufacturer_info()
+                        response_data = self.handle_get_manufacturer_info()
                     elif command.cid2 == '0x41':  # 获取交流模拟量
-                        response = self.handle_get_ac_analog_data()
+                        response_data = self.handle_get_ac_analog_data()
                     elif command.cid2 == '0x44':  # 获取交流告警状态
-                        response = self.handle_get_ac_alarm_status()
+                        response_data = self.handle_get_ac_alarm_status()
                     elif command.cid2 == '0x46':  # 获取交流配电参数
-                        response = self.handle_get_ac_config_params()
+                        response_data = self.handle_get_ac_config_params()
                     elif command.cid2 == '0x48':  # 设置交流配电参数  
                         self.handle_set_ac_config_params(command.data)
                     elif command.cid2 == '0x80':  # 修改系统控制状态
                         self.handle_set_system_control_state(command.data)  
                     elif command.cid2 == '0x81':  # 读取系统控制状态
-                        response = self.handle_get_system_control_state()
+                        response_data = self.handle_get_system_control_state()
                     elif command.cid2 == '0x84':  # 后台告警音使能控制
                         self.handle_set_alarm_sound_enable(command.data)
                         
                 elif command.cid1 == '0x41': 
                     if command.cid2 == '0x41':  # 获取整流模块模拟量
-                        response = self.handle_get_rect_analog_data()
+                        response_data = self.handle_get_rect_analog_data()
                     elif command.cid2 == '0x43':  # 获取整流模块开关输入状态  
-                        response = self.handle_get_rect_status()
+                        response_data = self.handle_get_rect_status()
                     elif command.cid2 == '0x44':  # 获取整流模块告警状态
-                        response = self.handle_get_rect_alarm_status() 
+                        response_data = self.handle_get_rect_alarm_status() 
                     elif command.cid2 == '0x45' or command.cid2 == '0x80':  # 遥控整流模块
                         self.handle_control_rect_module(command.data)
                         
                 elif command.cid1 == '0x42':
                     if command.cid2 == '0x41':  # 获取直流配电模拟量  
-                        response = self.handle_get_dc_analog_data()
+                        response_data = self.handle_get_dc_analog_data()
                     elif command.cid2 == '0x44':  # 获取直流告警状态
-                        response = self.handle_get_dc_alarm_status()  
+                        response_data = self.handle_get_dc_alarm_status()  
                     elif command.cid2 == '0x46':  # 获取直流配电参数
-                        response = self.handle_get_dc_config_params()
+                        response_data = self.handle_get_dc_config_params()
                     elif command.cid2 == '0x48':  # 设置直流配电参数
                         self.handle_set_dc_config_params(command.data)
                     elif command.cid2 == '0x90':  # 读取节能参数  
-                        response = self.handle_get_energy_params()
+                        response_data = self.handle_get_energy_params()
                     elif command.cid2 == '0x91':  # 设置节能参数
                         self.handle_set_energy_params(command.data)  
                     elif command.cid2 == '0x92':  # 系统控制
                         self.handle_system_control(command.data)
                         
-                if response:
-                    self.protocol.send_frame(command.cid1, 0x00, response)  
+                if response_data:
+                    self.protocol.send_response(command, '0x00', response_data)  
                 else:
                     self._log.warning(f"Unsupported command: cid1={command.cid1}, cid2={command.cid2}")
-                    self.protocol.send_frame(command.cid1, 0x04, None)  # 无效数据应答
+                    self.protocol.send_response(command, '0x04', None)  # 无效数据应答
                     
             except Exception as e:
-                self._log.error(f"An error occurred: {e}")
+                self._log.error(f"An error occurred: {e}",exc_info=True)
                 
 if __name__ == '__main__':
     device_addr = 1

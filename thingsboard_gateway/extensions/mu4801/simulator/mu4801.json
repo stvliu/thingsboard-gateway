@@ -22,22 +22,22 @@
                 {
                     "key": "collectorName",
                     "name": "采集器名称",
-                    "dataType": "string",
-                    "startPos": 0,
+                    "data_type": "string",
+                    "start_pos": 0,
                     "length": 10
                 },
                 {
-                    "key": "firmwareVersion",
+                    "key": "softwareVersion",
                     "name": "厂商软件版本",
-                    "dataType": "string",
-                    "startPos": 10,
+                    "data_type": "string",
+                    "start_pos": 10,
                     "length": 2
                 },
                 {
                     "key": "manufacturer",
                     "name": "厂商名称",
-                    "dataType": "string",
-                    "startPos": 12,
+                    "data_type": "string",
+                    "start_pos": 12,
                     "length": 20
                 }
             ]
@@ -52,8 +52,8 @@
                 {
                     "key": "version",
                     "name": "版本号",
-                    "dataType": "string",
-                    "startPos": 0,
+                    "data_type": "string",
+                    "start_pos": 0,
                     "length": 4
                 }
             ]
@@ -68,8 +68,8 @@
                 {
                     "key": "address",
                     "name": "设备地址",
-                    "dataType": "uint8",
-                    "startPos": 0,
+                    "data_type": "uint8",
+                    "start_pos": 0,
                     "length": 1
                 }
             ]
@@ -86,50 +86,50 @@
                 {
                     "key": "dataFlag",
                     "name": "数据标志",
-                    "dataType": "uint8",
-                    "startPos": 0,
+                    "data_type": "uint8",
+                    "start_pos": 0,
                     "length": 1
                 },
                 {
                     "key": "numberOfInputs",
                     "name": "交流输入路数",
-                    "dataType": "uint8",
-                    "startPos": 1,
+                    "data_type": "uint8",
+                    "start_pos": 1,
                     "length": 1
                 },
                 {
                     "key": "voltageA",
                     "name": "A相电压",
-                    "dataType": "float",
-                    "startPos": 2,
+                    "data_type": "float",
+                    "start_pos": 2,
                     "length": 4
                 },
                 {
                     "key": "voltageB",
                     "name": "B相电压",
-                    "dataType": "float",
-                    "startPos": 6,
+                    "data_type": "float",
+                    "start_pos": 6,
                     "length": 4
                 },
                 {
                     "key": "voltageC",
                     "name": "C相电压",
-                    "dataType": "float",
-                    "startPos": 10,
+                    "data_type": "float",
+                    "start_pos": 10,
                     "length": 4
                 },
                 {
                     "key": "inputFrequency",
                     "name": "输入频率",
-                    "dataType": "float",
-                    "startPos": 14,
+                    "data_type": "float",
+                    "start_pos": 14,
                     "length": 4
                 },
                 {
                     "key": "userDefinedParamsCount",
                     "name": "用户自定义数量",
-                    "dataType": "uint8",
-                    "startPos": 18,
+                    "data_type": "uint8",
+                    "start_pos": 18,
                     "length": 1
                 }
             ]
@@ -139,91 +139,90 @@
             "cid2": "0x41",
             "key": "getRectAnalogData",
             "name": "获取整流模块模拟量",
-            "params": [
-                {
-                    "key": "moduleCount",
-                    "name": "模块数量",
-                    "dataType": "uint8",
-                    "startPos": 1,
-                    "length": 1
-                }
-            ],
+            "params": [],
             "values": [
                 {
                     "key": "dataFlag",
                     "name": "数据标志",
-                    "dataType": "uint8",
-                    "startPos": 0,
+                    "data_type": "uint8",
+                    "start_pos": 0,
                     "length": 1
                 },
                 {
                     "key": "outputVoltage",
                     "name": "电压值",
-                    "dataType": "float",
-                    "startPos": 2,
+                    "data_type": "float",
+                    "start_pos": 1,
                     "length": 4
+                },
+                {
+                    "key": "moduleCount",
+                    "name": "监控模块数量",
+                    "data_type": "uint8",
+                    "start_pos": 5,
+                    "length": 1
                 },
                 {
                     "key": "moduleCurrent",
                     "name": "电流值",
-                    "dataType": "float",
-                    "startPos": 6,
+                    "data_type": "float",
+                    "start_pos": 6,
                     "length": 4,
                     "quantity": "${moduleCount}"
                 },
                 {
                     "key": "userDefinedParamsCount",
                     "name": "用户自定义数量",
-                    "dataType": "uint8",
-                    "startPos": 10,
+                    "data_type": "uint8",
+                    "start_pos": 10,
                     "length": 1,
                     "quantity": "${moduleCount}"
                 },
                 {
                     "key": "moduleCurrentLimit",
                     "name": "限流点",
-                    "dataType": "float",
-                    "startPos": 11,
+                    "data_type": "float",
+                    "start_pos": 11,
                     "length": 4,
                     "quantity": "${moduleCount}"
                 },
                 {
                     "key": "moduleVoltage",
                     "name": "模块电压",
-                    "dataType": "float",
-                    "startPos": 15,
+                    "data_type": "float",
+                    "start_pos": 15,
                     "length": 4,
                     "quantity": "${moduleCount}"
                 },
                 {
                     "key": "moduleTemperature",
                     "name": "模块温度",
-                    "dataType": "float",
-                    "startPos": 19,
+                    "data_type": "float",
+                    "start_pos": 19,
                     "length": 4,
                     "quantity": "${moduleCount}"
                 },
                 {
                     "key": "moduleInputVoltageAB",
                     "name": "交流输入AB线电压",
-                    "dataType": "float",
-                    "startPos": 23,
+                    "data_type": "float",
+                    "start_pos": 23,
                     "length": 4,
                     "quantity": "${moduleCount}"
                 },
                 {
                     "key": "moduleInputVoltageBC",
                     "name": "交流输入BC线电压",
-                    "dataType": "float",
-                    "startPos": 27,
+                    "data_type": "float",
+                    "start_pos": 27,
                     "length": 4,
                     "quantity": "${moduleCount}"
                 },
                 {
                     "key": "moduleInputVoltageCA",
                     "name": "交流输入CA线电压",
-                    "dataType": "float",
-                    "startPos": 31,
+                    "data_type": "float",
+                    "start_pos": 31,
                     "length": 4,
                     "quantity": "${moduleCount}"
                 }
@@ -234,28 +233,27 @@
             "cid2": "0x43",
             "key": "getRectSwitchStatus",
             "name": "获取整流模块开关状态",
-            "params": [
-                {
-                    "key": "moduleCount",
-                    "name": "模块数量",
-                    "dataType": "uint8",
-                    "startPos": 1,
-                    "length": 1
-                }
-            ],
+            "params": [],
             "values": [
                 {
                     "key": "dataFlag",
                     "name": "数据标志",
-                    "dataType": "uint8",
-                    "startPos": 0,
+                    "data_type": "uint8",
+                    "start_pos": 0,
+                    "length": 1
+                },
+                {
+                    "key": "moduleCount",
+                    "name": "整流模块数量",
+                    "data_type": "uint8",
+                    "start_pos": 1,
                     "length": 1
                 },
                 {
                     "key": "moduleRunStatus",
                     "name": "模块运行状态",
-                    "dataType": "enum",
-                    "startPos": 2,
+                    "data_type": "enum",
+                    "start_pos": 2,
                     "length": 1,
                     "quantity": "${moduleCount}",
                     "enum": {
@@ -266,8 +264,8 @@
                 {
                     "key": "moduleLimitStatus",
                     "name": "模块限流状态",
-                    "dataType": "enum",
-                    "startPos": 3,
+                    "data_type": "enum",
+                    "start_pos": 3,
                     "length": 1,
                     "quantity": "${moduleCount}",
                     "enum": {
@@ -278,8 +276,8 @@
                 {
                     "key": "moduleChargeStatus",
                     "name": "充电状态",
-                    "dataType": "enum",
-                    "startPos": 4,
+                    "data_type": "enum",
+                    "start_pos": 4,
                     "length": 1,
                     "quantity": "${moduleCount}",
                     "enum": {
@@ -291,8 +289,8 @@
                 {
                     "key": "userDefinedParamsCount",
                     "name": "用户自定义参数数量",
-                    "dataType": "uint8",
-                    "startPos": 5,
+                    "data_type": "uint8",
+                    "start_pos": 5,
                     "length": 1,
                     "quantity": "${moduleCount}"
                 }
@@ -308,323 +306,323 @@
                 {
                     "key": "dataFlag",
                     "name": "数据标志",
-                    "dataType": "uint8",
-                    "startPos": 0,
+                    "data_type": "uint8",
+                    "start_pos": 0,
                     "length": 1
                 },
                 {
                     "key": "dcVoltage",
                     "name": "电压值",
-                    "dataType": "float",
-                    "startPos": 1,
+                    "data_type": "float",
+                    "start_pos": 1,
                     "length": 4
                 },
                 {
                     "key": "totalLoadCurrent",
                     "name": "总负载电流",
-                    "dataType": "float",
-                    "startPos": 5,
+                    "data_type": "float",
+                    "start_pos": 5,
                     "length": 4
                 },
                 {
                     "key": "batteryGroupCount",
                     "name": "蓄电池组数",
-                    "dataType": "uint8",
-                    "startPos": 9,
+                    "data_type": "uint8",
+                    "start_pos": 9,
                     "length": 1
                 },
                 {
                     "key": "batteryGroup1Number",
                     "name": "电池组1编号",
-                    "dataType": "uint8",
-                    "startPos": 10,
+                    "data_type": "uint8",
+                    "start_pos": 10,
                     "length": 1
                 },
                 {
                     "key": "batteryGroup1Current",
                     "name": "电池组1电流",
-                    "dataType": "float",
-                    "startPos": 11,
+                    "data_type": "float",
+                    "start_pos": 11,
                     "length": 4
                 },
                 {
                     "key": "loadBranchCount",
                     "name": "监测直流分路数",
-                    "dataType": "uint8",
-                    "startPos": 15,
+                    "data_type": "uint8",
+                    "start_pos": 15,
                     "length": 1
                 },
                 {
                     "key": "loadBranch1Current",
                     "name": "直流分路1电流",
-                    "dataType": "float",
-                    "startPos": 16,
+                    "data_type": "float",
+                    "start_pos": 16,
                     "length": 4
                 },
                 {
                     "key": "loadBranch2Current",
                     "name": "直流分路2电流",
-                    "dataType": "float",
-                    "startPos": 20,
+                    "data_type": "float",
+                    "start_pos": 20,
                     "length": 4
                 },
                 {
                     "key": "loadBranch3Current",
                     "name": "直流分路3电流",
-                    "dataType": "float",
-                    "startPos": 24,
+                    "data_type": "float",
+                    "start_pos": 24,
                     "length": 4
                 },
                 {
                     "key": "loadBranch4Current",
                     "name": "直流分路4电流",
-                    "dataType": "float",
-                    "startPos": 28,
+                    "data_type": "float",
+                    "start_pos": 28,
                     "length": 4
                 },
                 {
                     "key": "userDefinedParamsCount",
                     "name": "用户自定义参数数量",
-                    "dataType": "uint8",
-                    "startPos": 32,
+                    "data_type": "uint8",
+                    "start_pos": 32,
                     "length": 1
                 },
                 {
                     "key": "batteryTotalCurrent",
                     "name": "电池总电流",
-                    "dataType": "float",
-                    "startPos": 33,
+                    "data_type": "float",
+                    "start_pos": 33,
                     "length": 4
                 },
                 {
                     "key": "batteryGroup1Capacity",
                     "name": "电池组1容量",
-                    "dataType": "float",
-                    "startPos": 51,
+                    "data_type": "float",
+                    "start_pos": 51,
                     "length": 4
                 },
                 {
                     "key": "batteryGroup1Voltage",
                     "name": "电池组1电压",
-                    "dataType": "float",
-                    "startPos": 55,
+                    "data_type": "float",
+                    "start_pos": 55,
                     "length": 4
                 },
                 {
                     "key": "batteryGroup2Voltage",
                     "name": "电池组2电压",
-                    "dataType": "float",
-                    "startPos": 59,
+                    "data_type": "float",
+                    "start_pos": 59,
                     "length": 4
                 },
                 {
                     "key": "batteryGroup3Voltage",
                     "name": "电池组3电压",
-                    "dataType": "float",
-                    "startPos": 63,
+                    "data_type": "float",
+                    "start_pos": 63,
                     "length": 4
                 },
                 {
                     "key": "batteryGroup4Voltage",
                     "name": "电池组4电压",
-                    "dataType": "float",
-                    "startPos": 67,
+                    "data_type": "float",
+                    "start_pos": 67,
                     "length": 4
                 },
                 {
                     "key": "batteryGroup5Voltage",
                     "name": "电池组5电压",
-                    "dataType": "float",
-                    "startPos": 71,
+                    "data_type": "float",
+                    "start_pos": 71,
                     "length": 4
                 },
                 {
                     "key": "batteryGroup6Voltage",
                     "name": "电池组6电压",
-                    "dataType": "float",
-                    "startPos": 75,
+                    "data_type": "float",
+                    "start_pos": 75,
                     "length": 4
                 },
                 {
                     "key": "batteryGroup1MidVoltage",
                     "name": "电池组1中点电压",
-                    "dataType": "float",
-                    "startPos": 79,
+                    "data_type": "float",
+                    "start_pos": 79,
                     "length": 4
                 },
                 {
                     "key": "batteryGroup2MidVoltage",
                     "name": "电池组2中点电压",
-                    "dataType": "float",
-                    "startPos": 83,
+                    "data_type": "float",
+                    "start_pos": 83,
                     "length": 4
                 },
                 {
                     "key": "batteryGroup3MidVoltage",
                     "name": "电池组3中点电压",
-                    "dataType": "float",
-                    "startPos": 87,
+                    "data_type": "float",
+                    "start_pos": 87,
                     "length": 4
                 },
                 {
                     "key": "batteryGroup4MidVoltage",
                     "name": "电池组4中点电压",
-                    "dataType": "float",
-                    "startPos": 91,
+                    "data_type": "float",
+                    "start_pos": 91,
                     "length": 4
                 },
                 {
                     "key": "batteryGroup1ChargeOverCurrent",
                     "name": "电池组1充电过流",
-                    "dataType": "float",
-                    "startPos": 95,
+                    "data_type": "float",
+                    "start_pos": 95,
                     "length": 4
                 },
                 {
                     "key": "batteryGroup2ChargeOverCurrent",
                     "name": "电池组2充电过流",
-                    "dataType": "float",
-                    "startPos": 99,
+                    "data_type": "float",
+                    "start_pos": 99,
                     "length": 4
                 },
                 {
                     "key": "batteryGroup3ChargeOverCurrent",
                     "name": "电池组3充电过流",
-                    "dataType": "float",
-                    "startPos": 103,
+                    "data_type": "float",
+                    "start_pos": 103,
                     "length": 4
                 },
                 {
                     "key": "batteryGroup4ChargeOverCurrent",
                     "name": "电池组4充电过流",
-                    "dataType": "float",
-                    "startPos": 107,
+                    "data_type": "float",
+                    "start_pos": 107,
                     "length": 4
                 },
                 {
                     "key": "batteryGroup5ChargeOverCurrent",
                     "name": "电池组5充电过流",
-                    "dataType": "float",
-                    "startPos": 111,
+                    "data_type": "float",
+                    "start_pos": 111,
                     "length": 4
                 },
                 {
                     "key": "batteryGroup6ChargeOverCurrent",
                     "name": "电池组6充电过流",
-                    "dataType": "float",
-                    "startPos": 115,
+                    "data_type": "float",
+                    "start_pos": 115,
                     "length": 4
                 },
                 {
                     "key": "envTemp1",
                     "name": "环境温度1",
-                    "dataType": "float",
-                    "startPos": 139,
+                    "data_type": "float",
+                    "start_pos": 139,
                     "length": 4
                 },
                 {
                     "key": "envTemp2",
                     "name": "环境温度2",
-                    "dataType": "float",
-                    "startPos": 143,
+                    "data_type": "float",
+                    "start_pos": 143,
                     "length": 4
                 },
                 {
                     "key": "envTemp3",
                     "name": "环境温度3",
-                    "dataType": "float",
-                    "startPos": 147,
+                    "data_type": "float",
+                    "start_pos": 147,
                     "length": 4
                 },
                 {
                     "key": "envHumidity1",
                     "name": "环境湿度1",
-                    "dataType": "float",
-                    "startPos": 151,
+                    "data_type": "float",
+                    "start_pos": 151,
                     "length": 4
                 },
                 {
                     "key": "envHumidity2",
                     "name": "环境湿度2",
-                    "dataType": "float",
-                    "startPos": 155,
+                    "data_type": "float",
+                    "start_pos": 155,
                     "length": 4
                 },
                 {
                     "key": "envHumidity3",
                     "name": "环境湿度3",
-                    "dataType": "float",
-                    "startPos": 159,
+                    "data_type": "float",
+                    "start_pos": 159,
                     "length": 4
                 },
                 {
                     "key": "totalLoadPower",
                     "name": "总负载功率",
-                    "dataType": "float",
-                    "startPos": 163,
+                    "data_type": "float",
+                    "start_pos": 163,
                     "length": 4
                 },
                 {
                     "key": "loadPower1",
                     "name": "负载1功率",
-                    "dataType": "float",
-                    "startPos": 167,
+                    "data_type": "float",
+                    "start_pos": 167,
                     "length": 4
                 },
                 {
                     "key": "loadPower2",
                     "name": "负载2功率",
-                    "dataType": "float",
-                    "startPos": 171,
+                    "data_type": "float",
+                    "start_pos": 171,
                     "length": 4
                 },
                 {
                     "key": "loadPower3",
                     "name": "负载3功率",
-                    "dataType": "float",
-                    "startPos": 175,
+                    "data_type": "float",
+                    "start_pos": 175,
                     "length": 4
                 },
                 {
                     "key": "loadPower4",
                     "name": "负载4功率",
-                    "dataType": "float",
-                    "startPos": 179,
+                    "data_type": "float",
+                    "start_pos": 179,
                     "length": 4
                 },
                 {
                     "key": "totalLoadEnergy",
                     "name": "总负载电量",
-                    "dataType": "float",
-                    "startPos": 183,
+                    "data_type": "float",
+                    "start_pos": 183,
                     "length": 4
                 },
                 {
                     "key": "loadEnergy1",
                     "name": "负载1电量",
-                    "dataType": "float",
-                    "startPos": 187,
+                    "data_type": "float",
+                    "start_pos": 187,
                     "length": 4
                 },
                 {
                     "key": "loadEnergy2",
                     "name": "负载2电量",
-                    "dataType": "float",
-                    "startPos": 191,
+                    "data_type": "float",
+                    "start_pos": 191,
                     "length": 4
                 },
                 {
                     "key": "loadEnergy3",
                     "name": "负载3电量",
-                    "dataType": "float",
-                    "startPos": 195,
+                    "data_type": "float",
+                    "start_pos": 195,
                     "length": 4
                 },
                 {
                     "key": "loadEnergy4",
                     "name": "负载4电量",
-                    "dataType": "float",
-                    "startPos": 199,
+                    "data_type": "float",
+                    "start_pos": 199,
                     "length": 4
                 }
             ]
@@ -641,22 +639,22 @@
                 {
                     "key": "dataFlag",
                     "name": "数据标志",
-                    "dataType": "uint8",
-                    "startPos": 0,
+                    "data_type": "uint8",
+                    "start_pos": 0,
                     "length": 1
                 },
                 {
                     "key": "numberOfInputs",
                     "name": "交流输入路数",
-                    "dataType": "uint8",
-                    "startPos": 1,
+                    "data_type": "uint8",
+                    "start_pos": 1,
                     "length": 1
                 },
                 {
                     "key": "voltageAStatus",
                     "name": "A相电压状态",
-                    "dataType": "enum",
-                    "startPos": 2,
+                    "data_type": "enum",
+                    "start_pos": 2,
                     "length": 1,
                     "enum": {
                         "0": "正常",
@@ -667,8 +665,8 @@
                 {
                     "key": "voltageBStatus",
                     "name": "B相电压状态",
-                    "dataType": "enum",
-                    "startPos": 3,
+                    "data_type": "enum",
+                    "start_pos": 3,
                     "length": 1,
                     "enum": {
                         "0": "正常",
@@ -679,8 +677,8 @@
                 {
                     "key": "voltageCStatus",
                     "name": "C相电压状态",
-                    "dataType": "enum",
-                    "startPos": 4,
+                    "data_type": "enum",
+                    "start_pos": 4,
                     "length": 1,
                     "enum": {
                         "0": "正常",
@@ -691,8 +689,8 @@
                 {
                     "key": "frequencyStatus",
                     "name": "频率状态",
-                    "dataType": "enum",
-                    "startPos": 5,
+                    "data_type": "enum",
+                    "start_pos": 5,
                     "length": 1,
                     "enum": {
                         "0": "正常",
@@ -703,22 +701,22 @@
                 {
                     "key": "fuseCount",
                     "name": "熔丝数量",
-                    "dataType": "uint8",
-                    "startPos": 6,
+                    "data_type": "uint8",
+                    "start_pos": 6,
                     "length": 1
                 },
                 {
                     "key": "userDefinedParamsCount",
                     "name": "用户自定义数量",
-                    "dataType": "uint8",
-                    "startPos": 7,
+                    "data_type": "uint8",
+                    "start_pos": 7,
                     "length": 1
                 },
                 {
                     "key": "acArresterStatus",
                     "name": "交流防雷器状态",
-                    "dataType": "enum",
-                    "startPos": 8,
+                    "data_type": "enum",
+                    "start_pos": 8,
                     "length": 1,
                     "enum": {
                         "0": "正常",
@@ -728,8 +726,8 @@
                 {
                     "key": "acCommFailureStatus",
                     "name": "交流屏通讯中断状态",
-                    "dataType": "enum",
-                    "startPos": 9,
+                    "data_type": "enum",
+                    "start_pos": 9,
                     "length": 1,
                     "enum": {
                         "0": "正常",
@@ -739,8 +737,8 @@
                 {
                     "key": "acInputSwitchStatus",
                     "name": "交流输入空开状态",
-                    "dataType": "enum",
-                    "startPos": 10,
+                    "data_type": "enum",
+                    "start_pos": 10,
                     "length": 1,
                     "enum": {
                         "0": "正常",
@@ -750,8 +748,8 @@
                 {
                     "key": "acOutputSwitchStatus",
                     "name": "交流输出空开状态",
-                    "dataType": "enum",
-                    "startPos": 11,
+                    "data_type": "enum",
+                    "start_pos": 11,
                     "length": 1,
                     "enum": {
                         "0": "正常",
@@ -761,8 +759,8 @@
                 {
                     "key": "acPowerStatus",
                     "name": "交流第一路输入状态",
-                    "dataType": "enum",
-                    "startPos": 12,
+                    "data_type": "enum",
+                    "start_pos": 12,
                     "length": 1,
                     "enum": {
                         "0": "正常",
@@ -776,28 +774,27 @@
             "cid2": "0x44",
             "key": "getRectAlarmStatus",
             "name": "获取整流模块告警状态",
-            "params": [
-                {
-                    "key": "moduleCount",
-                    "name": "模块数量",
-                    "dataType": "uint8",
-                    "startPos": 1,
-                    "length": 1
-                }
-            ],
+            "params": [],
             "values": [
                 {
                     "key": "dataFlag",
                     "name": "数据标志",
-                    "dataType": "uint8",
-                    "startPos": 0,
+                    "data_type": "uint8",
+                    "start_pos": 0,
+                    "length": 1
+                },
+                {
+                    "key": "moduleCount",
+                    "name": "整流模块数量",
+                    "data_type": "uint8",
+                    "start_pos": 1,
                     "length": 1
                 },
                 {
                     "key": "moduleFailureStatus",
                     "name": "模块故障状态",
-                    "dataType": "enum",
-                    "startPos": 2,
+                    "data_type": "enum",
+                    "start_pos": 2,
                     "length": 1,
                     "quantity": "${moduleCount}",
                     "enum": {
@@ -808,8 +805,8 @@
                 {
                     "key": "moduleCommFailureStatus",
                     "name": "模块通讯故障状态",
-                    "dataType": "enum",
-                    "startPos": 3,
+                    "data_type": "enum",
+                    "start_pos": 3,
                     "length": 1,
                     "quantity": "${moduleCount}",
                     "enum": {
@@ -820,8 +817,8 @@
                 {
                     "key": "moduleProtectionStatus",
                     "name": "模块保护状态",
-                    "dataType": "enum",
-                    "startPos": 4,
+                    "data_type": "enum",
+                    "start_pos": 4,
                     "length": 1,
                     "quantity": "${moduleCount}",
                     "enum": {
@@ -832,8 +829,8 @@
                 {
                     "key": "moduleUnbalanceStatus",
                     "name": "模块不均流状态",
-                    "dataType": "enum",
-                    "startPos": 5,
+                    "data_type": "enum",
+                    "start_pos": 5,
                     "length": 1,
                     "quantity": "${moduleCount}",
                     "enum": {
@@ -844,8 +841,8 @@
                 {
                     "key": "moduleOverVoltageStatus",
                     "name": "模块交流过压状态",
-                    "dataType": "enum",
-                    "startPos": 6,
+                    "data_type": "enum",
+                    "start_pos": 6,
                     "length": 1,
                     "quantity": "${moduleCount}",
                     "enum": {
@@ -856,8 +853,8 @@
                 {
                     "key": "moduleUnderVoltageStatus",
                     "name": "模块交流欠压状态",
-                    "dataType": "enum",
-                    "startPos": 7,
+                    "data_type": "enum",
+                    "start_pos": 7,
                     "length": 1,
                     "quantity": "${moduleCount}",
                     "enum": {
@@ -868,8 +865,8 @@
                 {
                     "key": "moduleVoltUnbalanceStatus",
                     "name": "模块交流不平衡状态",
-                    "dataType": "enum",
-                    "startPos": 8,
+                    "data_type": "enum",
+                    "start_pos": 8,
                     "length": 1,
                     "quantity": "${moduleCount}",
                     "enum": {
@@ -880,8 +877,8 @@
                 {
                     "key": "modulePhaseLossStatus",
                     "name": "模块交流缺相状态",
-                    "dataType": "enum",
-                    "startPos": 9,
+                    "data_type": "enum",
+                    "start_pos": 9,
                     "length": 1,
                     "quantity": "${moduleCount}",
                     "enum": {
@@ -892,8 +889,8 @@
                 {
                     "key": "moduleEnvTempAbnormalStatus",
                     "name": "模块环境温度异常状态",
-                    "dataType": "enum",
-                    "startPos": 10,
+                    "data_type": "enum",
+                    "start_pos": 10,
                     "length": 1,
                     "quantity": "${moduleCount}",
                     "enum": {
@@ -904,8 +901,8 @@
                 {
                     "key": "moduleFanStatus",
                     "name": "模块风扇状态",
-                    "dataType": "enum",
-                    "startPos": 11,
+                    "data_type": "enum",
+                    "start_pos": 11,
                     "length": 1,
                     "quantity": "${moduleCount}",
                     "enum": {
@@ -916,8 +913,8 @@
                 {
                     "key": "userDefinedParamsCount",
                     "name": "用户自定义数量",
-                    "dataType": "uint8",
-                    "startPos": 12,
+                    "data_type": "uint8",
+                    "start_pos": 12,
                     "length": 1,
                     "quantity": "${moduleCount}"
                 }
@@ -933,15 +930,15 @@
                 {
                     "key": "dataFlag",
                     "name": "数据标志",
-                    "dataType": "uint8",
-                    "startPos": 0,
+                    "data_type": "uint8",
+                    "start_pos": 0,
                     "length": 1
                 },
                 {
                     "key": "dcVoltageStatus",
                     "name": "直流电压状态",
-                    "dataType": "enum",
-                    "startPos": 1,
+                    "data_type": "enum",
+                    "start_pos": 1,
                     "length": 1,
                     "enum": {
                         "0": "正常",
@@ -952,22 +949,22 @@
                 {
                     "key": "batteryFuseCount",
                     "name": "监测直流熔丝(或开关)数量",
-                    "dataType": "uint8",
-                    "startPos": 2,
+                    "data_type": "uint8",
+                    "start_pos": 2,
                     "length": 1
                 },
                 {
                     "key": "userDefinedParamsCount",
                     "name": "用户自定义数量",
-                    "dataType": "uint8",
-                    "startPos": 3,
+                    "data_type": "uint8",
+                    "start_pos": 3,
                     "length": 1
                 },
                 {
                     "key": "dcArresterStatus",
                     "name": "直流防雷器状态",
-                    "dataType": "enum",
-                    "startPos": 4,
+                    "data_type": "enum",
+                    "start_pos": 4,
                     "length": 1,
                     "enum": {
                         "0": "正常",
@@ -977,8 +974,8 @@
                 {
                     "key": "loadFuseStatus",
                     "name": "负载熔丝状态",
-                    "dataType": "enum",
-                    "startPos": 5,
+                    "data_type": "enum",
+                    "start_pos": 5,
                     "length": 1,
                     "enum": {
                         "0": "正常",
@@ -988,8 +985,8 @@
                 {
                     "key": "batteryGroup1FuseStatus",
                     "name": "电池组1熔丝状态",
-                    "dataType": "enum",
-                    "startPos": 6,
+                    "data_type": "enum",
+                    "start_pos": 6,
                     "length": 1,
                     "enum": {
                         "0": "正常",
@@ -999,8 +996,8 @@
                 {
                     "key": "batteryGroup2FuseStatus",
                     "name": "电池组2熔丝状态",
-                    "dataType": "enum",
-                    "startPos": 7,
+                    "data_type": "enum",
+                    "start_pos": 7,
                     "length": 1,
                     "enum": {
                         "0": "正常",
@@ -1010,8 +1007,8 @@
                 {
                     "key": "batteryGroup3FuseStatus",
                     "name": "电池组3熔丝状态",
-                    "dataType": "enum",
-                    "startPos": 8,
+                    "data_type": "enum",
+                    "start_pos": 8,
                     "length": 1,
                     "enum": {
                         "0": "正常",
@@ -1021,8 +1018,8 @@
                 {
                     "key": "batteryGroup4FuseStatus",
                     "name": "电池组4熔丝状态",
-                    "dataType": "enum",
-                    "startPos": 9,
+                    "data_type": "enum",
+                    "start_pos": 9,
                     "length": 1,
                     "enum": {
                         "0": "正常",
@@ -1032,8 +1029,8 @@
                 {
                     "key": "batteryChargeOverCurrentStatus",
                     "name": "电池组充电过流状态",
-                    "dataType": "enum",
-                    "startPos": 10,
+                    "data_type": "enum",
+                    "start_pos": 10,
                     "length": 1,
                     "enum": {
                         "0": "正常",
@@ -1043,8 +1040,8 @@
                 {
                     "key": "batteryUnbalanceStatus",
                     "name": "电池组不平衡状态",
-                    "dataType": "enum",
-                    "startPos": 11,
+                    "data_type": "enum",
+                    "start_pos": 11,
                     "length": 1,
                     "enum": {
                         "0": "正常",
@@ -1054,8 +1051,8 @@
                 {
                     "key": "blvdImpendingStatus",
                     "name": "BLVD即将下电状态",
-                    "dataType": "enum",
-                    "startPos": 12,
+                    "data_type": "enum",
+                    "start_pos": 12,
                     "length": 1,
                     "enum": {
                         "0": "正常",
@@ -1065,8 +1062,8 @@
                 {
                     "key": "blvdStatus",
                     "name": "BLVD下电状态",
-                    "dataType": "enum",
-                    "startPos": 13,
+                    "data_type": "enum",
+                    "start_pos": 13,
                     "length": 1,
                     "enum": {
                         "0": "正常",
@@ -1076,8 +1073,8 @@
                 {
                     "key": "llvd1ImpendingStatus",
                     "name": "负载即将下电LLVD1状态",
-                    "dataType": "enum",
-                    "startPos": 14,
+                    "data_type": "enum",
+                    "start_pos": 14,
                     "length": 1,
                     "enum": {
                         "0": "正常",
@@ -1087,8 +1084,8 @@
                 {
                     "key": "llvd1Status",
                     "name": "负载下电LLVD1状态",
-                    "dataType": "enum",
-                    "startPos": 15,
+                    "data_type": "enum",
+                    "start_pos": 15,
                     "length": 1,
                     "enum": {
                         "0": "正常",
@@ -1098,8 +1095,8 @@
                 {
                     "key": "llvd2ImpendingStatus",
                     "name": "负载即将下电LLVD2状态",
-                    "dataType": "enum",
-                    "startPos": 16,
+                    "data_type": "enum",
+                    "start_pos": 16,
                     "length": 1,
                     "enum": {
                         "0": "正常",
@@ -1109,8 +1106,8 @@
                 {
                     "key": "llvd2Status",
                     "name": "负载下电LLVD2状态",
-                    "dataType": "enum",
-                    "startPos": 17,
+                    "data_type": "enum",
+                    "start_pos": 17,
                     "length": 1,
                     "enum": {
                         "0": "正常",
@@ -1120,8 +1117,8 @@
                 {
                     "key": "llvd3ImpendingStatus",
                     "name": "负载即将下电LLVD3状态",
-                    "dataType": "enum",
-                    "startPos": 18,
+                    "data_type": "enum",
+                    "start_pos": 18,
                     "length": 1,
                     "enum": {
                         "0": "正常",
@@ -1131,8 +1128,8 @@
                 {
                     "key": "llvd3Status",
                     "name": "负载下电LLVD3状态",
-                    "dataType": "enum",
-                    "startPos": 19,
+                    "data_type": "enum",
+                    "start_pos": 19,
                     "length": 1,
                     "enum": {
                         "0": "正常",
@@ -1142,8 +1139,8 @@
                 {
                     "key": "llvd4ImpendingStatus",
                     "name": "负载即将下电LLVD4状态",
-                    "dataType": "enum",
-                    "startPos": 20,
+                    "data_type": "enum",
+                    "start_pos": 20,
                     "length": 1,
                     "enum": {
                         "0": "正常",
@@ -1153,8 +1150,8 @@
                 {
                     "key": "llvd4Status",
                     "name": "负载下电LLVD4状态",
-                    "dataType": "enum",
-                    "startPos": 21,
+                    "data_type": "enum",
+                    "start_pos": 21,
                     "length": 1,
                     "enum": {
                         "0": "正常",
@@ -1164,8 +1161,8 @@
                 {
                     "key": "batteryTempStatus",
                     "name": "电池温度状态",
-                    "dataType": "enum",
-                    "startPos": 22,
+                    "data_type": "enum",
+                    "start_pos": 22,
                     "length": 1,
                     "enum": {
                         "0": "正常",
@@ -1176,8 +1173,8 @@
                 {
                     "key": "batteryTempSensor1Status",
                     "name": "电池温度传感器1状态",
-                    "dataType": "enum",
-                    "startPos": 23,
+                    "data_type": "enum",
+                    "start_pos": 23,
                     "length": 1,
                     "enum": {
                         "0": "正常",
@@ -1188,8 +1185,8 @@
                 {
                     "key": "batteryTempSensor2Status",
                     "name": "电池温度传感器2状态",
-                    "dataType": "enum",
-                    "startPos": 24,
+                    "data_type": "enum",
+                    "start_pos": 24,
                     "length": 1,
                     "enum": {
                         "0": "正常",
@@ -1200,8 +1197,8 @@
                 {
                     "key": "envTempStatus",
                     "name": "环境温度状态",
-                    "dataType": "enum",
-                    "startPos": 25,
+                    "data_type": "enum",
+                    "start_pos": 25,
                     "length": 1,
                     "enum": {
                         "0": "正常",
@@ -1212,8 +1209,8 @@
                 {
                     "key": "envTempSensor1Status",
                     "name": "环境温度传感器1状态",
-                    "dataType": "enum",
-                    "startPos": 26,
+                    "data_type": "enum",
+                    "start_pos": 26,
                     "length": 1,
                     "enum": {
                         "0": "正常",
@@ -1224,8 +1221,8 @@
                 {
                     "key": "envTempSensor2Status",
                     "name": "环境温度传感器2状态",
-                    "dataType": "enum",
-                    "startPos": 27,
+                    "data_type": "enum",
+                    "start_pos": 27,
                     "length": 1,
                     "enum": {
                         "0": "正常",
@@ -1236,8 +1233,8 @@
                 {
                     "key": "envHumidityStatus",
                     "name": "环境湿度状态",
-                    "dataType": "enum",
-                    "startPos": 28,
+                    "data_type": "enum",
+                    "start_pos": 28,
                     "length": 1,
                     "enum": {
                         "0": "正常",
@@ -1247,8 +1244,8 @@
                 {
                     "key": "envHumiditySensor1Status",
                     "name": "环境湿度传感器1状态",
-                    "dataType": "enum",
-                    "startPos": 29,
+                    "data_type": "enum",
+                    "start_pos": 29,
                     "length": 1,
                     "enum": {
                         "0": "正常",
@@ -1259,8 +1256,8 @@
                 {
                     "key": "doorStatus",
                     "name": "门磁状态",
-                    "dataType": "enum",
-                    "startPos": 40,
+                    "data_type": "enum",
+                    "start_pos": 40,
                     "length": 1,
                     "enum": {
                         "0": "正常",
@@ -1270,8 +1267,8 @@
                 {
                     "key": "waterStatus",
                     "name": "水浸状态",
-                    "dataType": "enum",
-                    "startPos": 41,
+                    "data_type": "enum",
+                    "start_pos": 41,
                     "length": 1,
                     "enum": {
                         "0": "正常",
@@ -1281,8 +1278,8 @@
                 {
                     "key": "smokeStatus",
                     "name": "烟雾状态",
-                    "dataType": "enum",
-                    "startPos": 42,
+                    "data_type": "enum",
+                    "start_pos": 42,
                     "length": 1,
                     "enum": {
                         "0": "正常",
@@ -1292,8 +1289,8 @@
                 {
                     "key": "digitalInputStatus1",
                     "name": "数字输入1状态",
-                    "dataType": "enum",
-                    "startPos": 43,
+                    "data_type": "enum",
+                    "start_pos": 43,
                     "length": 1,
                     "enum": {
                         "0": "正常",
@@ -1303,8 +1300,8 @@
                 {
                     "key": "digitalInputStatus2",
                     "name": "数字输入2状态",
-                    "dataType": "enum",
-                    "startPos": 44,
+                    "data_type": "enum",
+                    "start_pos": 44,
                     "length": 1,
                     "enum": {
                         "0": "正常",
@@ -1314,8 +1311,8 @@
                 {
                     "key": "digitalInputStatus3",
                     "name": "数字输入3状态",
-                    "dataType": "enum",
-                    "startPos": 45,
+                    "data_type": "enum",
+                    "start_pos": 45,
                     "length": 1,
                     "enum": {
                         "0": "正常",
@@ -1325,8 +1322,8 @@
                 {
                     "key": "digitalInputStatus4",
                     "name": "数字输入4状态",
-                    "dataType": "enum",
-                    "startPos": 46,
+                    "data_type": "enum",
+                    "start_pos": 46,
                     "length": 1,
                     "enum": {
                         "0": "正常",
@@ -1336,8 +1333,8 @@
                 {
                     "key": "digitalInputStatus5",
                     "name": "数字输入5状态",
-                    "dataType": "enum",
-                    "startPos": 47,
+                    "data_type": "enum",
+                    "start_pos": 47,
                     "length": 1,
                     "enum": {
                         "0": "正常",
@@ -1347,8 +1344,8 @@
                 {
                     "key": "digitalInputStatus6",
                     "name": "数字输入6状态",
-                    "dataType": "enum",
-                    "startPos": 48,
+                    "data_type": "enum",
+                    "start_pos": 48,
                     "length": 1,
                     "enum": {
                         "0": "正常",
@@ -1358,8 +1355,8 @@
                 {
                     "key": "llvdStatus",
                     "name": "LLVD状态",
-                    "dataType": "enum",
-                    "startPos": 252,
+                    "data_type": "enum",
+                    "start_pos": 252,
                     "length": 1,
                     "enum": {
                         "0": "正常",
@@ -1370,8 +1367,8 @@
                 {
                     "key": "blvdStatus",
                     "name": "BLVD状态",
-                    "dataType": "enum",
-                    "startPos": 251,
+                    "data_type": "enum",
+                    "start_pos": 251,
                     "length": 1,
                     "enum": {
                         "0": "正常",
@@ -1393,22 +1390,22 @@
                 {
                     "key": "acOverVoltage",
                     "name": "交流过压值",
-                    "dataType": "float",
-                    "startPos": 0,
+                    "data_type": "float",
+                    "start_pos": 0,
                     "length": 4
                 },
                 {
                     "key": "acUnderVoltage",
                     "name": "交流欠压值",
-                    "dataType": "float",
-                    "startPos": 4,
+                    "data_type": "float",
+                    "start_pos": 4,
                     "length": 4
                 },
                 {
                     "key": "userDefinedParamsCount",
                     "name": "用户自定义参数数量",
-                    "dataType": "uint8",
-                    "startPos": 8,
+                    "data_type": "uint8",
+                    "start_pos": 8,
                     "length": 1
                 }
             ]
@@ -1422,18 +1419,18 @@
                 {
                     "key": "acOverVoltage",
                     "name": "交流过压值",
-                    "dataType": "float",
-                    "startPos": 0,
+                    "data_type": "float",
+                    "start_pos": 0,
                     "length": 4,
-                    "paramType": "0x80"
+                    "param_type": "0x80"
                 },
                 {
                     "key": "acUnderVoltage",
                     "name": "交流欠压值",
-                    "dataType": "float",
-                    "startPos": 4,
+                    "data_type": "float",
+                    "start_pos": 4,
                     "length": 4,
-                    "paramType": "0x81"
+                    "param_type": "0x81"
                 }
             ],
             "values": []
@@ -1448,43 +1445,43 @@
                 {
                     "key": "year",
                     "name": "年",
-                    "dataType": "uint16",
-                    "startPos": 0,
+                    "data_type": "uint16",
+                    "start_pos": 0,
                     "length": 2
                 },
                 {
                     "key": "month",
                     "name": "月",
-                    "dataType": "uint8",
-                    "startPos": 2,
+                    "data_type": "uint8",
+                    "start_pos": 2,
                     "length": 1
                 },
                 {
                     "key": "day",
                     "name": "日",
-                    "dataType": "uint8",
-                    "startPos": 3,
+                    "data_type": "uint8",
+                    "start_pos": 3,
                     "length": 1
                 },
                 {
                     "key": "hour",
                     "name": "时",
-                    "dataType": "uint8",
-                    "startPos": 4,
+                    "data_type": "uint8",
+                    "start_pos": 4,
                     "length": 1
                 },
                 {
                     "key": "minute",
                     "name": "分",
-                    "dataType": "uint8",
-                    "startPos": 5,
+                    "data_type": "uint8",
+                    "start_pos": 5,
                     "length": 1
                 },
                 {
                     "key": "second",
                     "name": "秒",
-                    "dataType": "uint8",
-                    "startPos": 6,
+                    "data_type": "uint8",
+                    "start_pos": 6,
                     "length": 1
                 }
             ]
@@ -1498,43 +1495,43 @@
                 {
                     "key": "year",
                     "name": "年",
-                    "dataType": "uint16",
-                    "startPos": 0,
+                    "data_type": "uint16",
+                    "start_pos": 0,
                     "length": 2
                 },
                 {
                     "key": "month",
                     "name": "月",
-                    "dataType": "uint8",
-                    "startPos": 2,
+                    "data_type": "uint8",
+                    "start_pos": 2,
                     "length": 1
                 },
                 {
                     "key": "day",
                     "name": "日",
-                    "dataType": "uint8",
-                    "startPos": 3,
+                    "data_type": "uint8",
+                    "start_pos": 3,
                     "length": 1
                 },
                 {
                     "key": "hour",
                     "name": "时",
-                    "dataType": "uint8",
-                    "startPos": 4,
+                    "data_type": "uint8",
+                    "start_pos": 4,
                     "length": 1
                 },
                 {
                     "key": "minute",
                     "name": "分",
-                    "dataType": "uint8",
-                    "startPos": 5,
+                    "data_type": "uint8",
+                    "start_pos": 5,
                     "length": 1
                 },
                 {
                     "key": "second",
                     "name": "秒",
-                    "dataType": "uint8",
-                    "startPos": 6,
+                    "data_type": "uint8",
+                    "start_pos": 6,
                     "length": 1
                 }
             ],
@@ -1549,15 +1546,15 @@
                 {
                     "key": "moduleId",
                     "name": "模块ID",
-                    "dataType": "uint8",
-                    "startPos": 0,
+                    "data_type": "uint8",
+                    "start_pos": 0,
                     "length": 1
                 },
                 {
                     "key": "controlType",
                     "name": "控制类型",
-                    "dataType": "enum",
-                    "startPos": 1,
+                    "data_type": "enum",
+                    "start_pos": 1,
                     "length": 1,
                     "enum": {
                         "0x20": "开机",
@@ -1567,8 +1564,8 @@
                 {
                     "key": "controlValue",
                     "name": "控制值",
-                    "dataType": "uint8",
-                    "startPos": 2,
+                    "data_type": "uint8",
+                    "start_pos": 2,
                     "length": 1
                 }
             ],
@@ -1584,239 +1581,239 @@
                 {
                     "key": "dcOverVoltage",
                     "name": "直流过压值",
-                    "dataType": "float",
-                    "startPos": 0,
+                    "data_type": "float",
+                    "start_pos": 0,
                     "length": 4
                 },
                 {
                     "key": "dcUnderVoltage",
                     "name": "直流欠压值",
-                    "dataType": "float",
-                    "startPos": 4,
+                    "data_type": "float",
+                    "start_pos": 4,
                     "length": 4
                 },
                 {
                     "key": "timeEqualizeDuration",
                     "name": "定时均充时间",
-                    "dataType": "uint8",
-                    "startPos": 8,
+                    "data_type": "uint8",
+                    "start_pos": 8,
                     "length": 1
                 },
                 {
                     "key": "timeEqualizeInterval",
                     "name": "定时均充间隔",
-                    "dataType": "uint16",
-                    "startPos": 9,
+                    "data_type": "uint16",
+                    "start_pos": 9,
                     "length": 2
                 },
                 {
                     "key": "batteryGroupNumber",
                     "name": "电池组数",
-                    "dataType": "uint8",
-                    "startPos": 11,
+                    "data_type": "uint8",
+                    "start_pos": 11,
                     "length": 1
                 },
                 {
                     "key": "batteryOverTemp",
                     "name": "电池过温告警点",
-                    "dataType": "float",
-                    "startPos": 12,
+                    "data_type": "float",
+                    "start_pos": 12,
                     "length": 4
                 },
                 {
                     "key": "batteryUnderTemp",
                     "name": "电池欠温告警点",
-                    "dataType": "float",
-                    "startPos": 16,
+                    "data_type": "float",
+                    "start_pos": 16,
                     "length": 4
                 },
                 {
                     "key": "envOverTemp",
                     "name": "环境过温告警点",
-                    "dataType": "float",
-                    "startPos": 20,
+                    "data_type": "float",
+                    "start_pos": 20,
                     "length": 4
                 },
                 {
                     "key": "envUnderTemp",
                     "name": "环境欠温告警点",
-                    "dataType": "float",
-                    "startPos": 24,
+                    "data_type": "float",
+                    "start_pos": 24,
                     "length": 4
                 },
                 {
                     "key": "envOverHumidity",
                     "name": "环境过湿告警点",
-                    "dataType": "float",
-                    "startPos": 28,
+                    "data_type": "float",
+                    "start_pos": 28,
                     "length": 4
                 },
                 {
                     "key": "batteryChargeCurrentLimit",
                     "name": "电池充电限流点",
-                    "dataType": "float",
-                    "startPos": 32,
+                    "data_type": "float",
+                    "start_pos": 32,
                     "length": 4
                 },
                 {
                     "key": "floatVoltage",
                     "name": "浮充电压",
-                    "dataType": "float",
-                    "startPos": 36,
+                    "data_type": "float",
+                    "start_pos": 36,
                     "length": 4
                 },
                 {
                     "key": "equalizeVoltage",
                     "name": "均充电压",
-                    "dataType": "float",
-                    "startPos": 40,
+                    "data_type": "float",
+                    "start_pos": 40,
                     "length": 4
                 },
                 {
                     "key": "batteryOffVoltage",
                     "name": "电池下电电压",
-                    "dataType": "float",
-                    "startPos": 44,
+                    "data_type": "float",
+                    "start_pos": 44,
                     "length": 4
                 },
                 {
                     "key": "batteryOnVoltage",
                     "name": "电池上电电压",
-                    "dataType": "float",
-                    "startPos": 48,
+                    "data_type": "float",
+                    "start_pos": 48,
                     "length": 4
                 },
                 {
                     "key": "llvd1OffVoltage",
                     "name": "LLVD1下电电压",
-                    "dataType": "float",
-                    "startPos": 52,
+                    "data_type": "float",
+                    "start_pos": 52,
                     "length": 4
                 },
                 {
                     "key": "llvd1OnVoltage",
                     "name": "LLVD1上电电压",
-                    "dataType": "float",
-                    "startPos": 56,
+                    "data_type": "float",
+                    "start_pos": 56,
                     "length": 4
                 },
                 {
                     "key": "llvd2OffVoltage",
                     "name": "LLVD2下电电压",
-                    "dataType": "float",
-                    "startPos": 60,
+                    "data_type": "float",
+                    "start_pos": 60,
                     "length": 4
                 },
                 {
                     "key": "llvd2OnVoltage",
                     "name": "LLVD2上电电压",
-                    "dataType": "float",
-                    "startPos": 64,
+                    "data_type": "float",
+                    "start_pos": 64,
                     "length": 4
                 },
                 {
                     "key": "llvd3OffVoltage",
                     "name": "LLVD3下电电压",
-                    "dataType": "float",
-                    "startPos": 68,
+                    "data_type": "float",
+                    "start_pos": 68,
                     "length": 4
                 },
                 {
                     "key": "llvd3OnVoltage",
                     "name": "LLVD3上电电压",
-                    "dataType": "float",
-                    "startPos": 72,
+                    "data_type": "float",
+                    "start_pos": 72,
                     "length": 4
                 },
                 {
                     "key": "llvd4OffVoltage",
                     "name": "LLVD4下电电压",
-                    "dataType": "float",
-                    "startPos": 76,
+                    "data_type": "float",
+                    "start_pos": 76,
                     "length": 4
                 },
                 {
                     "key": "llvd4OnVoltage",
                     "name": "LLVD4上电电压",
-                    "dataType": "float",
-                    "startPos": 80,
+                    "data_type": "float",
+                    "start_pos": 80,
                     "length": 4
                 },
                 {
                     "key": "batteryCapacity",
                     "name": "每组电池额定容量",
-                    "dataType": "float",
-                    "startPos": 84,
+                    "data_type": "float",
+                    "start_pos": 84,
                     "length": 4
                 },
                 {
                     "key": "batteryTestStopVoltage",
                     "name": "电池测试终止电压",
-                    "dataType": "float",
-                    "startPos": 88,
+                    "data_type": "float",
+                    "start_pos": 88,
                     "length": 4
                 },
                 {
                     "key": "batteryTempCoeff",
                     "name": "电池组温补系数",
-                    "dataType": "float",
-                    "startPos": 92,
+                    "data_type": "float",
+                    "start_pos": 92,
                     "length": 4
                 },
                 {
                     "key": "batteryTempCenter",
                     "name": "电池温补中心点",
-                    "dataType": "float",
-                    "startPos": 96,
+                    "data_type": "float",
+                    "start_pos": 96,
                     "length": 4
                 },
                 {
                     "key": "floatToEqualizeCoeff",
                     "name": "浮充转均充系数",
-                    "dataType": "float",
-                    "startPos": 100,
+                    "data_type": "float",
+                    "start_pos": 100,
                     "length": 4
                 },
                 {
                     "key": "equalizeToFloatCoeff",
                     "name": "均充转浮充系数",
-                    "dataType": "float",
-                    "startPos": 104,
+                    "data_type": "float",
+                    "start_pos": 104,
                     "length": 4
                 },
                 {
                     "key": "llvd1OffTime",
                     "name": "LLVD1下电时间",
-                    "dataType": "float",
-                    "startPos": 108,
+                    "data_type": "float",
+                    "start_pos": 108,
                     "length": 4
                 },
                 {
                     "key": "llvd2OffTime",
                     "name": "LLVD2下电时间",
-                    "dataType": "float",
-                    "startPos": 112,
+                    "data_type": "float",
+                    "start_pos": 112,
                     "length": 4
                 },
                 {
                     "key": "llvd3OffTime",
                     "name": "LLVD3下电时间",
-                    "dataType": "float",
-                    "startPos": 116,
+                    "data_type": "float",
+                    "start_pos": 116,
                     "length": 4
                 },
                 {
                     "key": "llvd4OffTime",
                     "name": "LLVD4下电时间",
-                    "dataType": "float",
-                    "startPos": 120,
+                    "data_type": "float",
+                    "start_pos": 120,
                     "length": 4
                 },
                 {
                     "key": "loadOffMode",
                     "name": "负载下电模式",
-                    "dataType": "enum",
-                    "startPos": 124,
+                    "data_type": "enum",
+                    "start_pos": 124,
                     "length": 1,
                     "enum": {
                         "0": "电压模式",
@@ -1834,26 +1831,26 @@
                 {
                     "key": "dcOverVoltage",
                     "name": "直流过压值",
-                    "dataType": "float",
-                    "startPos": 0,
+                    "data_type": "float",
+                    "start_pos": 0,
                     "length": 4,
-                    "paramType": "0x80"
+                    "param_type": "0x80"
                 },
                 {
                     "key": "dcUnderVoltage",
                     "name": "直流欠压值",
-                    "dataType": "float",
-                    "startPos": 4,
+                    "data_type": "float",
+                    "start_pos": 4,
                     "length": 4,
-                    "paramType": "0x81"
+                    "param_type": "0x81"
                 },
                 {
                     "key": "timeEqualizeChargeEnable",
                     "name": "定时均充使能",
-                    "dataType": "enum",
-                    "startPos": 8,
+                    "data_type": "enum",
+                    "start_pos": 8,
                     "length": 1,
-                    "paramType": "0xC0",
+                    "param_type": "0xC0",
                     "enum": {
                         "0": "禁止",
                         "1": "使能"
@@ -1862,258 +1859,258 @@
                 {
                     "key": "timeEqualizeDuration",
                     "name": "定时均充时间",
-                    "dataType": "uint8",
-                    "startPos": 9,
+                    "data_type": "uint8",
+                    "start_pos": 9,
                     "length": 1,
-                    "paramType": "0xC5"
+                    "param_type": "0xC5"
                 },
                 {
                     "key": "timeEqualizeInterval",
                     "name": "定时均充间隔",
-                    "dataType": "uint16",
-                    "startPos": 10,
+                    "data_type": "uint16",
+                    "start_pos": 10,
                     "length": 2,
-                    "paramType": "0xC6"
+                    "param_type": "0xC6"
                 },
                 {
                     "key": "batteryGroupNumber",
                     "name": "电池组数",
-                    "dataType": "uint8",
-                    "startPos": 12,
+                    "data_type": "uint8",
+                    "start_pos": 12,
                     "length": 1,
-                    "paramType": "0xC7"
+                    "param_type": "0xC7"
                 },
                 {
                     "key": "batteryOverTemp",
                     "name": "电池过温告警点",
-                    "dataType": "float",
-                    "startPos": 13,
+                    "data_type": "float",
+                    "start_pos": 13,
                     "length": 4,
-                    "paramType": "0xD4"
+                    "param_type": "0xD4"
                 },
                 {
                     "key": "batteryUnderTemp",
                     "name": "电池欠温告警点",
-                    "dataType": "float",
-                    "startPos": 17,
+                    "data_type": "float",
+                    "start_pos": 17,
                     "length": 4,
-                    "paramType": "0xD5"
+                    "param_type": "0xD5"
                 },
                 {
                     "key": "envOverTemp",
                     "name": "环境过温告警点",
-                    "dataType": "float",
-                    "startPos": 21,
+                    "data_type": "float",
+                    "start_pos": 21,
                     "length": 4,
-                    "paramType": "0xD6"
+                    "param_type": "0xD6"
                 },
                 {
                     "key": "envUnderTemp",
                     "name": "环境欠温告警点",
-                    "dataType": "float",
-                    "startPos": 25,
+                    "data_type": "float",
+                    "start_pos": 25,
                     "length": 4,
-                    "paramType": "0xD7"
+                    "param_type": "0xD7"
                 },
                 {
                     "key": "envOverHumidity",
                     "name": "环境过湿告警点",
-                    "dataType": "float",
-                    "startPos": 29,
+                    "data_type": "float",
+                    "start_pos": 29,
                     "length": 4,
-                    "paramType": "0xD8"
+                    "param_type": "0xD8"
                 },
                 {
                     "key": "batteryChargeCurrentLimit",
                     "name": "电池充电限流点",
-                    "dataType": "float",
-                    "startPos": 33,
+                    "data_type": "float",
+                    "start_pos": 33,
                     "length": 4,
-                    "paramType": "0xDA"
+                    "param_type": "0xDA"
                 },
                 {
                     "key": "floatVoltage",
                     "name": "浮充电压",
-                    "dataType": "float",
-                    "startPos": 37,
+                    "data_type": "float",
+                    "start_pos": 37,
                     "length": 4,
-                    "paramType": "0xDB"
+                    "param_type": "0xDB"
                 },
                 {
                     "key": "equalizeVoltage",
                     "name": "均充电压",
-                    "dataType": "float",
-                    "startPos": 41,
+                    "data_type": "float",
+                    "start_pos": 41,
                     "length": 4,
-                    "paramType": "0xDC"
+                    "param_type": "0xDC"
                 },
                 {
                     "key": "batteryOffVoltage",
                     "name": "电池下电电压",
-                    "dataType": "float",
-                    "startPos": 45,
+                    "data_type": "float",
+                    "start_pos": 45,
                     "length": 4,
-                    "paramType": "0xDD"
+                    "param_type": "0xDD"
                 },
                 {
                     "key": "batteryOnVoltage",
                     "name": "电池上电电压",
-                    "dataType": "float",
-                    "startPos": 49,
+                    "data_type": "float",
+                    "start_pos": 49,
                     "length": 4,
-                    "paramType": "0xDE"
+                    "param_type": "0xDE"
                 },
                 {
                     "key": "llvd1OffVoltage",
                     "name": "LLVD1下电电压",
-                    "dataType": "float",
-                    "startPos": 53,
+                    "data_type": "float",
+                    "start_pos": 53,
                     "length": 4,
-                    "paramType": "0xDF"
+                    "param_type": "0xDF"
                 },
                 {
                     "key": "llvd1OnVoltage",
                     "name": "LLVD1上电电压",
-                    "dataType": "float",
-                    "startPos": 57,
+                    "data_type": "float",
+                    "start_pos": 57,
                     "length": 4,
-                    "paramType": "0xE0"
+                    "param_type": "0xE0"
                 },
                 {
                     "key": "llvd2OffVoltage",
                     "name": "LLVD2下电电压",
-                    "dataType": "float",
-                    "startPos": 61,
+                    "data_type": "float",
+                    "start_pos": 61,
                     "length": 4,
-                    "paramType": "0xE1"
+                    "param_type": "0xE1"
                 },
                 {
                     "key": "llvd2OnVoltage",
                     "name": "LLVD2上电电压",
-                    "dataType": "float",
-                    "startPos": 65,
+                    "data_type": "float",
+                    "start_pos": 65,
                     "length": 4,
-                    "paramType": "0xE2"
+                    "param_type": "0xE2"
                 },
                 {
                     "key": "llvd3OffVoltage",
                     "name": "LLVD3下电电压",
-                    "dataType": "float",
-                    "startPos": 69,
+                    "data_type": "float",
+                    "start_pos": 69,
                     "length": 4,
-                    "paramType": "0xE3"
+                    "param_type": "0xE3"
                 },
                 {
                     "key": "llvd3OnVoltage",
                     "name": "LLVD3上电电压",
-                    "dataType": "float",
-                    "startPos": 73,
+                    "data_type": "float",
+                    "start_pos": 73,
                     "length": 4,
-                    "paramType": "0xE4"
+                    "param_type": "0xE4"
                 },
                 {
                     "key": "llvd4OffVoltage",
                     "name": "LLVD4下电电压",
-                    "dataType": "float",
-                    "startPos": 77,
+                    "data_type": "float",
+                    "start_pos": 77,
                     "length": 4,
-                    "paramType": "0xE5"
+                    "param_type": "0xE5"
                 },
                 {
                     "key": "llvd4OnVoltage",
                     "name": "LLVD4上电电压",
-                    "dataType": "float",
-                    "startPos": 81,
+                    "data_type": "float",
+                    "start_pos": 81,
                     "length": 4,
-                    "paramType": "0xE6"
+                    "param_type": "0xE6"
                 },
                 {
                     "key": "batteryCapacity",
                     "name": "每组电池额定容量",
-                    "dataType": "float",
-                    "startPos": 85,
+                    "data_type": "float",
+                    "start_pos": 85,
                     "length": 4,
-                    "paramType": "0xE7"
+                    "param_type": "0xE7"
                 },
                 {
                     "key": "batteryTestStopVoltage",
                     "name": "电池测试终止电压",
-                    "dataType": "float",
-                    "startPos": 89,
+                    "data_type": "float",
+                    "start_pos": 89,
                     "length": 4,
-                    "paramType": "0xE8"
+                    "param_type": "0xE8"
                 },
                 {
                     "key": "batteryTempCoeff",
                     "name": "电池组温补系数",
-                    "dataType": "float",
-                    "startPos": 93,
+                    "data_type": "float",
+                    "start_pos": 93,
                     "length": 4,
-                    "paramType": "0xEA"
+                    "param_type": "0xEA"
                 },
                 {
                     "key": "batteryTempCenter",
                     "name": "电池温补中心点",
-                    "dataType": "float",
-                    "startPos": 97,
+                    "data_type": "float",
+                    "start_pos": 97,
                     "length": 4,
-                    "paramType": "0xEB"
+                    "param_type": "0xEB"
                 },
                 {
                     "key": "floatToEqualizeCoeff",
                     "name": "浮充转均充系数",
-                    "dataType": "float",
-                    "startPos": 101,
+                    "data_type": "float",
+                    "start_pos": 101,
                     "length": 4,
-                    "paramType": "0xEC"
+                    "param_type": "0xEC"
                 },
                 {
                     "key": "equalizeToFloatCoeff",
                     "name": "均充转浮充系数",
-                    "dataType": "float",
-                    "startPos": 105,
+                    "data_type": "float",
+                    "start_pos": 105,
                     "length": 4,
-                    "paramType": "0xED"
+                    "param_type": "0xED"
                 },
                 {
                     "key": "llvd1OffTime",
                     "name": "LLVD1下电时间",
-                    "dataType": "float",
-                    "startPos": 109,
+                    "data_type": "float",
+                    "start_pos": 109,
                     "length": 4,
-                    "paramType": "0xEE"
+                    "param_type": "0xEE"
                 },
                 {
                     "key": "llvd2OffTime",
                     "name": "LLVD2下电时间",
-                    "dataType": "float",
-                    "startPos": 113,
+                    "data_type": "float",
+                    "start_pos": 113,
                     "length": 4,
-                    "paramType": "0xEF"
+                    "param_type": "0xEF"
                 },
                 {
                     "key": "llvd3OffTime",
                     "name": "LLVD3下电时间",
-                    "dataType": "float",
-                    "startPos": 117,
+                    "data_type": "float",
+                    "start_pos": 117,
                     "length": 4,
-                    "paramType": "0xF0"
+                    "param_type": "0xF0"
                 },
                 {
                     "key": "llvd4OffTime",
                     "name": "LLVD4下电时间",
-                    "dataType": "float",
-                    "startPos": 121,
+                    "data_type": "float",
+                    "start_pos": 121,
                     "length": 4,
-                    "paramType": "0xF1"
+                    "param_type": "0xF1"
                 },
                 {
                     "key": "loadOffMode",
                     "name": "负载下电模式",
-                    "dataType": "enum",
-                    "startPos": 125,
+                    "data_type": "enum",
+                    "start_pos": 125,
                     "length": 1,
-                    "paramType": "0xF2",
+                    "param_type": "0xF2",
                     "enum": {
                         "0": "电压模式",
                         "1": "时间模式"
@@ -2131,8 +2128,8 @@
                 {
                     "key": "state",
                     "name": "控制状态",
-                    "dataType": "enum",
-                    "startPos": 0,
+                    "data_type": "enum",
+                    "start_pos": 0,
                     "length": 1,
                     "enum": {
                         "0xE0": "自动控制",
@@ -2152,8 +2149,8 @@
                 {
                     "key": "state",
                     "name": "控制状态",
-                    "dataType": "enum",
-                    "startPos": 0,
+                    "data_type": "enum",
+                    "start_pos": 0,
                     "length": 1,
                     "enum": {
                         "0xE0": "自动控制",
@@ -2171,8 +2168,8 @@
                 {
                     "key": "enable",
                     "name": "使能状态",
-                    "dataType": "enum",
-                    "startPos": 0,
+                    "data_type": "enum",
+                    "start_pos": 0,
                     "length": 1,
                     "enum": {
                         "0xE0": "禁止",
@@ -2192,8 +2189,8 @@
                 {
                     "key": "energySaving",
                     "name": "节能允许",
-                    "dataType": "enum",
-                    "startPos": 0,
+                    "data_type": "enum",
+                    "start_pos": 0,
                     "length": 1,
                     "enum": {
                         "0": "使能",
@@ -2203,29 +2200,29 @@
                 {
                     "key": "minWorkingModules",
                     "name": "最小工作模块数",
-                    "dataType": "uint8",
-                    "startPos": 1,
+                    "data_type": "uint8",
+                    "start_pos": 1,
                     "length": 1
                 },
                 {
                     "key": "moduleSwitchCycle",
                     "name": "模块循环开关周期",
-                    "dataType": "uint16",
-                    "startPos": 2,
+                    "data_type": "uint16",
+                    "start_pos": 2,
                     "length": 2
                 },
                 {
                     "key": "moduleBestEfficiencyPoint",
                     "name": "模块最佳效率点",
-                    "dataType": "uint8",
-                    "startPos": 4,
+                    "data_type": "uint8",
+                    "start_pos": 4,
                     "length": 1
                 },
                 {
                     "key": "moduleRedundancyPoint",
                     "name": "模块冗余点",
-                    "dataType": "uint8",
-                    "startPos": 5,
+                    "data_type": "uint8",
+                    "start_pos": 5,
                     "length": 1
                 }
             ]
@@ -2239,10 +2236,10 @@
                 {
                     "key": "energySaving",
                     "name": "节能允许",
-                    "dataType": "enum",
-                    "startPos": 0,
+                    "data_type": "enum",
+                    "start_pos": 0,
                     "length": 1,
-                    "paramType": "0xE1",
+                    "param_type": "0xE1",
                     "enum": {
                         "0": "使能",
                         "1": "禁止"
@@ -2251,34 +2248,34 @@
                 {
                     "key": "minWorkingModules",
                     "name": "最小工作模块数",
-                    "dataType": "uint8",
-                    "startPos": 1,
+                    "data_type": "uint8",
+                    "start_pos": 1,
                     "length": 1,
-                    "paramType": "0xE2"
+                    "param_type": "0xE2"
                 },
                 {
                     "key": "moduleSwitchCycle",
                     "name": "模块循环开关周期",
-                    "dataType": "uint16",
-                    "startPos": 2,
+                    "data_type": "uint16",
+                    "start_pos": 2,
                     "length": 2,
-                    "paramType": "0xE3"
+                    "param_type": "0xE3"
                 },
                 {
                     "key": "moduleBestEfficiencyPoint",
                     "name": "模块最佳效率点",
-                    "dataType": "uint8",
-                    "startPos": 4,
+                    "data_type": "uint8",
+                    "start_pos": 4,
                     "length": 1,
-                    "paramType": "0xE4"
+                    "param_type": "0xE4"
                 },
                 {
                     "key": "moduleRedundancyPoint",
                     "name": "模块冗余点",
-                    "dataType": "uint8",
-                    "startPos": 5,
+                    "data_type": "uint8",
+                    "start_pos": 5,
                     "length": 1,
-                    "paramType": "0xE5"
+                    "param_type": "0xE5"
                 }
             ],
             "values": []
@@ -2292,8 +2289,8 @@
                 {
                     "key": "controlType",
                     "name": "控制类型",
-                    "dataType": "enum",
-                    "startPos": 0,
+                    "data_type": "enum",
+                    "start_pos": 0,
                     "length": 1,
                     "enum": {
                         "0xE1": "系统复位",
@@ -2308,23 +2305,6 @@
                         "0xEB": "负载4下电",
                         "0xEC": "负载4上电"
                     }
-                }
-            ],
-            "values": []
-        },
-        {
-            "cid1": "0x40",
-            "cid2": "0x80",
-            "key": "controlSystemReset",
-            "name": "遥控系统复位",
-            "params": [
-                {
-                    "key": "command",
-                    "name": "命令",
-                    "dataType": "uint8",
-                    "startPos": 0,
-                    "length": 1,
-                    "value": "0xE1"
                 }
             ],
             "values": []

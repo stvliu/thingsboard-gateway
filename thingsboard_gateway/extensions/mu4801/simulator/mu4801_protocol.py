@@ -11,12 +11,3 @@ class MU4801Protocol(Protocol):
         with open(config_file, 'r') as f:
             config = json.load(f)
         super().__init__(device_addr, port, config=config)
-
-    def parse_response(self, response, command_key):
-        command = self._find_command_by_key(command_key)
-        if not command:
-            raise ValueError(f"Unsupported command: {command_key}")
-        return super().parse_response(response, command)
-    
-    def recv_command(self):
-        return self._receive_command()
