@@ -17,7 +17,7 @@ class MU4801Simulator:
         
         self.device_info = {
             'collectorName': 'MU4801A',
-            'softwareVersion': '10',
+            'softwareVersion': 2.11,
             'manufacturer': 'Virtual Inc.'
         }
         
@@ -225,7 +225,7 @@ class MU4801Simulator:
     def handle_get_manufacturer_info(self): 
         return {
             'collectorName': self.device_info['collectorName'].ljust(10)[:10],
-            'softwareVersion': self.device_info['softwareVersion'].ljust(2)[:2],
+            'softwareVersion': self.device_info['softwareVersion'],
             'manufacturer': self.device_info['manufacturer'].ljust(20)[:20]
         }
         

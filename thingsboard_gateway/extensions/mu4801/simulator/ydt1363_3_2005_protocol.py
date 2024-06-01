@@ -163,62 +163,117 @@ class Commands:
         return None
 
 # Codec Module
+class FieldCodec:
+    """
+    字段编解码器基类
+    """
+
+    def encode(self, value):
+        """
+        对一个包含多个值的字段进行编码
+        :param values: 字段值的字典,键为值的key,值为具体的值
+        :return: 编码后的字节流
+        """
+        raise NotImplementedError
+
+    def decode(self, data):
+        """
+        从字节流中解码出多个值
+        :param data: 字节流数据
+        :return: 字段值的字典,键为值的key,值为解码后的具体值
+        """
+        raise NotImplementedError
+
+class Type:
+    def __init__(self):
+        pass
+    
+    def fromBytes(self, bytes):
+        pass
+    def toBytes(self, data):
+        pass
+class UInt8(Type):
+    def fromBytes(self, bytes):
+        return struct.unpack('B', bytes)[0]
+    def toBytes(self, data):
+        return struct.pack('B', data)
+    
+
+class UInt16(Type):
+    def fromBytes(self, bytes):
+        return struct.unpack('>H', bytes)[0]
+    def toBytes(self, data):
+        return struct.pack('>H', data)
+    
+
+class Float(Type):
+    def fromBytes(self, bytes):
+        return struct.unpack('>f', bytes)[0]
+    def toBytes(self, data):
+        return struct.pack('>f', data)    
+
+
+class Enum(Type):
+    def __init__(self, enum_dict):
+        self._enum_dict = enum_dict 
+
+    def fromBytes(self, bytes):
+        value = struct.unpack('B', bytes)[0]
+        return next(key for key, val in self._enum_dict.items() if val == value)  
+    def toBytes(self, data):
+        value = self._enum_dict[data]
+        return struct.pack('B', value)    
+
+class String(Type): 
+    def fromBytes(self, bytes):
+        return bytes.decode('ascii')
+    def toBytes(self, data):
+        return data.encode('ascii')
+class DateTime(Type):
+    def fromBytes(self, bytes):
+        year, month, day, hour, minute, second = struct.unpack('>HBBBBB', bytes)
+        return datetime.datetime(year, month, day, hour, minute, second)
+    def toBytes(self, data):
+        return struct.pack('>HBBBBB', data.year, data.month, data.day, data.hour, data.minute, data.second)
+class SoftwareVersion(Type):
+    def fromBytes(self, bytes):
+        major, minor = struct.unpack('BB', bytes)
+        return f"{major}.{minor}"
+    def toBytes(self, data):
+        major, minor = map(int, data.split('.'))
+        return struct.pack('BB', major, minor)    
+
 class DataCodec:
-    @staticmethod
-    def encode_value(value, data_config: CommandData):
-        logger.debug(f"Encoding value: {value}, data_config: {data_config}")
-        if data_config.data_type == 'uint8':
-            encoded_value = struct.pack('B', value)
-        elif data_config.data_type == 'uint16':
-            encoded_value = struct.pack('>H', value)  
-        elif data_config.data_type == 'float':
-            encoded_value = struct.pack('>f', value)
-        elif data_config.data_type == 'enum':  
-            encoded_value = struct.pack('B', data_config.enum[value])
-        elif data_config.data_type == 'datetime':
-            encoded_value = self.encode_datetime(value)
-        elif data_config.data_type == 'string':
-            encoded_value = value.encode('ascii')
+    def __init__(self):
+        self._types = {
+                'uint8': UInt8(),
+                'uint16': UInt16(),
+                'float': Float(),
+                'enum': Enum({}),
+                'datetime': DateTime(),
+                'string': String(),
+                'software_version': SoftwareVersion()
+        }
+
+    def encode_value(self, value, value_type: str):
+        logger.debug(f"Encoding value: {value}, value_type: {value_type}")
+        value_type=self._coders[value_type]
+        if value_type:
+            encoded_value = value_type.toBytes(value)
+            logger.debug(f"Encoded value: {encoded_value.hex()}")
+            return encoded_value
         else:
-            raise ValueError(f"Unsupported data type: {data_config.data_type}")
-        logger.debug(f"Encoded value: {encoded_value.hex()}")
-        return encoded_value
-
-    @staticmethod
-    def decode_value(bytes_value, data_config: CommandData):
-        logger.debug(f"Decoding value: {bytes_value.hex()}, data_config: {data_config}")
-        if data_config.data_type == 'uint8':
-            decoded_value = bytes_value[0]
-        elif data_config.data_type == 'uint16':
-            decoded_value = struct.unpack('>H', bytes_value)[0]
-        elif data_config.data_type == 'float':
-            decoded_value = struct.unpack('>f', bytes_value)[0]
-        elif data_config.data_type == 'enum':
-            value = bytes_value[0]
-            decoded_value = next(key for key, val in data_config.enum.items() if val == value)
-        elif data_config.data_type == 'datetime':
-            decoded_value = DataCodec.decode_datetime(bytes_value)
-        elif data_config.data_type == 'string':
-            decoded_value = bytes_value.decode('ascii')
+            raise ValueError(f"Unsupported data type: {value_type}")
+        
+    def decode_value(self, bytes_value: bytes, value_type: str):
+        logger.debug(f"Decoding value: {bytes_value.hex()}, value_type: {value_type}")
+        value_type=self._coders[value_type.data_type]
+        if value_type:
+            decoded_value = value_type.fromBytes(bytes_value)
+            logger.debug(f"Decoded value: {decoded_value.hex()}")
+            return decoded_value
         else:
-            raise ValueError(f"Unsupported data type: {data_config.data_type}")
-        logger.debug(f"Decoded value: {decoded_value}")
-        return decoded_value
-
-    @staticmethod
-    def encode_datetime(dt):
-        logger.debug(f"Encoding datetime: {dt}")
-        encoded_value = struct.pack('>HBBBBB', dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second)
-        logger.debug(f"Encoded datetime: {encoded_value.hex()}")
-        return encoded_value
-
-    @staticmethod
-    def decode_datetime(bytes_value):
-        logger.debug(f"Decoding datetime: {bytes_value.hex()}")
-        year, month, day, hour, minute, second = struct.unpack('>HBBBBB', bytes_value)
-        dt = datetime.datetime(year, month, day, hour, minute, second)
-        logger.debug(f"Decoded datetime: {dt}")
-        return dt
+            raise ValueError(f"Unsupported data type: {value_type}")
 
 class FrameCodec:
     @staticmethod
@@ -557,27 +612,6 @@ class Protocol:
 
         except serial.SerialTimeoutException:
             raise ProtocolError("Timeout waiting for response")
-
-    # def _receive_frame(self):
-    #     logger.debug(f"Receiving frame")
-    #     try:
-    #         frame = bytearray()
-    #         while True:
-    #             byte = self._serial.read(1)
-    #             if len(byte) == 0:
-    #                 raise ProtocolError("Timeout waiting for response")
-    #             if byte[0] == SOI:
-    #                 frame = bytearray(byte)
-    #             elif byte[0] == EOI:
-    #                 frame.extend(byte)
-    #                 break
-    #             else:
-    #                 frame.extend(byte)
-    #         logger.debug(f"Received frame: {frame.hex()}")
-    #         FrameCodec.validate_frame(frame)
-    #         return frame
-    #     except serial.SerialTimeoutException:
-    #         raise ProtocolError("Timeout waiting for response")
 
     def _build_command_frame(self, command, data):
         logger.debug(f"Building command frame: {command}, data: {data}")
