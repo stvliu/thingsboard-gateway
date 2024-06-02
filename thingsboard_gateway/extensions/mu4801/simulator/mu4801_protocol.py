@@ -1,4 +1,4 @@
-from ydt1363_3_2005_protocol import Protocol, Command, CommandParam, CommandValue
+from ydt1363_3_2005_protocol import Protocol
 import json
 import logging
 

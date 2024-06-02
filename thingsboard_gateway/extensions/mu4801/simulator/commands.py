@@ -1,6 +1,9 @@
 from enum import Enum
 from typing import List
 import struct
+from dataclasses import dataclass
+import datetime
+
 
 class DataFlag(Enum):
     NORMAL = 0  # 数据标志,0表示正常
@@ -72,7 +75,8 @@ class LVDStatus(Enum):
     IMPENDING = 1   # 即将下电
     OFF = 2         # 已下电
 
-class GetDateTimeResponse:
+@dataclass
+class DateTime:
     def __init__(self, year: int, month: int, day: int, hour: int, minute: int, second: int):
         self.year = year
         self.month = month
@@ -80,91 +84,86 @@ class GetDateTimeResponse:
         self.hour = hour
         self.minute = minute
         self.second = second
-        print(f"初始化GetDateTimeResponse, year={year}, month={month}, day={day}, hour={hour}, minute={minute}, second={second}")
 
     def to_bytes(self):
-        print(f"将GetDateTimeResponse转换为字节串")
         return struct.pack('>HBBBBB', self.year, self.month, self.day, self.hour, self.minute, self.second)
 
+    @property
+    def datetime(self):
+         return datetime.datetime(self.year, self.month, self.day, self.hour, self.minute, self.second)  
+    
     @classmethod
     def from_bytes(cls, data): 
-        print(f"从字节串{data.hex()}构建GetDateTimeResponse")
         year, month, day, hour, minute, second = struct.unpack('>HBBBBB', data)
         return cls(year, month, day, hour, minute, second)
-
-class SetDateTimeRequest:
-    def __init__(self, year: int, month: int, day: int, hour: int, minute: int, second: int):
-        self.year = year
-        self.month = month
-        self.day = day
-        self.hour = hour
-        self.minute = minute
-        self.second = second
-        print(f"初始化SetDateTimeRequest, year={year}, month={month}, day={day}, hour={hour}, minute={minute}, second={second}")
-
-    def to_bytes(self):
-        print(f"将SetDateTimeRequest转换为字节串")
-        return struct.pack('>HBBBBB', self.year, self.month, self.day, self.hour, self.minute, self.second)
-
-    @classmethod
-    def from_bytes(cls, data):
-        print(f"从字节串{data.hex()}构建SetDateTimeRequest")
-        year, month, day, hour, minute, second = struct.unpack('>HBBBBB', data)
-        return cls(year, month, day, hour, minute, second)
-
-class GetProtocolVersionResponse:
+@dataclass
+class ProtocolVersion:
     def __init__(self, version: str):
         self.version = version
-        print(f"初始化GetProtocolVersionResponse, version={version}")
 
     def to_bytes(self):
-        print(f"将GetProtocolVersionResponse转换为字节串")
         return self.version.encode('ascii')
 
     @classmethod
     def from_bytes(cls, data):
-        print(f"从字节串{data.hex()}构建GetProtocolVersionResponse")
         version = data.decode('ascii')
         return cls(version)
-    
-class GetDeviceAddressResponse:
+
+@dataclass    
+class DeviceAddress:
     def __init__(self, address: int):
         self.address = address  # 设备地址,1字节
-        print(f"初始化GetDeviceAddressResponse, address={address}")
 
     def to_bytes(self):
-        print(f"将GetDeviceAddressResponse转换为字节串")
         return struct.pack('B', self.address)
 
     @classmethod
     def from_bytes(cls, data):
-        print(f"从字节串{data.hex()}构建GetDeviceAddressResponse")
         address, = struct.unpack('B', data)
         return cls(address)
 
-class GetManufacturerInfoResponse:
-    def __init__(self, collector_name: str, software_version: str, manufacturer: str):
+@dataclass
+class SoftwareVersion():
+    def __init__(self, major: int, minor: int):
+        self.major = major
+        self.minor = minor
+
+    def to_bytes(self):
+        return struct.pack('BB', self.major, self.minor)
+
+    @classmethod
+    def from_bytes(cls, data):
+        major, minor = struct.unpack('BB', data)
+        return cls(major, minor)
+
+    def to_dict (self):
+        return {"major": self.major, "minor": self.minor}
+    
+    def __str__(self):
+        return f"{self.major}.{self.minor}"
+    
+@dataclass
+class ManufacturerInfo:
+    def __init__(self, collector_name: str, software_version: SoftwareVersion, manufacturer: str):
         self.collector_name = collector_name    # 采集器名称,10字节
         self.software_version = software_version  # 厂商软件版本,2字节
         self.manufacturer = manufacturer    # 厂商名称,20字节
-        print(f"初始化GetManufacturerInfoResponse, collector_name={collector_name}, software_version={software_version}, manufacturer={manufacturer}")
 
     def to_bytes(self):
-        print(f"将GetManufacturerInfoResponse转换为字节串")
         data = bytearray()
-        data.extend(self.collector_name.encode('ascii')[:10])
-        data.extend(self.software_version.encode('ascii')[:2])  
-        data.extend(self.manufacturer.encode('ascii')[:20])
+        data.extend((self.collector_name.encode('ascii')[:10]).ljust(10, b'\x00'))
+        data.extend(self.software_version.to_bytes())
+        data.extend((self.manufacturer.encode('ascii')[:20]).ljust(20, b'\x00'))
         return bytes(data)
 
     @classmethod
     def from_bytes(cls, data):
-        print(f"从字节串{data.hex()}构建GetManufacturerInfoResponse")
         collector_name = data[:10].decode('ascii').rstrip('\x00') 
-        software_version = data[10:12].decode('ascii')
+        software_version =SoftwareVersion.from_bytes(data[10:12])
         manufacturer = data[12:32].decode('ascii').rstrip('\x00')
         return cls(collector_name, software_version, manufacturer)
 
+@dataclass
 class GetAcAnalogDataResponse:
     def __init__(self, data_flag: DataFlag, number_of_inputs: int, voltage_a: float, voltage_b: float, voltage_c: float,
                  frequency: float, user_defined_params_count: int):
@@ -178,18 +177,17 @@ class GetAcAnalogDataResponse:
         print(f"初始化GetAcAnalogDataResponse, data_flag={data_flag}, number_of_inputs={number_of_inputs}, voltage_a={voltage_a}, voltage_b={voltage_b}, voltage_c={voltage_c}, frequency={frequency}, user_defined_params_count={user_defined_params_count}")
 
     def to_bytes(self):
-        print(f"将GetAcAnalogDataResponse转换为字节串")
-        return struct.pack('<BBBBBBBBBBBBBBBB', self.data_flag.value, self.number_of_inputs,  
-                           *struct.unpack('4B', struct.pack('<f', self.voltage_a)),
-                           *struct.unpack('4B', struct.pack('<f', self.voltage_b)),
-                           *struct.unpack('4B', struct.pack('<f', self.voltage_c)),
-                           *struct.unpack('4B', struct.pack('<f', self.frequency)),
-                           self.user_defined_params_count)
+        return struct.pack('<BBBBBBBBBBBBBBBBBBB', self.data_flag.value, self.number_of_inputs,
+                        *struct.unpack('4B', struct.pack('<f', self.voltage_a)),
+                        *struct.unpack('4B', struct.pack('<f', self.voltage_b)),
+                        *struct.unpack('4B', struct.pack('<f', self.voltage_c)),
+                        *struct.unpack('4B', struct.pack('<f', self.frequency)),
+                        self.user_defined_params_count)
 
     @classmethod
     def from_bytes(cls, data):
         print(f"从字节串{data.hex()}构建GetAcAnalogDataResponse")
-        data_flag, number_of_inputs, *values = struct.unpack('<BBBBBBBBBBBBBBBB', data)
+        data_flag, number_of_inputs, *values = struct.unpack('<BBBBBBBBBBBBBBBBBBB', data)
         voltage_a = struct.unpack('<f', bytes(values[:4]))[0]
         voltage_b = struct.unpack('<f', bytes(values[4:8]))[0]  
         voltage_c = struct.unpack('<f', bytes(values[8:12]))[0]
@@ -198,6 +196,7 @@ class GetAcAnalogDataResponse:
         return cls(DataFlag(data_flag), number_of_inputs, voltage_a, voltage_b, voltage_c, 
                    frequency, user_defined_params_count)
 
+@dataclass
 class GetAcAlarmStatusResponse:
     def __init__(self, data_flag: DataFlag, number_of_inputs: int, voltage_a_status: VoltageStatus,
                  voltage_b_status: VoltageStatus, voltage_c_status: VoltageStatus,  
@@ -242,6 +241,7 @@ class GetAcAlarmStatusResponse:
                    AlarmStatus(ac_input_switch_status), AlarmStatus(ac_output_switch_status),
                    AlarmStatus(ac_power_status))
 
+@dataclass
 class GetAcConfigParamsResponse:
     def __init__(self, ac_over_voltage: float, ac_under_voltage: float):
         self.ac_over_voltage = ac_over_voltage   # 交流输入线/相电压上限,4字节浮点数
@@ -258,6 +258,7 @@ class GetAcConfigParamsResponse:
         ac_over_voltage, ac_under_voltage = struct.unpack('<ff', data)
         return cls(ac_over_voltage, ac_under_voltage)
 
+@dataclass
 class SetAcConfigParamsRequest:
     def __init__(self, ac_over_voltage: float, ac_under_voltage: float):
         self.ac_over_voltage = ac_over_voltage   # 交流输入线/相电压上限,4字节浮点数,参数类型80H
@@ -274,6 +275,7 @@ class SetAcConfigParamsRequest:
         ac_over_voltage, ac_under_voltage = struct.unpack('<ff', data)
         return cls(ac_over_voltage, ac_under_voltage)
 
+@dataclass
 class GetRectAnalogDataResponse:
     def __init__(self, data_flag: DataFlag, output_voltage: float, module_count: int, module_currents: List[float],
                  user_defined_params_count: List[int], module_current_limit: List[float], module_voltage: List[float], 
@@ -326,6 +328,7 @@ class GetRectAnalogDataResponse:
                    user_defined_params_count, module_current_limit, module_voltage, 
                    module_temperature, module_input_voltage_ab)
 
+@dataclass
 class GetRectSwitchStatusResponse:
     def __init__(self, data_flag: DataFlag, module_count: int, module_run_status: List[SwitchStatus],
                  module_limit_status: List[SwitchStatus], module_charge_status: List[ChargeStatus],
@@ -365,6 +368,7 @@ class GetRectSwitchStatusResponse:
         return cls(DataFlag(data_flag), module_count, module_run_status, module_limit_status,  
                    module_charge_status, user_defined_params_count)
 
+@dataclass
 class GetRectAlarmStatusResponse:
     def __init__(self, data_flag: DataFlag, module_count: int, module_failure_status: List[AlarmStatus],
                  user_defined_params_count: List[int], module_comm_failure_status: List[AlarmStatus], 
@@ -411,6 +415,7 @@ class GetRectAlarmStatusResponse:
                    user_defined_params_count, module_comm_failure_status,  
                    module_protection_status, module_fan_status)
 
+@dataclass
 class ControlRectModuleRequest:
     def __init__(self, module_id: int, control_type: RectModuleControlType, control_value: int):  
         self.module_id = module_id   # 模块ID,1字节
@@ -428,6 +433,7 @@ class ControlRectModuleRequest:
         module_id, control_type, control_value = struct.unpack('<BBB', data)  
         return cls(module_id, RectModuleControlType(control_type), control_value)
 
+@dataclass
 class GetDcAnalogDataResponse:
     def __init__(self, data_flag: DataFlag, dc_voltage: float, total_load_current: float, battery_group_count: int,
                  battery_group_1_number: int, battery_group_1_current: float, load_branch_count: int,
@@ -524,7 +530,8 @@ class GetDcAnalogDataResponse:
                 total_load_power, load_power_1, load_power_2, load_power_3,  
                 load_power_4, total_load_energy, load_energy_1, load_energy_2,
                 load_energy_3, load_energy_4)
-    
+
+@dataclass    
 class GetDcAlarmStatusResponse:
     def __init__(self, data_flag: DataFlag, dc_voltage_status: VoltageStatus, battery_fuse_count: int,
                  user_defined_params_count: int, dc_arrester_status: AlarmStatus, load_fuse_status: AlarmStatus, 
@@ -614,6 +621,7 @@ class GetDcAlarmStatusResponse:
                 AlarmStatus(digital_input_status_3), AlarmStatus(digital_input_status_4),
                 AlarmStatus(digital_input_status_5), AlarmStatus(digital_input_status_6))
 
+@dataclass
 class GetDcConfigParamsResponse:
     def __init__(self, dc_over_voltage: float, dc_under_voltage: float, time_equalize_charge_enable: EnableStatus,
                  time_equalize_duration: int, time_equalize_interval: int, battery_group_number: int, 
@@ -699,6 +707,7 @@ class GetDcConfigParamsResponse:
                     battery_temp_coeff, battery_temp_center, float_to_equalize_coeff, equalize_to_float_coeff,
                     llvd1_off_time, llvd2_off_time, llvd3_off_time, llvd4_off_time, LoadOffMode(load_off_mode))
 
+@dataclass
 class SetDcConfigParamsRequest:
    def __init__(self, dc_over_voltage: float, dc_under_voltage: float, time_equalize_charge_enable: EnableStatus,
                 time_equalize_duration: int, time_equalize_interval: int, battery_group_number: int,
@@ -784,6 +793,7 @@ class SetDcConfigParamsRequest:
                   battery_temp_coeff, battery_temp_center, float_to_equalize_coeff, equalize_to_float_coeff,
                   llvd1_off_time, llvd2_off_time, llvd3_off_time, llvd4_off_time, LoadOffMode(load_off_mode))
 
+@dataclass
 class SetSystemControlStateRequest:  
    def __init__(self, state: SystemControlState):
        self.state = state   # 系统控制状态,1字节
@@ -799,6 +809,7 @@ class SetSystemControlStateRequest:
        state, = struct.unpack('<B', data)
        return cls(SystemControlState(state))
 
+@dataclass
 class GetSystemControlStateResponse:
    def __init__(self, state: SystemControlState):  
        self.state = state   # 系统控制状态,1字节
@@ -814,6 +825,7 @@ class GetSystemControlStateResponse:
        state, = struct.unpack('<B', data)  
        return cls(SystemControlState(state))
 
+@dataclass
 class SetAlarmSoundEnableRequest:
    def __init__(self, enable: EnableStatus):
        self.enable = enable   # 告警音使能,1字节  
@@ -829,6 +841,7 @@ class SetAlarmSoundEnableRequest:
        enable, = struct.unpack('<B', data)
        return cls(EnableStatus(enable))  
 
+@dataclass
 class GetEnergyParamsResponse:
    def __init__(self, energy_saving: EnableStatus, min_working_modules: int, module_switch_cycle: int,
                 module_best_efficiency_point: int, module_redundancy_point: int):
@@ -852,6 +865,7 @@ class GetEnergyParamsResponse:
        return cls(EnableStatus(energy_saving), min_working_modules, module_switch_cycle,
                   module_best_efficiency_point, module_redundancy_point)
 
+@dataclass
 class SetEnergyParamsRequest:
    def __init__(self, energy_saving: EnableStatus, min_working_modules: int, module_switch_cycle: int,
                 module_best_efficiency_point: int, module_redundancy_point: int):  
@@ -874,7 +888,7 @@ class SetEnergyParamsRequest:
         module_best_efficiency_point, module_redundancy_point) = struct.unpack('<BBHBB', data)
        return cls(EnableStatus(energy_saving), min_working_modules, module_switch_cycle,
                   module_best_efficiency_point, module_redundancy_point)  
-
+@dataclass
 class SystemControlRequest:
    def __init__(self, control_type: SystemControlType):
        self.control_type = control_type   # 控制类型,1字节
@@ -889,4 +903,3 @@ class SystemControlRequest:
        print(f"从字节串{data.hex()}构建SystemControlRequest")
        control_type, = struct.unpack('<B', data)
        return cls(SystemControlType(control_type))
-

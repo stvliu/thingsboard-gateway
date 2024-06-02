@@ -4,11 +4,13 @@ import logging
 from dataclasses import dataclass
 from typing import List, Dict, Union, Optional
 import serial
+from enum import Enum
+from commands import *
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Constant Definitions
+# 常量定义
 SOI = 0x7E
 EOI = 0x0D
 PROTOCOL_VERSION = 0x21
@@ -56,7 +58,7 @@ RTN_INVALID_DATA = 0x06  # 无效数据
 RTN_USER_DEFINED_ERROR_START = 0x80  # 用户自定义错误码起始值
 RTN_USER_DEFINED_ERROR_END = 0xEF  # 用户自定义错误码结束值
 
-# Exception Classes
+# 异常类
 class ProtocolError(Exception):
     pass
 
@@ -67,214 +69,137 @@ class RTNError(ProtocolError):
 
 class RTNVerError(RTNError):
     def __init__(self):
-        super().__init__('0x01', "Version mismatch")
+        super().__init__(RTN_VER_ERROR, "Version mismatch")
 
 class RTNChksumError(RTNError):
     def __init__(self):
-        super().__init__('0x02', "Checksum error")
+        super().__init__(RTN_CHKSUM_ERROR, "Checksum error")
 
 class RTNLchksumError(RTNError):
     def __init__(self):
-        super().__init__('0x03', "Length checksum error")
+        super().__init__(RTN_LCHKSUM_ERROR, "Length checksum error")
 
 class RTNCidError(RTNError):
     def __init__(self):
-        super().__init__('0x04', "Invalid CID")
+        super().__init__(RTN_CID2_INVALID, "Invalid CID")
 
 class RTNFormatError(RTNError):
     def __init__(self):
-        super().__init__('0x05', "Format error")
+        super().__init__(RTN_COMMAND_FORMAT_ERROR, "Format error")
 
 class RTNDataError(RTNError):
     def __init__(self):
-        super().__init__('0x06', "Invalid data")
+        super().__init__(RTN_INVALID_DATA, "Invalid data")
 
-
-# Data Classes
-@dataclass
-class CommandData:
-    key: str
-    name: str
-    data_type: str
-    start_pos: int
-    length: int
-    enum: Union[Dict[str, int], None] = None
-
-    def __post_init__(self):
-        if self.data_type not in ['uint8', 'uint16', 'float', 'enum', 'datetime', 'string']:
-            raise ValueError(f"Unsupported data type: {self.data_type}")
-
-@dataclass
-class CommandParam(CommandData):
-    param_type: Union[str, None] = None
-
-@dataclass
-class CommandValue(CommandData):
-    quantity: Union[int, str, None] = None
-
-# Command Module
-@dataclass
-class Command:
-    cid1: str
-    cid2: str
-    key: str
-    name: str
-    params: List[CommandParam]
-    values: List[CommandValue]
-
-class Commands:
-    def __init__(self, config):
-        logger.debug(f"Initializing Commands with config: {config}")
-        self._command_dict = {}
-
-        self._attributes = self._parse_commands(config['attributes'])
-        self._timeseries = self._parse_commands(config['timeseries'])
-        self._alarms = self._parse_commands(config['alarms'])
-        self._server_side_rpc = self._parse_commands(config['serverSideRpc'])
-
-        for command in self._attributes + self._timeseries + self._alarms + self._server_side_rpc:
-            self._command_dict[(command.cid1, command.cid2)] = command
-        logger.debug(f"Built command dictionary: {self._command_dict}")
-
-    def _parse_commands(self, commands_configs):
-        logger.debug(f"Parsing commands from config: {commands_configs}")
-        commands = []
-        for cmd_config in commands_configs:
-            params = [CommandParam(**param) for param in cmd_config.get('params', [])]
-            values = [CommandValue(**value) for value in cmd_config.get('values', [])]
-            command = Command(cmd_config['cid1'], cmd_config['cid2'], cmd_config['key'], cmd_config['name'], params, values)
-            commands.append(command)
-        logger.debug(f"Parsed commands: {commands}")
-        return commands
-
-    def get_command_by_cid(self, cid1, cid2):
-        logger.debug(f"Looking up command with cid1={cid1}, cid2={cid2}")
-        command = self._command_dict.get((cid1, cid2))
-        logger.debug(f"Found command: {command}")
-        return command
-
-    def get_command_by_key(self, command_key):
-        logger.debug(f"Looking up command by key: {command_key}")
-        for command in self._attributes + self._timeseries + self._alarms + self._server_side_rpc:
-            if command.key == command_key:
-                logger.debug(f"Found command: {command}")
-                return command
-        logger.debug(f"Command not found")
-        return None
-
-# Codec Module
-class FieldCodec:
-    """
-    字段编解码器基类
-    """
-
-    def encode(self, value):
-        """
-        对一个包含多个值的字段进行编码
-        :param values: 字段值的字典,键为值的key,值为具体的值
-        :return: 编码后的字节流
-        """
-        raise NotImplementedError
-
-    def decode(self, data):
-        """
-        从字节流中解码出多个值
-        :param data: 字节流数据
-        :return: 字段值的字典,键为值的key,值为解码后的具体值
-        """
-        raise NotImplementedError
-
-class Type:
-    def __init__(self):
-        pass
-    
-    def fromBytes(self, bytes):
-        pass
-    def toBytes(self, data):
-        pass
-class UInt8(Type):
-    def fromBytes(self, bytes):
-        return struct.unpack('B', bytes)[0]
-    def toBytes(self, data):
-        return struct.pack('B', data)
-    
-
-class UInt16(Type):
-    def fromBytes(self, bytes):
-        return struct.unpack('>H', bytes)[0]
-    def toBytes(self, data):
-        return struct.pack('>H', data)
-    
-
-class Float(Type):
-    def fromBytes(self, bytes):
-        return struct.unpack('>f', bytes)[0]
-    def toBytes(self, data):
-        return struct.pack('>f', data)    
-
-
-class Enum(Type):
-    def __init__(self, enum_dict):
-        self._enum_dict = enum_dict 
-
-    def fromBytes(self, bytes):
-        value = struct.unpack('B', bytes)[0]
-        return next(key for key, val in self._enum_dict.items() if val == value)  
-    def toBytes(self, data):
-        value = self._enum_dict[data]
-        return struct.pack('B', value)    
-
-class String(Type): 
-    def fromBytes(self, bytes):
-        return bytes.decode('ascii')
-    def toBytes(self, data):
-        return data.encode('ascii')
-class DateTime(Type):
-    def fromBytes(self, bytes):
-        year, month, day, hour, minute, second = struct.unpack('>HBBBBB', bytes)
-        return datetime.datetime(year, month, day, hour, minute, second)
-    def toBytes(self, data):
-        return struct.pack('>HBBBBB', data.year, data.month, data.day, data.hour, data.minute, data.second)
-class SoftwareVersion(Type):
-    def fromBytes(self, bytes):
-        major, minor = struct.unpack('BB', bytes)
-        return f"{major}.{minor}"
-    def toBytes(self, data):
-        major, minor = map(int, data.split('.'))
-        return struct.pack('BB', major, minor)    
-
+# 数据类编解码器
 class DataCodec:
     def __init__(self):
         self._types = {
-                'uint8': UInt8(),
-                'uint16': UInt16(),
-                'float': Float(),
-                'enum': Enum({}),
-                'datetime': DateTime(),
-                'string': String(),
-                'software_version': SoftwareVersion()
+                'uint8': self._uint8_codec,
+                'uint16': self._uint16_codec,
+                'float': self._float_codec,
+                'enum': self._enum_codec,
+                'datetime': self._datetime_codec,
+                'string': self._string_codec
         }
-
-    def encode_value(self, value, value_type: str):
-        logger.debug(f"Encoding value: {value}, value_type: {value_type}")
-        value_type=self._coders[value_type]
-        if value_type:
-            encoded_value = value_type.toBytes(value)
-            logger.debug(f"Encoded value: {encoded_value.hex()}")
-            return encoded_value
+ 
+    def to_bytes(self, value, data_type: str):
+        if data_type in self._types:
+            codec = self._types[data_type]
+            bytes = codec().encode(value)
+            logger.debug(f"Encoded value: {bytes.hex()}")
+            return bytes
         else:
-            raise ValueError(f"Unsupported data type: {value_type}")
+            raise ValueError(f"Unsupported data type: {data_type}")
         
-    def decode_value(self, bytes_value: bytes, value_type: str):
-        logger.debug(f"Decoding value: {bytes_value.hex()}, value_type: {value_type}")
-        value_type=self._coders[value_type.data_type]
-        if value_type:
-            decoded_value = value_type.fromBytes(bytes_value)
-            logger.debug(f"Decoded value: {decoded_value.hex()}")
-            return decoded_value
+    def from_bytes(self, bytes, data_type: str):
+        if data_type in self._types:
+            codec = self._types[data_type]
+            data = codec().decode(bytes)
+            logger.debug(f"Decoded value: {data}")
+            return data
         else:
-            raise ValueError(f"Unsupported data type: {value_type}")
+            raise ValueError(f"Unsupported data type: {data_type}")
+        
+    def _uint8_codec(self):
+        return UInt8Codec()
+    
+    def _uint16_codec(self):
+        return UInt16Codec()
+        
+    def _float_codec(self):
+        return FloatCodec()
+        
+    def _enum_codec(self):
+        return Enum(self._commands.get_enums())
+        
+    def _datetime_codec(self):
+        return DateTimeCodec()
+        
+    def _string_codec(self):
+        return StringCodec()
+        
+class Codec:
+    def encode(self, value):
+        raise NotImplementedError
+        
+    def decode(self, data):
+        raise NotImplementedError
+        
+class UInt8Codec(Codec):
+    def encode(self, value):
+        return struct.pack('B', value)
+        
+    def decode(self, data):
+        return struct.unpack('B', data)[0]
+        
+class UInt16Codec(Codec):
+    def encode(self, value):
+        return struct.pack('>H', value)
+        
+    def decode(self, data):
+        return struct.unpack('>H', data)[0]
+        
+class FloatCodec(Codec):
+    def encode(self, value):
+        return struct.pack('>f', value)
+        
+    def decode(self, data):
+        return struct.unpack('>f', data)[0]
+        
+class Enum(Codec):
+    def __init__(self, enum_dict):
+        self._enum_dict = enum_dict
+        self._value_to_byte = {value: struct.pack('B', value) for value in enum_dict.values()}
+        self._byte_to_value = {byte_value: key for key, byte_value in self._value_to_byte.items()}
 
+    def encode(self, value):
+        if value in self._enum_dict.keys():
+            enum_value = self._enum_dict[value]
+            return self._value_to_byte[enum_value]
+        else:
+            raise ValueError(f"Invalid enum value: {value}")
+        
+    def decode(self, data):
+        value = struct.unpack('B', data)[0]
+        return self._byte_to_value.get(value, None)
+        
+class DateTimeCodec(Codec):
+    def encode(self, value):
+        return struct.pack('>HBBBBB', value.year, value.month, value.day, value.hour, value.minute, value.second)
+        
+    def decode(self, data):
+        year, month, day, hour, minute, second = struct.unpack('>HBBBBB', data)
+        return datetime.datetime(year, month, day, hour, minute, second)
+        
+class StringCodec(Codec):
+    def encode(self, value):
+        return value.encode('ascii')
+        
+    def decode(self, data):
+        return data.decode('ascii')
+
+# 帧编解码器        
 class FrameCodec:
     @staticmethod
     def encode_frame(cid1, cid2, data, address=0x00):
@@ -287,8 +212,7 @@ class FrameCodec:
         frame.extend(bytes.fromhex(cid2[2:]))
         frame.extend(FrameCodec._encode_length(len(data)))
         frame.extend(data)
-        # frame.extend(FrameCodec._calculate_checksum(frame))
-        frame.extend(FrameCodec._calculate_checksum(frame[VER_INDEX:]))
+        frame.extend(FrameCodec._calculate_checksum(frame[1:]))
         frame.extend(struct.pack('B', EOI))
         logger.debug(f"Built frame: {frame.hex()}")
         return bytes(frame)
@@ -296,12 +220,14 @@ class FrameCodec:
     @staticmethod
     def decode_frame(frame):
         logger.debug(f"Parsing frame: {frame.hex()}")
-        # FrameCodec.validate_frame(frame)
+        FrameCodec.validate_frame(frame)
         cid1 = f'0x{frame[CID1_INDEX]:02X}'
         logger.debug(f"cid1: {cid1}")
         cid2 = f'0x{frame[CID2_INDEX]:02X}'
         logger.debug(f"cid2: {cid2}")
-        data = frame[INFO_INDEX:CHKSUM_INDEX]
+        data_start = INFO_INDEX
+        data_end = len(frame) + CHKSUM_INDEX
+        data = frame[data_start:data_end]
         logger.debug(f"data: {data.hex()}")
         return cid1, cid2, data
 
@@ -323,16 +249,7 @@ class FrameCodec:
             raise RTNFormatError()
         
         #长度校验
-        info_length = FrameCodec._decode_length(frame[LENGTH_INDEX:LENGTH_INDEX+2])
-        expected_length = (
-            START_FLAG_LENGTH +
-            ADDRESS_LENGTH +
-            CONTROL_CODE_LENGTH +
-            DATA_LENGTH_LENGTH +
-            info_length +
-            CHECKSUM_LENGTH +
-            END_FLAG_LENGTH
-        )
+        info_length = FrameCodec._decode_length(frame[LENGTH_INDEX:LENGTH_INDEX+DATA_LENGTH_LENGTH])
         expected_length = MIN_FRAME_LENGTH + info_length
         if len(frame) != expected_length:
             logger.warn(f"Frame length mismatch: expected {expected_length}, got {len(frame)}")
@@ -340,84 +257,11 @@ class FrameCodec:
     
         #校验和校验
         received_checksum = frame[CHKSUM_INDEX:CHKSUM_INDEX + CHECKSUM_LENGTH]
-        calculated_checksum =FrameCodec._calculate_checksum(frame[VER_INDEX:CHKSUM_INDEX])
+        calculated_checksum = FrameCodec._calculate_checksum(frame[VER_INDEX:CHKSUM_INDEX])
         if received_checksum != calculated_checksum:
-            logger.warn(f"calculated_checksum {calculated_checksum.hex()}, received_checksum {received_checksum.hex()}")
+            logger.warn(f"Checksum mismatch: expected {calculated_checksum.hex()}, got {received_checksum.hex()}")
             raise RTNChksumError()
         
-        # if len(frame) < MIN_FRAME_LENGTH:
-        #     raise RTNFormatError()
-        # if frame[0] != SOI:
-        #     raise RTNFormatError()
-        # if frame[-1] != EOI:
-        #     raise RTNFormatError()
-        # if frame[1] != PROTOCOL_VERSION:
-        #     raise RTNVerError()
-
-        # #长度校验
-        # info_length = FrameCodec._decode_length(frame[LENGTH_INDEX:LENGTH_INDEX+2])
-        # expected_length = (
-        #     START_FLAG_LENGTH +
-        #     ADDRESS_LENGTH +
-        #     CONTROL_CODE_LENGTH +
-        #     DATA_LENGTH_LENGTH +
-        #     info_length +
-        #     CHECKSUM_LENGTH +
-        #     END_FLAG_LENGTH
-        # )
-        # expected_length = MIN_FRAME_LENGTH + info_length
-        # if len(frame) != expected_length:
-        #     raise RTNLchksumError(f"Frame length mismatch: expected {expected_length}, got {len(frame)}")
-    
-        # #校验和校验
-        # received_checksum = frame[CHKSUM_INDEX:CHKSUM_INDEX + CHECKSUM_LENGTH]
-        # calculated_checksum =FrameCodec._calculate_checksum(frame[VER_INDEX:CHKSUM_INDEX])
-        # logger.debug(f"calculated_checksum {calculated_checksum.hex()}, received_checksum {received_checksum.hex()}")
-        # if received_checksum != calculated_checksum:
-        #     raise RTNChksumError(f"Checksum mismatch: expected {calculated_checksum.hex()}, got {received_checksum.hex()}")
-
-        # info_length = FrameCodec._decode_length(frame[4:6])
-        # expected_length = MIN_FRAME_LENGTH + info_length
-        # if len(frame) != expected_length:
-        #     raise RTNLchksumError()
-
-        # received_checksum = frame[-3:-1]
-        # calculated_checksum = FrameCodec._calculate_checksum(frame[1:-3])
-        # logger.debug(f"calculated_checksum {calculated_checksum.hex()}, received_checksum {received_checksum.hex()}")
-        # if received_checksum != calculated_checksum:
-        #     raise RTNChksumError()
-
-    # @staticmethod
-    # def _encode_length(length):
-    #     logger.debug(f"Encoding length: {length}")
-    #     lenid = length & 0x0FFF
-    #     lchksum = ((lenid & 0x0F) + ((lenid >> 4) & 0x0F) + ((lenid >> 8) & 0x0F)) & 0x0F
-    #     lchksum = (~lchksum + 1) & 0x0F
-    #     encoded_length = struct.pack('>H', (lchksum << 12) | lenid)
-    #     logger.debug(f"Encoded length: {encoded_length.hex()}")
-    #     return encoded_length
-
-    # @staticmethod
-    # def _decode_length(bytes_value):
-    #     logger.debug(f"Decoding length: {bytes_value.hex()}")
-    #     length = struct.unpack('>H', bytes_value)[0]
-    #     lenid = length & 0x0FFF
-    #     lchksum = (length >> 12) & 0x0F
-    #     calc_lchksum = ((lenid & 0x0F) + ((lenid >> 4) & 0x0F) + ((lenid >> 8) & 0x0F)) & 0x0F
-    #     calc_lchksum = (~calc_lchksum + 1) & 0x0F
-    #     if lchksum != calc_lchksum:
-    #         raise ProtocolError(f"Length checksum mismatch: expected {lchksum}, calculated {calc_lchksum}")
-    #     logger.debug(f"Decoded length: {lenid}")
-    #     return lenid
-
-    # @staticmethod
-    # def _calculate_checksum(data):
-    #     logger.debug(f"Calculating checksum for data: {data.hex()}")
-    #     checksum = sum(data) & 0xFFFF
-    #     checksum = (~checksum + 1) & 0xFFFF
-    #     checksum_bytes = struct.pack('>H', checksum)
-    #     logger.debug(f"Calculated checksum: {checksum_bytes.hex()}")
-    #     return checksum_bytes
     @staticmethod
     def _encode_length(length):
         logger.debug(f"Encoding length: {length}")
@@ -449,20 +293,97 @@ class FrameCodec:
     @staticmethod
     def _calculate_checksum(data_for_checksum):
         logger.debug(f"Calculating checksum for data: {data_for_checksum.hex()}")
-        # 计算校验和  
-        checksum = sum(data_for_checksum[1:]) % 65536
+        checksum = sum(data_for_checksum) % 65536
         checksum = (~checksum + 1) & 0xFFFF
         checksum_bytes = struct.pack('>H', checksum)
         logger.debug(f"Calculated checksum: {checksum_bytes.hex()}")
         return checksum_bytes
+        
+# 命令类        
+class Command:
+    def __init__(self, cid1, cid2, key, name, request_class, response_class):
+        self.cid1 = cid1
+        self.cid2 = cid2
+        self.key = key
+        self.name = name
+        self.request_class = request_class
+        self.response_class = response_class
+        
+# 命令管理器
+class Commands:
+    def __init__(self, config):
+        logger.debug(f"Initializing Commands with config: {config}")
+        self._enums = {}
+        self._commands_by_cid = {}
+        self._commands_by_key = {}
+        self._attributes = self._parse_commands(config['attributes'])
+        self._timeseries = self._parse_commands(config['timeseries'])
+        self._alarms = self._parse_commands(config['alarms'])
+        self._server_side_rpc = self._parse_commands(config['serverSideRpc'])
+        for command in self._attributes + self._timeseries + self._alarms + self._server_side_rpc:
+            self._commands_by_cid[(command.cid1, command.cid2)] = command
+            self._commands_by_key[command.key] = command
 
-# Protocol Class
+    def _parse_commands(self, cmd_configs):
+        commands = []
+        for cmd_config in cmd_configs:
+            cid1 = cmd_config['cid1']
+            cid2 = cmd_config['cid2']
+            key = cmd_config['key']
+            name = cmd_config['name']
+            request_class_name = cmd_config.get('request')
+            response_class_name = cmd_config.get('response')
+            
+            request_class = None
+            if request_class_name:
+                request_module = __import__('commands', fromlist=[request_class_name])
+                request_class = getattr(request_module, request_class_name)
+                self._collect_enums(request_class, self._enums)
+                
+            response_class = None  
+            if response_class_name:
+                response_module = __import__('commands', fromlist=[response_class_name])
+                response_class = getattr(response_module, response_class_name)
+                self._collect_enums(response_class, self._enums)
+                
+            cmd = Command(cid1, cid2, key, name, request_class, response_class)
+            commands.append(cmd)
+
+        return commands
+
+    def get_command_by_cid(self, cid1, cid2):
+        logger.debug(f"Looking up command with cid1={cid1}, cid2={cid2}")
+        command = self._commands_by_cid.get((cid1, cid2))
+        logger.debug(f"Found command: {command}")
+        return command
+
+    def get_command_by_key(self, command_key):
+        logger.debug(f"Looking up command by key: {command_key}")
+        command = self._commands_by_key.get(command_key)
+        logger.debug(f"Found command: {command}")
+        return command
+
+    def get_enums(self):
+        return self._enums
+    
+    def _collect_enums(self, data_class, enums):
+        from dataclasses import fields
+        for field in fields(data_class):
+            if field.type is Enum:
+                enums.update(field.type.enum_dict)
+        from dataclasses import fields
+        for field in fields(data_class):
+            if field.type is Enum:
+                enums.update(field.type.enum_dict)
+        
+# 协议类
 class Protocol:
     def __init__(self, device_addr = 1,  port=None, baudrate=9600, bytesize=serial.EIGHTBITS, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE, timeout=None, config=None):
         logger.debug(f"Initializing Protocol with config={config}, port={port}, baudrate={baudrate}, bytesize={bytesize}, parity={parity}, stopbits={stopbits}, timeout={timeout}")
         self._commands = Commands(config)
         self._frame_codec = FrameCodec()
         self._data_codec = DataCodec()
+        self._data_codec._commands = self._commands
 
         self._device_addr = device_addr
         self._port = port
@@ -473,11 +394,11 @@ class Protocol:
         self._timeout = timeout
         self._serial = None
 
-    def get_device_addr(self):
+    @property
+    def device_addr(self):
         return self._device_addr
     
     def connect(self):
-        import serial
         try:
             logger.debug(f"Connecting to serial port {self._port}")
             self._serial = serial.Serial(
@@ -574,18 +495,18 @@ class Protocol:
         logger.debug(f"Receiving frame")
         try:
             # Read SOI
-            soi = self._serial.read(1)
+            soi = self._serial.read(START_FLAG_LENGTH)
             if len(soi) == 0 or soi[0] != SOI:
                 raise ProtocolError(f"Invalid SOI: {soi.hex()}")
 
             # Read VER, ADR, CID1, CID2
-            header = self._serial.read(4)
-            if len(header) < 4:
+            header = self._serial.read(ADDRESS_LENGTH + CONTROL_CODE_LENGTH)
+            if len(header) < ADDRESS_LENGTH + CONTROL_CODE_LENGTH:
                 raise ProtocolError(f"Incomplete header: {header.hex()}")
 
             # Read LENGTH
-            length = self._serial.read(2)
-            if len(length) < 2:
+            length = self._serial.read(DATA_LENGTH_LENGTH)
+            if len(length) < DATA_LENGTH_LENGTH:
                 raise ProtocolError(f"Incomplete LENGTH: {length.hex()}")
             info_length = FrameCodec._decode_length(length)
 
@@ -595,19 +516,18 @@ class Protocol:
                 raise ProtocolError(f"Incomplete INFO: {info.hex()}")
 
             # Read CHKSUM
-            chksum = self._serial.read(2)
-            if len(chksum) < 2:
+            chksum = self._serial.read(CHECKSUM_LENGTH)
+            if len(chksum) < CHECKSUM_LENGTH:
                 raise ProtocolError(f"Incomplete CHKSUM: {chksum.hex()}")
 
             # Read EOI
-            eoi = self._serial.read(1)
+            eoi = self._serial.read(END_FLAG_LENGTH)
             if len(eoi) == 0 or eoi[0] != EOI:
                 raise ProtocolError(f"Invalid EOI: {eoi.hex()}")
 
             # Assemble the frame
             frame = soi + header + length + info + chksum + eoi
             logger.debug(f"Received frame: {frame.hex()}")
-            FrameCodec.validate_frame(frame)
             return frame
 
         except serial.SerialTimeoutException:
@@ -617,13 +537,15 @@ class Protocol:
         logger.debug(f"Building command frame: {command}, data: {data}")
         if not data:
             data = {}
-        command_data = b''
-        for param in command.params:
-            value = data.get(param.key)
-            if value is None:
-                logger.warning(f"Missing parameter: {param.key}")
+        if command.request_class:
+            try:
+                request_obj = command.request_class(**data)
+                command_data = request_obj.to_bytes()
+            except Exception as e:
+                logger.error(f"Error building request object: {e}")
                 return None
-            command_data += self._data_codec.encode_value(value, param)
+        else:
+            command_data = b''
         command_frame = self._frame_codec.encode_frame(command.cid1, command.cid2, command_data, self._device_addr)
         logger.debug(f"Built command frame: {command_frame.hex()}")
         return command_frame
@@ -632,59 +554,46 @@ class Protocol:
         logger.debug(f"Decoding command data for {command}: {data.hex()}")
         if not data:
             return {}
-        result = {}
-        for param in command.params:
-            result[param.key] = self._decode_value(data, param, result)
-        logger.debug(f"Decoded command data: {result}")
-        return result
+        if command.request_class:
+            try:
+                command_data = command.request_class.from_bytes(data)
+            except Exception as e:
+                logger.error(f"Error decoding request data: {e}")
+                raise ProtocolError(f"Error decoding request data: {e}")
+        else:
+            command_data = {}
+        logger.debug(f"Decoded command data: {command_data}")
+        return command_data
 
     def _encode_response_data(self, command, data):
         logger.debug(f"Encoding response data for {command}: {data}")
-        if not data:
-            return b''
-        response_data = b''
-        for value in command.values:
-            if value.key in data:
-                response_data += self._data_codec.encode_value(data[value.key], value)
+        if command.response_class:
+            try:
+                if isinstance(data, command.response_class):
+                    response_data = data.to_bytes()
+                else:
+                    response_data = self._data_codec.to_bytes(data)
+            except Exception as e:
+                logger.error(f"Error encoding response data: {e}")
+                raise ProtocolError(f"Error encoding response data: {e}")
+        else:
+            response_data = b''
         logger.debug(f"Encoded response data: {response_data.hex()}")
         return response_data
 
     def _decode_response_data(self, command, response_frame):
         logger.debug(f"Decoding response data for {command}: {response_frame.hex()}")
-        cid1, cid2, response_data = self._frame_codec.decode_frame(response_frame)
-        if not response_data:
-            return {}
-        result = {}
-        for value in command.values:
-            result[value.key] = self._decode_value(response_data, value, result)
-        logger.debug(f"Decoded response data: {result}")
-        return result
-
-    def _decode_value(self, data, data_config, result):
-        logger.debug(f"Decoding value for {data_config} from {data.hex()}")
-        if data_config.quantity and isinstance(data_config.quantity, str):
-            # 变长字段，需要先获取长度
-            length_key = data_config.quantity[2:-1]
-            length = result[length_key]
-            logger.debug(f"Decoding variable length value, length key: {length_key}, length: {length}")
+        if command.response_class:
+            try:
+                cid1, cid2, response_data = self._frame_codec.decode_frame(response_frame)
+                response_data = command.response_class.from_bytes(response_data)
+            except Exception as e:
+                logger.error(f"Error decoding response data: {e}")
+                raise ProtocolError(f"Error decoding response data: {e}")
         else:
-            length = data_config.quantity or 1
-            logger.debug(f"Decoding fixed length value, length: {length}")
-
-        if length == 1:
-            bytes_value = data[data_config.start_pos:data_config.start_pos+data_config.length]
-            logger.debug(f"Decoding single value: {bytes_value.hex()}")
-            return self._data_codec.decode_value(bytes_value, data_config)
-        else:
-            logger.debug(f"Decoding {length} values")
-            values = []
-            for i in range(length):
-                bytes_value = data[data_config.start_pos+i*data_config.length:
-                                   data_config.start_pos+(i+1)*data_config.length]
-                logger.debug(f"Decoding value {i+1}/{length}: {bytes_value.hex()}")
-                values.append(self._data_codec.decode_value(bytes_value, data_config))
-            logger.debug(f"Decoded {length} values: {values}")
-            return values
+            response_data = {}
+        logger.debug(f"Decoded response data: {response_data}")
+        return response_data
 
     def _validate_command_data(self, command, data):
         # TODO: Add validation logic based on command definition
@@ -692,6 +601,6 @@ class Protocol:
 
     def _is_unidirectional_command(self, command):
         logger.debug(f"Checking if command is unidirectional: {command}")
-        is_unidirectional = len(command.values) == 0
+        is_unidirectional = command.response_class is None
         logger.debug(f"Command is unidirectional: {is_unidirectional}")
-        return is_unidirectional
+        return is_unidirectional 

@@ -1,6 +1,9 @@
 from mu4801_protocol import MU4801Protocol
 import logging
-from datetime import datetime
+import datetime
+
+# 导入相关的数据类
+from commands import *
 
 # 日志配置
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(name)s %(levelname)s %(message)s')
@@ -46,46 +49,44 @@ class MU4801Monitor:
             elif choice == '1':  # 读取当前时间
                 print("读取当前时间:")
                 dt = self.protocol.send_command('getDateTime')
-                device_datetime = datetime(year=dt['year'], month=dt['month'], day=dt['day'],
-                    hour=dt['hour'], minute=dt['minute'], second=dt['second'])
-                print(f"设备时间: {device_datetime}")
+                print(f"当前时间: {dt.datetime}")
             elif choice == '2':  # 设置当前时间
                 print("设置当前时间:")
                 try:
                     dt_str = input("请输入日期时间(格式: YYYY-MM-DD hh:mm:ss): ")
                     dt = datetime.datetime.strptime(dt_str, '%Y-%m-%d %H:%M:%S')
-                    self.protocol.send_command('setDateTime', {
-                        'year': dt.year,
-                        'month': dt.month,
-                        'day': dt.day,
-                        'hour': dt.hour,
-                        'minute': dt.minute,
-                        'second': dt.second
-                    })
+                    self.protocol.send_command('setDateTime', DateTime(
+                        year=dt.year,
+                        month=dt.month,
+                        day=dt.day,
+                        hour=dt.hour,
+                        minute=dt.minute,
+                        second=dt.second
+                    ))
                     print("时间设置成功")
                 except ValueError:
                     print("无效的日期时间格式")
             elif choice == '3':  # 读取协议版本号
                 print("读取协议版本号:")
                 version = self.protocol.send_command('getProtocolVersion')
-                print(f"协议版本号: {version['version']}")
+                print(f"协议版本号: {version.version}")
             elif choice == '4':  # 读取设备地址
                 print("读取设备地址:")
                 addr = self.protocol.send_command('getDeviceAddress')
-                print(f"设备地址: {addr['address']}")
+                print(f"设备地址: {addr.address}")
             elif choice == '5':  # 读取厂家信息
                 print("读取厂家信息:")
                 info = self.protocol.send_command('getManufacturerInfo')
-                print(f"采集器名称: {info['collectorName'].strip()}")
-                print(f"厂商软件版本: {info['softwareVersion'].strip()}")
-                print(f"制造商: {info['manufacturer'].strip()}")
+                print(f"设备名称: {info.collector_name}")
+                print(f"软件版本: {info.software_version}")
+                print(f"制造商: {info.manufacturer}")
             elif choice == '6':  # 读取交流数据
                 print("读取交流数据:")
                 ac_data = self.protocol.send_command('getAcAnalogData')
-                print(f"A相电压: {ac_data['voltageA']:.2f} V")
-                print(f"B相电压: {ac_data['voltageB']:.2f} V")
-                print(f"C相电压: {ac_data['voltageC']:.2f} V")
-                print(f"频率: {ac_data['frequency']:.2f} Hz")
+                print(f"A相电压: {ac_data.voltage_a:.2f} V")
+                print(f"B相电压: {ac_data.voltage_b:.2f} V")
+                print(f"C相电压: {ac_data.voltage_c:.2f} V")  
+                print(f"频率: {ac_data.frequency:.2f} Hz")
             elif choice == '7':  # 读取交流告警状态
                 print("读取交流告警状态:")
                 ac_alarm = self.protocol.send_command('getAcAlarmStatus')
@@ -107,10 +108,10 @@ class MU4801Monitor:
                 try:
                     over_volt = float(input("请输入交流过压值(V): "))
                     under_volt = float(input("请输入交流欠压值(V): "))
-                    self.protocol.send_command('setAcConfigParams', {
-                        'acOverVoltage': over_volt,
-                        'acUnderVoltage': under_volt
-                    })
+                    self.protocol.send_command('setAcConfigParams', SetAcConfigParamsRequest(
+                        acOverVoltage=over_volt,
+                        acUnderVoltage=under_volt
+                    ).to_dict())
                     print("交流配置参数设置成功")
                 except ValueError:
                     print("无效的参数值")
@@ -147,11 +148,11 @@ class MU4801Monitor:
                     print("无效的控制类型")
                     continue
 
-                self.protocol.send_command('controlRectModule', {
-                    'moduleId': module_id,
-                    'controlType': ctrl_code,
-                    'controlValue': 0
-                })
+                self.protocol.send_command('controlRectModule', ControlRectModuleRequest(
+                    moduleId=module_id,
+                    controlType=ctrl_code,
+                    controlValue=0
+                ).to_dict())
                 print(f"整流模块{module_id}{'开机' if ctrl_code == 0x20 else '关机'}成功")
             elif choice == '14':  # 读取直流数据
                 print("读取直流数据:")
@@ -296,44 +297,43 @@ class MU4801Monitor:
                     llvd3_off_time = float(input("请输入LLVD3下电时间(min): "))
                     llvd4_off_time = float(input("请输入LLVD4下电时间(min): "))
                     load_off_mode = int(input("请输入负载下电模式(0-电压模式, 1-时间模式): "))
-                    self.protocol.send_command('setDcConfigParams', {
-                            'dcOverVoltage': over_volt,
-                            'dcUnderVoltage': under_volt,
-                            'timeEqualizeChargeEnable': time_equalize_enable,
-                            'timeEqualizeDuration': time_equalize_duration,
-                            'timeEqualizeInterval': time_equalize_interval,
-                            'batteryGroupNumber': battery_group_number,
-                            'batteryOverTemp': battery_over_temp,
-                            'batteryUnderTemp': battery_under_temp,
-                            'envOverTemp': env_over_temp,
-                            'envUnderTemp': env_under_temp,
-                            'envOverHumidity': env_over_humidity,
-                            'batteryChargeCurrentLimit': battery_charge_current_limit,
-                            'floatVoltage': float_voltage,
-                            'equalizeVoltage': equalize_voltage,
-                            'batteryOffVoltage': battery_off_voltage,
-                            'batteryOnVoltage': battery_on_voltage,
-                            'llvd1OffVoltage': llvd1_off_voltage,
-                            'llvd1OnVoltage': llvd1_on_voltage,
-                            'llvd2OffVoltage': llvd2_off_voltage,
-                            'llvd2OnVoltage': llvd2_on_voltage,
-                            'llvd3OffVoltage': llvd3_off_voltage,
-                            'llvd3OnVoltage': llvd3_on_voltage,
-                            'llvd4OffVoltage': llvd4_off_voltage,
-                            'llvd4OnVoltage': llvd4_on_voltage,
-                            'batteryCapacity': battery_capacity,
-                            'batteryTestStopVoltage': battery_test_stop_voltage,
-                            'batteryTempCoeff': battery_temp_coeff,
-                            'batteryTempCenter': battery_temp_center,
-                            'floatToEqualizeCoeff': float_to_equalize_coeff,
-                            'equalizeToFloatCoeff': equalize_to_float_coeff,
-                            'llvd1OffTime': llvd1_off_time,
-                            'llvd2OffTime': llvd2_off_time,
-                            'llvd3OffTime': llvd3_off_time,
-                            'llvd4OffTime': llvd4_off_time,
-                            'loadOffMode': load_off_mode
-                        }
-                    )
+                    self.protocol.send_command('setDcConfigParams', SetDcConfigParamsRequest(
+                            dcOverVoltage=over_volt,
+                            dcUnderVoltage=under_volt,
+                            timeEqualizeChargeEnable=time_equalize_enable,
+                            timeEqualizeDuration=time_equalize_duration,
+                            timeEqualizeInterval=time_equalize_interval,
+                            batteryGroupNumber=battery_group_number,
+                            batteryOverTemp=battery_over_temp,
+                            batteryUnderTemp=battery_under_temp,
+                            envOverTemp=env_over_temp,
+                            envUnderTemp=env_under_temp,
+                            envOverHumidity=env_over_humidity,
+                            batteryChargeCurrentLimit=battery_charge_current_limit,
+                            floatVoltage=float_voltage,
+                            equalizeVoltage=equalize_voltage,
+                            batteryOffVoltage=battery_off_voltage,
+                            batteryOnVoltage=battery_on_voltage,
+                            llvd1OffVoltage=llvd1_off_voltage,
+                            llvd1OnVoltage=llvd1_on_voltage,
+                            llvd2OffVoltage=llvd2_off_voltage,
+                            llvd2OnVoltage=llvd2_on_voltage,
+                            llvd3OffVoltage=llvd3_off_voltage,
+                            llvd3OnVoltage=llvd3_on_voltage,
+                            llvd4OffVoltage=llvd4_off_voltage,
+                            llvd4OnVoltage=llvd4_on_voltage,
+                            batteryCapacity=battery_capacity,
+                            batteryTestStopVoltage=battery_test_stop_voltage,
+                            batteryTempCoeff=battery_temp_coeff,
+                            batteryTempCenter=battery_temp_center,
+                            floatToEqualizeCoeff=float_to_equalize_coeff,
+                            equalizeToFloatCoeff=equalize_to_float_coeff,
+                            llvd1OffTime=llvd1_off_time,
+                            llvd2OffTime=llvd2_off_time,
+                            llvd3OffTime=llvd3_off_time,
+                            llvd4OffTime=llvd4_off_time,
+                            loadOffMode=load_off_mode
+                    ).to_dict())
                     print("直流配置参数设置成功")
                 except ValueError:
                     print("无效的参数值")
@@ -348,17 +348,29 @@ class MU4801Monitor:
                 try:
                     cmd = int(input("请选择控制命令编号: "))
                     if cmd == 1:
-                        self.protocol.send_command('systemControl', {'controlType': 0xE1})
+                        self.protocol.send_command('systemControl', SystemControlRequest(
+                            controlType=0xE1
+                        ).to_dict())
                     elif cmd == 2:
-                        self.protocol.send_command('systemControl', {'controlType': 0xE2})
+                        self.protocol.send_command('systemControl', SystemControlRequest(
+                            controlType=0xE2
+                        ).to_dict())  
                     elif cmd == 3:
-                        self.protocol.send_command('systemControl', {'controlType': 0xE6})
+                        self.protocol.send_command('systemControl', SystemControlRequest(
+                            controlType=0xE6
+                        ).to_dict())
                     elif cmd == 4:
-                        self.protocol.send_command('systemControl', {'controlType': 0xE5})
+                        self.protocol.send_command('systemControl', SystemControlRequest(
+                            controlType=0xE5
+                        ).to_dict())
                     elif cmd == 5:
-                        self.protocol.send_command('systemControl', {'controlType': 0xEE})
+                        self.protocol.send_command('systemControl', SystemControlRequest(
+                            controlType=0xEE
+                        ).to_dict())
                     elif cmd == 6:
-                        self.protocol.send_command('systemControl', {'controlType': 0xED})
+                        self.protocol.send_command('systemControl', SystemControlRequest(
+                            controlType=0xED
+                        ).to_dict())
                     else:
                         print("无效的命令编号")
                 except ValueError:
@@ -374,6 +386,6 @@ if __name__ == '__main__':
     port = input(f'请输入串口号(默认为{default_port}): ')
     if not port:
         port = default_port
-    logging.info(f"Using serial port: {port}")
-    monitor = MU4801Monitor(1, '/dev/ttyS2')
-    monitor.run()
+    logging.info(f"Using serial port: {port}") 
+    simulator = MU4801Monitor(device_addr, port)
+    simulator.run()

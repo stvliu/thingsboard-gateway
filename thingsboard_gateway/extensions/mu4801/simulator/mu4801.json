@@ -13,25 +13,25 @@
     "logLevel": "DEBUG",
     "attributes": [
         {
-            "cid1": "0x51",
+            "cid1": "0x40",
             "cid2": "0x51", 
             "key": "getManufacturerInfo",
             "name": "获取厂家信息",
-            "response": "GetManufacturerInfoResponse"
+            "response": "ManufacturerInfo"
         },
         {
             "cid1": "0x40",
             "cid2": "0x4F",
             "key": "getProtocolVersion",
             "name": "获取协议版本号",
-            "response": "GetProtocolVersionResponse"
+            "response": "ProtocolVersion"
         },
         {
             "cid1": "0x40", 
             "cid2": "0x50",
             "key": "getDeviceAddress",
             "name": "获取本机地址",
-            "response": "GetDeviceAddressResponse"
+            "response": "DeviceAddress"
         }
     ],
     "timeseries": [
@@ -107,14 +107,14 @@
             "cid2": "0x4D",
             "key": "getDateTime",
             "name": "获取当前时间",
-            "response": "GetDateTimeResponse"
+            "response": "DateTime"
         },
         {
             "cid1": "0x40", 
             "cid2": "0x4E",
             "key": "setDateTime",
             "name": "设置当前时间",
-            "request": "SetDateTimeRequest"
+            "request": "DateTime"
         },
         {
             "cid1": "0x41",
