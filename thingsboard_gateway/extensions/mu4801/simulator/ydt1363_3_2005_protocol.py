@@ -433,32 +433,59 @@ class Protocol:
             logger.warning(f"Failed to build command frame for {command}")
             return None
         self._send_frame(command_frame)
-        if not self._is_unidirectional_command(command):
-            # 接收响应帧
-            response_frame = self._receive_frame() 
-            if response_frame is None:
-                logger.warning(f"No response received for command: {command}")
-                return None
+        
+        # 接收响应帧
+        response_frame = self._receive_frame()
+        if response_frame is None:
+            logger.warning(f"No response received for command: {command}")
+            return None
+        
+        # 解析响应数据
+        try:
             response_data = self._decode_response_data(command, response_frame)
-            logger.debug(f"Decoded response data: {response_data}")
+        except ProtocolError as e:
+            logger.error(f"Error decoding response data: {e}")
+            return None
+        
+        # 检查返回码
+        rtn_code = response_frame[4]  # 假设返回码在响应帧的第5个字节
+        if rtn_code == RTN_OK:
+            logger.debug(f"Received normal response: {response_data}")
             return response_data
+        else:
+            logger.warning(f"Received error response: RTN={rtn_code}")
+            self._handle_error_response(rtn_code)
+            return None
 
     def receive_command(self):
         frame = self._receive_frame()
         try:
             cid1, cid2, data = self._frame_codec.decode_frame(frame)
-        except ProtocolError:
-            raise RTNFormatError()
+        except ProtocolError as e:
+            # 根据不同的错误类型,发送相应的错误响应
+            if isinstance(e, RTNVerError):
+                self._send_error_response(RTN_VER_ERROR)
+            elif isinstance(e, RTNChksumError):
+                self._send_error_response(RTN_CHKSUM_ERROR)
+            elif isinstance(e, RTNLchksumError):
+                self._send_error_response(RTN_LCHKSUM_ERROR)
+            else:
+                self._send_error_response(RTN_COMMAND_FORMAT_ERROR)
+            raise e
 
         command = self._commands.get_command_by_cid(cid1, cid2)
         if not command:
+            logger.warning(f"Command with cid1={cid1}, cid2={cid2} not found in configuration.",exc_info=True)
+            # 如果找不到对应的命令,发送一个CID2无效的错误响应
+            self._send_error_response(RTN_CID2_INVALID)
             raise RTNCidError()
-
         try:
             command_data = self._decode_command_data(command, data)
         except ProtocolError:
+            logger.warning(f"Error decoding command data: {data.hex()}",exc_info=True)
+            # 如果解析命令数据失败,发送一个无效数据的错误响应
+            self._send_error_response(RTN_INVALID_DATA)
             raise RTNDataError()
-
         logger.debug(f"Received command: {command}, data: {command_data}")
         return command, command_data
 
@@ -476,6 +503,22 @@ class Protocol:
         except ProtocolError as e:
             logger.error(f"Failed to send response: {e}")
             raise RTNFormatError() from e
+    
+    def _send_error_response(self, rtn_code):
+        """
+        发送错误响应。
+
+        :param rtn_code: 错误码。
+        """
+        response_frame = self._frame_codec.encode_frame(
+            '0x00',  # 使用一个虚拟的CID1
+            rtn_code,  # 错误码作为RTN
+            b'',  # 错误响应没有数据
+            self._device_addr
+        )
+        self._send_frame(response_frame)
+    
+
 
     def _send_frame(self, frame):
         logger.debug(f"Sending frame: {frame.hex()}")
@@ -534,20 +577,45 @@ class Protocol:
             raise ProtocolError("Timeout waiting for response")
 
     def _build_command_frame(self, command, data):
+        """
+        构建命令帧。
+
+        :param command: 命令对象,包含命令类型信息。
+        :param data: 请求数据,可以是一个字典或者一个请求类的对象。
+        :return: 构建好的命令帧(字节串),如果构建失败则返回None。
+        """
         logger.debug(f"Building command frame: {command}, data: {data}")
-        if not data:
-            data = {}
+
         if command.request_class:
+            # 如果命令有关联的请求类
+            if not isinstance(data, command.request_class):
+                # 如果提供的数据不是一个请求类的对象,尝试用数据字典创建一个
+                try:
+                    request_obj = command.request_class(**data)
+                except Exception as e:
+                    # 如果创建请求对象失败,记录错误并返回None
+                    logger.error(f"Error building request object: {e}")
+                    return None
+            else:
+                # 如果提供的数据已经是一个请求类的对象,直接使用它
+                request_obj = data
+
             try:
-                request_obj = command.request_class(**data)
+                # 尝试将请求对象序列化为字节串
                 command_data = request_obj.to_bytes()
             except Exception as e:
-                logger.error(f"Error building request object: {e}")
+                # 如果序列化失败,记录错误并返回None
+                logger.error(f"Error serializing request object: {e}")
                 return None
         else:
+            # 如果命令没有关联的请求类,将命令数据设为空字节串
             command_data = b''
+
+        # 使用帧编码器将命令类型、命令数据和设备地址编码为命令帧
         command_frame = self._frame_codec.encode_frame(command.cid1, command.cid2, command_data, self._device_addr)
         logger.debug(f"Built command frame: {command_frame.hex()}")
+
+        # 返回构建好的命令帧
         return command_frame
 
     def _decode_command_data(self, command, data):
@@ -564,7 +632,7 @@ class Protocol:
             command_data = {}
         logger.debug(f"Decoded command data: {command_data}")
         return command_data
-
+    
     def _encode_response_data(self, command, data):
         logger.debug(f"Encoding response data for {command}: {data}")
         if command.response_class:
@@ -595,9 +663,29 @@ class Protocol:
         logger.debug(f"Decoded response data: {response_data}")
         return response_data
 
-    def _validate_command_data(self, command, data):
-        # TODO: Add validation logic based on command definition
-        pass
+    def _handle_error_response(self, rtn_code):
+        """
+        处理错误响应。
+
+        :param rtn_code: 返回码。
+        :raises ProtocolError: 如果返回码表示一个错误。
+        """
+        if rtn_code == RTN_VER_ERROR:
+            raise RTNVerError()
+        elif rtn_code == RTN_CHKSUM_ERROR:
+            raise RTNChksumError()
+        elif rtn_code == RTN_LCHKSUM_ERROR:
+            raise RTNLchksumError()
+        elif rtn_code == RTN_CID2_INVALID:
+            raise RTNCidError()
+        elif rtn_code == RTN_COMMAND_FORMAT_ERROR:
+            raise RTNFormatError()
+        elif rtn_code == RTN_INVALID_DATA:
+            raise RTNDataError()
+        elif RTN_USER_DEFINED_ERROR_START <= rtn_code <= RTN_USER_DEFINED_ERROR_END:
+            raise RTNError(rtn_code, f"User-defined error: {rtn_code}")
+        else:
+            raise RTNError(rtn_code, f"Unknown error: {rtn_code}")
 
     def _is_unidirectional_command(self, command):
         logger.debug(f"Checking if command is unidirectional: {command}")

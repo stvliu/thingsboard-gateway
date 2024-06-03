@@ -56,7 +56,7 @@ class MU4801Simulator:
         )
         
         self.rect_data = GetRectAnalogDataResponse(
-            data_flag=0,
+            data_flag=DataFlag.NORMAL,
             output_voltage=53.5,
             module_count=3,
             module_currents=[30.0, 30.0, 30.0],
@@ -77,17 +77,17 @@ class MU4801Simulator:
         )
         
         self.rect_alarm_status = GetRectAlarmStatusResponse(
-            data_flag=0,
+            data_flag=DataFlag.NORMAL,
             module_count=3,
-            module_failure_status=[0, 0, 0],
+            module_failure_status=[AlarmStatus.NORMAL, AlarmStatus.NORMAL, AlarmStatus.NORMAL],
             user_defined_params_count=[18, 18, 18],
-            module_comm_failure_status=[0, 0, 0],
-            module_protection_status=[0, 0, 0],
-            module_fan_status=[0, 0, 0]
+            module_comm_failure_status=[AlarmStatus.NORMAL, AlarmStatus.NORMAL, AlarmStatus.NORMAL],
+            module_protection_status=[AlarmStatus.NORMAL, AlarmStatus.NORMAL, AlarmStatus.NORMAL],
+            module_fan_status=[AlarmStatus.NORMAL, AlarmStatus.NORMAL, AlarmStatus.NORMAL]
         )
         
         self.dc_data = GetDcAnalogDataResponse(
-            data_flag=0,
+            data_flag=DataFlag.NORMAL,
             dc_voltage=53.5,
             total_load_current=120.0,
             battery_group_count=1,
@@ -159,7 +159,7 @@ class MU4801Simulator:
         self.dc_config_params = GetDcConfigParamsResponse(
             dc_over_voltage=57.6,
             dc_under_voltage=43.2,
-            time_equalize_charge_enable=1,
+            time_equalize_charge_enable=EnableStatus.DISABLE,
             time_equalize_duration=8,
             time_equalize_interval=180,
             battery_group_number=1,
@@ -191,11 +191,11 @@ class MU4801Simulator:
             llvd2_off_time=5.0,
             llvd3_off_time=5.0,
             llvd4_off_time=5.0,
-            load_off_mode=0
+            load_off_mode=LoadOffMode.VOLTAGE
         )
         
         self.energy_params = GetEnergyParamsResponse(
-            energy_saving=0,
+            energy_saving=EnableStatus.ENABLE,
             min_working_modules=2,
             module_switch_cycle=180,
             module_best_efficiency_point=90,
@@ -215,9 +215,8 @@ class MU4801Simulator:
             second=now.second
         )
         
-    def handle_set_time(self, data):
-        request = DateTime.from_bytes(data)
-        self._log.info(f"Time set to: {request}")
+    def handle_set_time(self, request: DateTime):
+        self._log.info(f"Time set to: {request.datetime}")
         
     def handle_get_protocol_version(self):
         return ProtocolVersion(version='V2.1')
@@ -242,9 +241,9 @@ class MU4801Simulator:
     def handle_get_ac_config_params(self):
         return self.ac_config_params
         
-    def handle_set_ac_config_params(self, request):
+    def handle_set_ac_config_params(self, request: SetAcConfigParamsRequest):
         self.ac_config_params = request
-        self._log.info(f"AC config updated: {self.ac_config_params}")
+        self._log.info(f"AC config updated: {request.to_dict()}")
         
     def handle_get_rect_analog_data(self):  
         return self.rect_data
@@ -255,10 +254,10 @@ class MU4801Simulator:
     def handle_get_rect_alarm_status(self):
         return self.rect_alarm_status
         
-    def handle_control_rect_module(self, request):
+    def handle_control_rect_module(self, request: ControlRectModuleRequest):
         module_id = request.module_id
         control_type = request.control_type
-        self._log.info(f"Rectifier module {module_id} turned {'on' if control_type == 0x20 else 'off'}")
+        self._log.info(f"Rectifier module {module_id} turned {'on' if control_type == RectModuleControlType.ON else 'off'}")
         
     def handle_get_dc_analog_data(self):
         return self.dc_data
@@ -269,51 +268,50 @@ class MU4801Simulator:
     def handle_get_dc_config_params(self):
         return self.dc_config_params
         
-    def handle_set_dc_config_params(self, request):
+    def handle_set_dc_config_params(self, request: SetDcConfigParamsRequest):
         self.dc_config_params = request
-        self._log.info(f"DC config updated: {self.dc_config_params}")
+        self._log.info(f"DC config updated: {request.to_dict()}")
         
-    def handle_set_system_control_state(self, request):
+    def handle_set_system_control_state(self, request: SetSystemControlStateRequest):
         self.system_control_state = request.state
-        self._log.info(f"System control state set to: {self.system_control_state}")
+        self._log.info(f"System control state set to: {self.system_control_stat.to_dict()}")
         
     def handle_get_system_control_state(self):
         return GetSystemControlStateResponse(state=self.system_control_state)
         
-    def handle_set_alarm_sound_enable(self, request):
-        self._log.info(f"Alarm sound {'enabled' if request.enable == 1 else 'disabled'}")
+    def handle_set_alarm_sound_enable(self, request: SetAlarmSoundEnableRequest):
+        self._log.info(f"Alarm sound {'enabled' if request.enable == EnableStatus.ENABLE else 'disabled'}")
         
     def handle_get_energy_params(self):
         return self.energy_params
         
-    def handle_set_energy_params(self, request):
-        self.energy_params = request
-        self._log.info(f"Energy params updated: {self.energy_params}")
+    def handle_set_energy_params(self, request: SetEnergyParamsRequest):
+        self._log.info(f"Energy params updated: {request.to_dict()}")
         
-    def handle_system_control(self, request): 
+    def handle_system_control(self, request: SystemControlRequest): 
         control_type = request.control_type
-        if control_type == 0xE1:
+        if control_type == SystemControlType.RESET:
             self._log.info("System reset")
-        elif control_type == 0xED:
-            self._log.info("Battery off")  
-        elif control_type == 0xEE:
-            self._log.info("Battery on")
-        elif control_type == 0xE5: 
+        elif control_type == SystemControlType.LOAD1_OFF: 
             self._log.info("Load 1 off")
-        elif control_type == 0xE6:
+        elif control_type == SystemControlType.LOAD1_ON:
             self._log.info("Load 1 on") 
-        elif control_type == 0xE7:
+        elif control_type == SystemControlType.LOAD2_OFF:
             self._log.info("Load 2 off")
-        elif control_type == 0xE8: 
+        elif control_type == SystemControlType.LOAD2_ON: 
             self._log.info("Load 2 on")
-        elif control_type == 0xE9:  
+        elif control_type == SystemControlType.LOAD3_OFF:  
             self._log.info("Load 3 off")
-        elif control_type == 0xEA:
+        elif control_type == SystemControlType.LOAD3_ON:
             self._log.info("Load 3 on") 
-        elif control_type == 0xEB:
+        elif control_type == SystemControlType.LOAD4_OFF:
             self._log.info("Load 4 off")  
-        elif control_type == 0xEC:
+        elif control_type == SystemControlType.LOAD4_ON:
             self._log.info("Load 4 on")
+        elif control_type == SystemControlType.BATTERY_OFF:
+            self._log.info("Battery off")  
+        elif control_type == SystemControlType.BATTERY_ON:
+            self._log.info("Battery on")
             
     def run(self):
         while True:
@@ -342,16 +340,13 @@ class MU4801Simulator:
                     elif command.cid2 == '0x46':  # 获取交流配电参数
                         response_data = self.handle_get_ac_config_params()
                     elif command.cid2 == '0x48':  # 设置交流配电参数  
-                        request = SetAcConfigParamsRequest.from_bytes(command_data)
-                        self.handle_set_ac_config_params(request)
+                        self.handle_set_ac_config_params(command_data)
                     elif command.cid2 == '0x80':  # 修改系统控制状态
-                        request = SetSystemControlStateRequest.from_bytes(command_data)
-                        self.handle_set_system_control_state(request)  
+                        self.handle_set_system_control_state(command_data)  
                     elif command.cid2 == '0x81':  # 读取系统控制状态
                         response_data = self.handle_get_system_control_state()
                     elif command.cid2 == '0x84':  # 后台告警音使能控制
-                        request = SetAlarmSoundEnableRequest.from_bytes(command_data)
-                        self.handle_set_alarm_sound_enable(request)
+                        self.handle_set_alarm_sound_enable(command_data)
                         
                 elif command.cid1 == '0x41': 
                     if command.cid2 == '0x41':  # 获取整流模块模拟量
@@ -361,8 +356,7 @@ class MU4801Simulator:
                     elif command.cid2 == '0x44':  # 获取整流模块告警状态
                         response_data = self.handle_get_rect_alarm_status() 
                     elif command.cid2 == '0x45' or command.cid2 == '0x80':  # 遥控整流模块
-                        request = ControlRectModuleRequest.from_bytes(command_data)
-                        self.handle_control_rect_module(request)
+                        self.handle_control_rect_module(command_data)
                         
                 elif command.cid1 == '0x42':
                     if command.cid2 == '0x41':  # 获取直流配电模拟量  
@@ -372,23 +366,16 @@ class MU4801Simulator:
                     elif command.cid2 == '0x46':  # 获取直流配电参数
                         response_data = self.handle_get_dc_config_params()
                     elif command.cid2 == '0x48':  # 设置直流配电参数
-                        request = SetDcConfigParamsRequest.from_bytes(command_data)
-                        self.handle_set_dc_config_params(request)
+                        self.handle_set_dc_config_params(command_data)
                     elif command.cid2 == '0x90':  # 读取节能参数  
                         response_data = self.handle_get_energy_params()
                     elif command.cid2 == '0x91':  # 设置节能参数
-                        request = SetEnergyParamsRequest.from_bytes(command_data)
-                        self.handle_set_energy_params(request)  
+                        self.handle_set_energy_params(command_data)  
                     elif command.cid2 == '0x92':  # 系统控制
-                        request = SystemControlRequest.from_bytes(command_data)
-                        self.handle_system_control(request)
-                        
-                if response_data:
-                    self.protocol.send_response(command, '0x00', response_data)  
-                else:
-                    self._log.warning(f"Unsupported command: cid1={command.cid1}, cid2={command.cid2}")
-                    self.protocol.send_response(command, '0x04', None)  # 无效数据应答
-                    
+                        self.handle_system_control(command_data) 
+
+                self.protocol.send_response(command, '0x00', response_data)  
+
             except Exception as e:
                 self._log.error(f"An error occurred: {e}", exc_info=True)
                 

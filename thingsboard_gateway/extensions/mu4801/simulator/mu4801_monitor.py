@@ -90,181 +90,181 @@ class MU4801Monitor:
             elif choice == '7':  # 读取交流告警状态
                 print("读取交流告警状态:")
                 ac_alarm = self.protocol.send_command('getAcAlarmStatus')
-                print(f"A相电压状态: {ac_alarm['voltageAStatus']}")
-                print(f"B相电压状态: {ac_alarm['voltageBStatus']}")
-                print(f"C相电压状态: {ac_alarm['voltageCStatus']}")
-                print(f"频率状态: {ac_alarm['frequencyStatus']}")
-                print(f"交流防雷器状态: {ac_alarm['acArresterStatus']}")
-                print(f"交流输入空开状态: {ac_alarm['acInputSwitchStatus']}")
-                print(f"交流输出空开状态: {ac_alarm['acOutputSwitchStatus']}")
-                print(f"交流第一路输入状态: {ac_alarm['acPowerStatus']}")
+                print(f"A相电压状态: {ac_alarm.voltage_a_status.name}")
+                print(f"B相电压状态: {ac_alarm.voltage_b_status.name}")
+                print(f"C相电压状态: {ac_alarm.voltage_c_status.name}")
+                print(f"频率状态: {ac_alarm.frequency_status.name}")
+                print(f"交流防雷器状态: {ac_alarm.ac_arrester_status.name}")
+                print(f"交流输入空开状态: {ac_alarm.ac_input_switch_status.name}")
+                print(f"交流输出空开状态: {ac_alarm.ac_output_switch_status.name}")
+                print(f"交流第一路输入状态: {ac_alarm.ac_power_status.name}")
             elif choice == '8':  # 读取交流配置参数
                 print("读取交流配置参数:")
                 ac_config = self.protocol.send_command('getAcConfigParams')
-                print(f"交流过压值: {ac_config['acOverVoltage']:.2f} V")
-                print(f"交流欠压值: {ac_config['acUnderVoltage']:.2f} V")
+                print(f"交流过压值: {ac_config.ac_over_voltage:.2f} V")
+                print(f"交流欠压值: {ac_config.ac_under_voltage:.2f} V")
             elif choice == '9':  # 设置交流配置参数
                 print("设置交流配置参数:")
                 try:
                     over_volt = float(input("请输入交流过压值(V): "))
                     under_volt = float(input("请输入交流欠压值(V): "))
                     self.protocol.send_command('setAcConfigParams', SetAcConfigParamsRequest(
-                        acOverVoltage=over_volt,
-                        acUnderVoltage=under_volt
-                    ).to_dict())
+                        ac_over_voltage=over_volt,
+                        ac_under_voltage=under_volt
+                    ))
                     print("交流配置参数设置成功")
                 except ValueError:
                     print("无效的参数值")
             elif choice == '10':  # 读取整流模块数据
                 print("读取整流模块数据:")
-                rect_data = self.protocol.send_command('getRectAnalogData', {'moduleCount': 3})
-                print(f"输出电压: {rect_data['outputVoltage']:.2f} V")
-                for i, current in enumerate(rect_data['moduleCurrent'], 1):
+                rect_data = self.protocol.send_command('getRectAnalogData')
+                print(f"输出电压: {rect_data.output_voltage:.2f} V")
+                for i, current in enumerate(rect_data.module_currents, 1):
                     print(f"模块{i}电流: {current:.2f} A")
             elif choice == '11':  # 读取整流模块状态
                 print("读取整流模块状态:")
-                rect_status = self.protocol.send_command('getRectSwitchStatus', {'moduleCount': 3})
-                for i, status in enumerate(rect_status['moduleRunStatus'], 1):
-                    print(f"模块{i}运行状态: {'开机' if status == 0 else '关机'}")
+                rect_status = self.protocol.send_command('getRectSwitchStatus')
+                for i, status in enumerate(rect_status.module_run_status, 1):
+                    print(f"模块{i}运行状态: {'开机' if status == SwitchStatus.ON else '关机'}")
             elif choice == '12':  # 读取整流模块告警
                 print("读取整流模块告警:")
-                rect_alarm = self.protocol.send_command('getRectAlarmStatus', {'moduleCount': 3})
-                for i, alarm in enumerate(rect_alarm['moduleFailureStatus'], 1):
-                    print(f"模块{i}故障状态: {'正常' if alarm == 0 else '故障'}")
-                for i, alarm in enumerate(rect_alarm['moduleCommFailureStatus'], 1):
-                    print(f"模块{i}通讯故障状态: {'正常' if alarm == 0 else '通讯故障'}")
-                for i, alarm in enumerate(rect_alarm['moduleProtectionStatus'], 1):
-                    print(f"模块{i}保护状态: {'正常' if alarm == 0 else '保护'}")
-                for i, alarm in enumerate(rect_alarm['moduleFanStatus'], 1):
-                    print(f"模块{i}风扇状态: {'正常' if alarm == 0 else '故障'}")
+                rect_alarm = self.protocol.send_command('getRectAlarmStatus')
+                for i, alarm in enumerate(rect_alarm.module_failure_status, 1):
+                    print(f"模块{i}故障状态: {'正常' if alarm == AlarmStatus.NORMAL else '故障'}")
+                for i, alarm in enumerate(rect_alarm.module_comm_failure_status, 1):
+                    print(f"模块{i}通讯故障状态: {'正常' if alarm == AlarmStatus.NORMAL else '通讯故障'}")
+                for i, alarm in enumerate(rect_alarm.module_protection_status, 1):
+                    print(f"模块{i}保护状态: {'正常' if alarm == AlarmStatus.NORMAL else '保护'}")
+                for i, alarm in enumerate(rect_alarm.module_fan_status, 1):
+                    print(f"模块{i}风扇状态: {'正常' if alarm == AlarmStatus.NORMAL else '故障'}")
             elif choice == '13':  # 整流模块远程开关机
                 module_id = int(input("请输入要控制的模块ID(1~n): "))
                 ctrl_type = input("请输入控制类型(0-开机, 1-关机): ")
                 if ctrl_type == '0':
-                    ctrl_code = 0x20
+                    ctrl_code = RectModuleControlType.ON
                 elif ctrl_type == '1':
-                    ctrl_code = 0x2F
+                    ctrl_code = RectModuleControlType.OFF
                 else:
                     print("无效的控制类型")
                     continue
 
                 self.protocol.send_command('controlRectModule', ControlRectModuleRequest(
-                    moduleId=module_id,
-                    controlType=ctrl_code,
-                    controlValue=0
-                ).to_dict())
-                print(f"整流模块{module_id}{'开机' if ctrl_code == 0x20 else '关机'}成功")
+                    module_id=module_id,
+                    control_type=ctrl_code,
+                    control_value=0
+                ))
+                print(f"整流模块{module_id}{'开机' if ctrl_code == RectModuleControlType.ON else '关机'}成功")
             elif choice == '14':  # 读取直流数据
                 print("读取直流数据:")
                 dc_data = self.protocol.send_command('getDcAnalogData')
-                print(f"电池电压: {dc_data['dcVoltage']:.2f} V")
-                print(f"负载总电流: {dc_data['totalLoadCurrent']:.2f} A")
-                print(f"电池组1电流: {dc_data['batteryGroup1Current']:.2f} A")
-                print(f"直流分路1电流: {dc_data['loadBranch1Current']:.2f} A")
-                print(f"直流分路2电流: {dc_data['loadBranch2Current']:.2f} A")
-                print(f"直流分路3电流: {dc_data['loadBranch3Current']:.2f} A")
-                print(f"直流分路4电流: {dc_data['loadBranch4Current']:.2f} A")
-                print(f"电池总电流: {dc_data['batteryTotalCurrent']:.2f} A")
-                print(f"电池组1容量: {dc_data['batteryGroup1Capacity']:.2f} Ah")
-                print(f"电池组1电压: {dc_data['batteryGroup1Voltage']:.2f} V")
-                print(f"电池组1中点电压: {dc_data['batteryGroup1MidVoltage']:.2f} V")
-                print(f"电池组2中点电压: {dc_data['batteryGroup2MidVoltage']:.2f} V")
-                print(f"电池组3中点电压: {dc_data['batteryGroup3MidVoltage']:.2f} V")
-                print(f"电池组4中点电压: {dc_data['batteryGroup4MidVoltage']:.2f} V")
-                print(f"电池组1温度: {dc_data['batteryGroup1Temperature']:.2f} °C")
-                print(f"环境温度1: {dc_data['envTemp1']:.2f} °C")
-                print(f"环境温度2: {dc_data['envTemp2']:.2f} °C")
-                print(f"环境湿度1: {dc_data['envHumidity1']:.2f} %RH")
-                print(f"总负载功率: {dc_data['totalLoadPower']:.2f} W")
-                print(f"负载1功率: {dc_data['loadPower1']:.2f} W")
-                print(f"负载2功率: {dc_data['loadPower2']:.2f} W")
-                print(f"负载3功率: {dc_data['loadPower3']:.2f} W")
-                print(f"负载4功率: {dc_data['loadPower4']:.2f} W")
-                print(f"总负载电量: {dc_data['totalLoadEnergy']:.2f} kWh")
-                print(f"负载1电量: {dc_data['loadEnergy1']:.2f} kWh")
-                print(f"负载2电量: {dc_data['loadEnergy2']:.2f} kWh")
-                print(f"负载3电量: {dc_data['loadEnergy3']:.2f} kWh")
-                print(f"负载4电量: {dc_data['loadEnergy4']:.2f} kWh")
+                print(f"电池电压: {dc_data.dc_voltage:.2f} V")
+                print(f"负载总电流: {dc_data.total_load_current:.2f} A")
+                print(f"电池组1电流: {dc_data.battery_group_1_current:.2f} A")
+                print(f"直流分路1电流: {dc_data.load_branch_1_current:.2f} A")
+                print(f"直流分路2电流: {dc_data.load_branch_2_current:.2f} A")
+                print(f"直流分路3电流: {dc_data.load_branch_3_current:.2f} A")
+                print(f"直流分路4电流: {dc_data.load_branch_4_current:.2f} A")
+                print(f"电池总电流: {dc_data.battery_total_current:.2f} A")
+                print(f"电池组1容量: {dc_data.battery_group_1_capacity:.2f} Ah")
+                print(f"电池组1电压: {dc_data.battery_group_1_voltage:.2f} V")
+                print(f"电池组1中点电压: {dc_data.battery_group_1_mid_voltage:.2f} V")
+                print(f"电池组2中点电压: {dc_data.battery_group_2_mid_voltage:.2f} V")
+                print(f"电池组3中点电压: {dc_data.battery_group_3_mid_voltage:.2f} V")
+                print(f"电池组4中点电压: {dc_data.battery_group_4_mid_voltage:.2f} V")
+                print(f"电池组1温度: {dc_data.battery_group_1_temperature:.2f} °C")
+                print(f"环境温度1: {dc_data.env_temp_1:.2f} °C")
+                print(f"环境温度2: {dc_data.env_temp_2:.2f} °C")
+                print(f"环境湿度1: {dc_data.env_humidity_1:.2f} %RH")
+                print(f"总负载功率: {dc_data.total_load_power:.2f} W")
+                print(f"负载1功率: {dc_data.load_power_1:.2f} W")
+                print(f"负载2功率: {dc_data.load_power_2:.2f} W")
+                print(f"负载3功率: {dc_data.load_power_3:.2f} W")
+                print(f"负载4功率: {dc_data.load_power_4:.2f} W")
+                print(f"总负载电量: {dc_data.total_load_energy:.2f} kWh")
+                print(f"负载1电量: {dc_data.load_energy_1:.2f} kWh")
+                print(f"负载2电量: {dc_data.load_energy_2:.2f} kWh")
+                print(f"负载3电量: {dc_data.load_energy_3:.2f} kWh")
+                print(f"负载4电量: {dc_data.load_energy_4:.2f} kWh")
             elif choice == '15':  # 读取直流告警状态
                 print("读取直流告警状态:")
                 dc_alarm = self.protocol.send_command('getDcAlarmStatus')
-                print(f"直流电压状态: {dc_alarm['dcVoltageStatus']}")
-                print(f"直流防雷器状态: {dc_alarm['dcArresterStatus']}")
-                print(f"负载熔丝状态: {dc_alarm['loadFuseStatus']}")
-                print(f"电池组1熔丝状态: {dc_alarm['batteryGroup1FuseStatus']}")
-                print(f"电池组2熔丝状态: {dc_alarm['batteryGroup2FuseStatus']}")
-                print(f"电池组3熔丝状态: {dc_alarm['batteryGroup3FuseStatus']}")
-                print(f"电池组4熔丝状态: {dc_alarm['batteryGroup4FuseStatus']}")
-                print(f"BLVD即将下电状态: {dc_alarm['blvdImpendingStatus']}")
-                print(f"BLVD下电状态: {dc_alarm['blvdStatus']}")
-                print(f"负载即将下电LLVD1状态: {dc_alarm['llvd1ImpendingStatus']}")
-                print(f"负载下电LLVD1状态: {dc_alarm['llvd1Status']}")
-                print(f"负载即将下电LLVD2状态: {dc_alarm['llvd2ImpendingStatus']}")
-                print(f"负载下电LLVD2状态: {dc_alarm['llvd2Status']}")
-                print(f"负载即将下电LLVD3状态: {dc_alarm['llvd3ImpendingStatus']}")
-                print(f"负载下电LLVD3状态: {dc_alarm['llvd3Status']}")
-                print(f"负载即将下电LLVD4状态: {dc_alarm['llvd4ImpendingStatus']}")
-                print(f"负载下电LLVD4状态: {dc_alarm['llvd4Status']}")
-                print(f"电池温度状态: {dc_alarm['batteryTempStatus']}")
-                print(f"电池温度传感器1状态: {dc_alarm['batteryTempSensor1Status']}")
-                print(f"环境温度状态: {dc_alarm['envTempStatus']}")
-                print(f"环境温度传感器1状态: {dc_alarm['envTempSensor1Status']}")
-                print(f"环境温度传感器2状态: {dc_alarm['envTempSensor2Status']}")
-                print(f"环境湿度状态: {dc_alarm['envHumidityStatus']}")
-                print(f"环境湿度传感器1状态: {dc_alarm['envHumiditySensor1Status']}")
-                print(f"门磁状态: {dc_alarm['doorStatus']}")
-                print(f"水浸状态: {dc_alarm['waterStatus']}")
-                print(f"烟雾状态: {dc_alarm['smokeStatus']}")
-                print(f"数字输入1状态: {dc_alarm['digitalInputStatus1']}")
-                print(f"数字输入2状态: {dc_alarm['digitalInputStatus2']}")
-                print(f"数字输入3状态: {dc_alarm['digitalInputStatus3']}")
-                print(f"数字输入4状态: {dc_alarm['digitalInputStatus4']}")
-                print(f"数字输入5状态: {dc_alarm['digitalInputStatus5']}")
-                print(f"数字输入6状态: {dc_alarm['digitalInputStatus6']}")
+                print(f"直流电压状态: {dc_alarm.dc_voltage_status.name}")
+                print(f"直流防雷器状态: {dc_alarm.dc_arrester_status.name}")
+                print(f"负载熔丝状态: {dc_alarm.load_fuse_status.name}")
+                print(f"电池组1熔丝状态: {dc_alarm.battery_group_1_fuse_status.name}")
+                print(f"电池组2熔丝状态: {dc_alarm.battery_group_2_fuse_status.name}")
+                print(f"电池组3熔丝状态: {dc_alarm.battery_group_3_fuse_status.name}")
+                print(f"电池组4熔丝状态: {dc_alarm.battery_group_4_fuse_status.name}")
+                print(f"BLVD即将下电状态: {LVDStatus(AlarmStatus.IMPENDING).name}")
+                print(f"BLVD下电状态: {dc_alarm.blvd_status.name}")
+                print(f"负载即将下电LLVD1状态: {LVDStatus(AlarmStatus.IMPENDING).name}")
+                print(f"负载下电LLVD1状态: {dc_alarm.llvd1_status.name}")
+                print(f"负载即将下电LLVD2状态: {LVDStatus(AlarmStatus.IMPENDING).name}")
+                print(f"负载下电LLVD2状态: {dc_alarm.llvd2_status.name}")
+                print(f"负载即将下电LLVD3状态: {LVDStatus(AlarmStatus.IMPENDING).name}")
+                print(f"负载下电LLVD3状态: {dc_alarm.llvd3_status.name}")
+                print(f"负载即将下电LLVD4状态: {LVDStatus(AlarmStatus.IMPENDING).name}")
+                print(f"负载下电LLVD4状态: {dc_alarm.llvd4_status.name}")
+                print(f"电池温度状态: {dc_alarm.battery_temp_status.name}")
+                print(f"电池温度传感器1状态: {dc_alarm.battery_temp_sensor_1_status.name}")
+                print(f"环境温度状态: {dc_alarm.env_temp_status.name}")
+                print(f"环境温度传感器1状态: {dc_alarm.env_temp_sensor_1_status.name}")
+                print(f"环境温度传感器2状态: {dc_alarm.env_temp_sensor_2_status.name}")
+                print(f"环境湿度状态: {dc_alarm.env_humidity_status.name}")
+                print(f"环境湿度传感器1状态: {dc_alarm.env_humidity_sensor_1_status.name}")
+                print(f"门磁状态: {dc_alarm.door_status.name}")
+                print(f"水浸状态: {dc_alarm.water_status.name}")
+                print(f"烟雾状态: {dc_alarm.smoke_status.name}")
+                print(f"数字输入1状态: {dc_alarm.digital_input_status_1.name}")
+                print(f"数字输入2状态: {dc_alarm.digital_input_status_2.name}")
+                print(f"数字输入3状态: {dc_alarm.digital_input_status_3.name}")
+                print(f"数字输入4状态: {dc_alarm.digital_input_status_4.name}")
+                print(f"数字输入5状态: {dc_alarm.digital_input_status_5.name}")
+                print(f"数字输入6状态: {dc_alarm.digital_input_status_6.name}")
             elif choice == '16':  # 读取直流配置参数
                 print("读取直流配置参数:")
                 dc_config = self.protocol.send_command('getDcConfigParams')
-                print(f"直流过压值: {dc_config['dcOverVoltage']:.2f} V")
-                print(f"直流欠压值: {dc_config['dcUnderVoltage']:.2f} V")
-                print(f"定时均充使能: {'使能' if dc_config['timeEqualizeChargeEnable'] == 1 else '禁止'}")
-                print(f"定时均充时间: {dc_config['timeEqualizeDuration']} 小时")
-                print(f"定时均充间隔: {dc_config['timeEqualizeInterval']}天")
-                print(f"电池组数: {dc_config['batteryGroupNumber']}")
-                print(f"电池过温告警点: {dc_config['batteryOverTemp']:.2f} °C")
-                print(f"电池欠温告警点: {dc_config['batteryUnderTemp']:.2f} °C")
-                print(f"环境过温告警点: {dc_config['envOverTemp']:.2f} °C")
-                print(f"环境欠温告警点: {dc_config['envUnderTemp']:.2f} °C")
-                print(f"环境过湿告警点: {dc_config['envOverHumidity']:.2f} %RH")
-                print(f"电池充电限流点: {dc_config['batteryChargeCurrentLimit']:.2f} C10")
-                print(f"浮充电压: {dc_config['floatVoltage']:.2f} V")
-                print(f"均充电压: {dc_config['equalizeVoltage']:.2f} V")
-                print(f"电池下电电压: {dc_config['batteryOffVoltage']:.2f} V")
-                print(f"电池上电电压: {dc_config['batteryOnVoltage']:.2f} V")
-                print(f"LLVD1下电电压: {dc_config['llvd1OffVoltage']:.2f} V")
-                print(f"LLVD1上电电压: {dc_config['llvd1OnVoltage']:.2f} V")
-                print(f"LLVD2下电电压: {dc_config['llvd2OffVoltage']:.2f} V")
-                print(f"LLVD2上电电压: {dc_config['llvd2OnVoltage']:.2f} V")
-                print(f"LLVD3下电电压: {dc_config['llvd3OffVoltage']:.2f} V")
-                print(f"LLVD3上电电压: {dc_config['llvd3OnVoltage']:.2f} V")
-                print(f"LLVD4下电电压: {dc_config['llvd4OffVoltage']:.2f} V")
-                print(f"LLVD4上电电压: {dc_config['llvd4OnVoltage']:.2f} V")
-                print(f"每组电池额定容量: {dc_config['batteryCapacity']:.2f} Ah")
-                print(f"电池测试终止电压: {dc_config['batteryTestStopVoltage']:.2f} V")
-                print(f"电池组温补系数: {dc_config['batteryTempCoeff']:.2f} mV/°C")
-                print(f"电池温补中心点: {dc_config['batteryTempCenter']:.2f} °C")
-                print(f"浮充转均充系数: {dc_config['floatToEqualizeCoeff']:.2f} C10")
-                print(f"均充转浮充系数: {dc_config['equalizeToFloatCoeff']:.2f} C10")
-                print(f"LLVD1下电时间: {dc_config['llvd1OffTime']:.2f} min")
-                print(f"LLVD2下电时间: {dc_config['llvd2OffTime']:.2f} min")
-                print(f"LLVD3下电时间: {dc_config['llvd3OffTime']:.2f} min")
-                print(f"LLVD4下电时间: {dc_config['llvd4OffTime']:.2f} min")
-                print(f"负载下电模式: {'电压模式' if dc_config['loadOffMode'] == 0 else '时间模式'}")
+                print(f"直流过压值: {dc_config.dc_over_voltage:.2f} V")
+                print(f"直流欠压值: {dc_config.dc_under_voltage:.2f} V")
+                print(f"定时均充使能: {'使能' if dc_config.time_equalize_charge_enable == EnableStatus.ENABLE else '禁止'}")
+                print(f"定时均充时间: {dc_config.time_equalize_duration} 小时")
+                print(f"定时均充间隔: {dc_config.time_equalize_interval}天")
+                print(f"电池组数: {dc_config.battery_group_number}")
+                print(f"电池过温告警点: {dc_config.battery_over_temp:.2f} °C")
+                print(f"电池欠温告警点: {dc_config.battery_under_temp:.2f} °C")
+                print(f"环境过温告警点: {dc_config.env_over_temp:.2f} °C")
+                print(f"环境欠温告警点: {dc_config.env_under_temp:.2f} °C")
+                print(f"环境过湿告警点: {dc_config.env_over_humidity:.2f} %RH")
+                print(f"电池充电限流点: {dc_config.battery_charge_current_limit:.2f} C10")
+                print(f"浮充电压: {dc_config.float_voltage:.2f} V")
+                print(f"均充电压: {dc_config.equalize_voltage:.2f} V")
+                print(f"电池下电电压: {dc_config.battery_off_voltage:.2f} V")
+                print(f"电池上电电压: {dc_config.battery_on_voltage:.2f} V")
+                print(f"LLVD1下电电压: {dc_config.llvd1_off_voltage:.2f} V")
+                print(f"LLVD1上电电压: {dc_config.llvd1_on_voltage:.2f} V")
+                print(f"LLVD2下电电压: {dc_config.llvd2_off_voltage:.2f} V")
+                print(f"LLVD2上电电压: {dc_config.llvd2_on_voltage:.2f} V")
+                print(f"LLVD3下电电压: {dc_config.llvd3_off_voltage:.2f} V")
+                print(f"LLVD3上电电压: {dc_config.llvd3_on_voltage:.2f} V")
+                print(f"LLVD4下电电压: {dc_config.llvd4_off_voltage:.2f} V")
+                print(f"LLVD4上电电压: {dc_config.llvd4_on_voltage:.2f} V")
+                print(f"每组电池额定容量: {dc_config.battery_capacity:.2f} Ah")
+                print(f"电池测试终止电压: {dc_config.battery_test_stop_voltage:.2f} V")
+                print(f"电池组温补系数: {dc_config.battery_temp_coeff:.2f} mV/°C")
+                print(f"电池温补中心点: {dc_config.battery_temp_center:.2f} °C")
+                print(f"浮充转均充系数: {dc_config.float_to_equalize_coeff:.2f} C10")
+                print(f"均充转浮充系数: {dc_config.equalize_to_float_coeff:.2f} C10")
+                print(f"LLVD1下电时间: {dc_config.llvd1_off_time:.2f} min")
+                print(f"LLVD2下电时间: {dc_config.llvd2_off_time:.2f} min")
+                print(f"LLVD3下电时间: {dc_config.llvd3_off_time:.2f} min")
+                print(f"LLVD4下电时间: {dc_config.llvd4_off_time:.2f} min")
+                print(f"负载下电模式: {'电压模式' if dc_config.load_off_mode == LoadOffMode.VOLTAGE else '时间模式'}")
             elif choice == '17':  # 设置直流配置参数
                 print("设置直流配置参数:")
                 try:
                     over_volt = float(input("请输入直流过压值(V): "))
                     under_volt = float(input("请输入直流欠压值(V): "))
-                    time_equalize_enable = int(input("请输入定时均充使能(0-禁止, 1-使能): "))
+                    time_equalize_enable = EnableStatus(int(input("请输入定时均充使能(0-禁止, 1-使能): ")))
                     time_equalize_duration = int(input("请输入定时均充时间(小时): "))
                     time_equalize_interval = int(input("请输入定时均充间隔(天): "))
                     battery_group_number = int(input("请输入电池组数: "))
@@ -296,81 +296,86 @@ class MU4801Monitor:
                     llvd2_off_time = float(input("请输入LLVD2下电时间(min): "))
                     llvd3_off_time = float(input("请输入LLVD3下电时间(min): "))
                     llvd4_off_time = float(input("请输入LLVD4下电时间(min): "))
-                    load_off_mode = int(input("请输入负载下电模式(0-电压模式, 1-时间模式): "))
+                    load_off_mode = LoadOffMode(int(input("请输入负载下电模式(0-电压模式, 1-时间模式): ")))
                     self.protocol.send_command('setDcConfigParams', SetDcConfigParamsRequest(
-                            dcOverVoltage=over_volt,
-                            dcUnderVoltage=under_volt,
-                            timeEqualizeChargeEnable=time_equalize_enable,
-                            timeEqualizeDuration=time_equalize_duration,
-                            timeEqualizeInterval=time_equalize_interval,
-                            batteryGroupNumber=battery_group_number,
-                            batteryOverTemp=battery_over_temp,
-                            batteryUnderTemp=battery_under_temp,
-                            envOverTemp=env_over_temp,
-                            envUnderTemp=env_under_temp,
-                            envOverHumidity=env_over_humidity,
-                            batteryChargeCurrentLimit=battery_charge_current_limit,
-                            floatVoltage=float_voltage,
-                            equalizeVoltage=equalize_voltage,
-                            batteryOffVoltage=battery_off_voltage,
-                            batteryOnVoltage=battery_on_voltage,
-                            llvd1OffVoltage=llvd1_off_voltage,
-                            llvd1OnVoltage=llvd1_on_voltage,
-                            llvd2OffVoltage=llvd2_off_voltage,
-                            llvd2OnVoltage=llvd2_on_voltage,
-                            llvd3OffVoltage=llvd3_off_voltage,
-                            llvd3OnVoltage=llvd3_on_voltage,
-                            llvd4OffVoltage=llvd4_off_voltage,
-                            llvd4OnVoltage=llvd4_on_voltage,
-                            batteryCapacity=battery_capacity,
-                            batteryTestStopVoltage=battery_test_stop_voltage,
-                            batteryTempCoeff=battery_temp_coeff,
-                            batteryTempCenter=battery_temp_center,
-                            floatToEqualizeCoeff=float_to_equalize_coeff,
-                            equalizeToFloatCoeff=equalize_to_float_coeff,
-                            llvd1OffTime=llvd1_off_time,
-                            llvd2OffTime=llvd2_off_time,
-                            llvd3OffTime=llvd3_off_time,
-                            llvd4OffTime=llvd4_off_time,
-                            loadOffMode=load_off_mode
-                    ).to_dict())
+                            dc_over_voltage=over_volt,
+                            dc_under_voltage=under_volt,
+                            time_equalize_charge_enable=time_equalize_enable,
+                            time_equalize_duration=time_equalize_duration,
+                            time_equalize_interval=time_equalize_interval,
+                            battery_group_number=battery_group_number,
+                            battery_over_temp=battery_over_temp,
+                            battery_under_temp=battery_under_temp,
+                            env_over_temp=env_over_temp,
+                            env_under_temp=env_under_temp,
+                            env_over_humidity=env_over_humidity,
+                            battery_charge_current_limit=battery_charge_current_limit,
+                            float_voltage=float_voltage,
+                            equalize_voltage=equalize_voltage,
+                            battery_off_voltage=battery_off_voltage,
+                            battery_on_voltage=battery_on_voltage,
+                            llvd1_off_voltage=llvd1_off_voltage,
+                            llvd1_on_voltage=llvd1_on_voltage,
+                            llvd2_off_voltage=llvd2_off_voltage,
+                            llvd2_on_voltage=llvd2_on_voltage,
+                            llvd3_off_voltage=llvd3_off_voltage,
+                            llvd3_on_voltage=llvd3_on_voltage,
+                            llvd4_off_voltage=llvd4_off_voltage,
+                            llvd4_on_voltage=llvd4_on_voltage,
+                            battery_capacity=battery_capacity,
+                            battery_test_stop_voltage=battery_test_stop_voltage,
+                            battery_temp_coeff=battery_temp_coeff,
+                            battery_temp_center=battery_temp_center,
+                            float_to_equalize_coeff=float_to_equalize_coeff,
+                            equalize_to_float_coeff=equalize_to_float_coeff,
+                            llvd1_off_time=llvd1_off_time,
+                            llvd2_off_time=llvd2_off_time,
+                            llvd3_off_time=llvd3_off_time,
+                            llvd4_off_time=llvd4_off_time,
+                            load_off_mode=load_off_mode
+                    ))
                     print("直流配置参数设置成功")
                 except ValueError:
                     print("无效的参数值")
             elif choice == '18':  # 系统控制命令
                 print("系统控制命令:")
                 print("1. 系统复位")
-                print("2. LLVD复位")
-                print("3. 负载开关合闸")
-                print("4. 负载开关分闸")
-                print("5. 电池开关合闸")
-                print("6. 电池开关分闸")
+                print("2. 负载1下电")
+                print("3. 负载1上电")
+                print("4. 负载2下电")
+                print("5. 负载2上电")
+                print("6. 负载3下电")
+                print("7. 负载3上电")
                 try:
                     cmd = int(input("请选择控制命令编号: "))
                     if cmd == 1:
                         self.protocol.send_command('systemControl', SystemControlRequest(
-                            controlType=0xE1
-                        ).to_dict())
+                            control_type=SystemControlType.RESET
+                        ))
                     elif cmd == 2:
                         self.protocol.send_command('systemControl', SystemControlRequest(
-                            controlType=0xE2
-                        ).to_dict())  
+                            control_type=SystemControlType.LOAD1_OFF
+                        ))  
                     elif cmd == 3:
                         self.protocol.send_command('systemControl', SystemControlRequest(
-                            controlType=0xE6
-                        ).to_dict())
+                            control_type=SystemControlType.LOAD1_ON
+                        ))
                     elif cmd == 4:
                         self.protocol.send_command('systemControl', SystemControlRequest(
-                            controlType=0xE5
-                        ).to_dict())
+                            control_type=SystemControlType.LOAD2_OFF
+                        ))
                     elif cmd == 5:
                         self.protocol.send_command('systemControl', SystemControlRequest(
-                            controlType=0xEE
-                        ).to_dict())
+                            control_type=SystemControlType.LOAD2_ON
+                        ))
                     elif cmd == 6:
                         self.protocol.send_command('systemControl', SystemControlRequest(
-                            controlType=0xED
-                        ).to_dict())
+                            control_type=SystemControlType.LOAD3_OFF
+                        ))
+                    elif cmd == 6:
+                        self.protocol.send_command('systemControl', SystemControlRequest(
+                            control_type=SystemControlType.LOAD3_ON
+                        ))
                     else:
                         print("无效的命令编号")
                 except ValueError:

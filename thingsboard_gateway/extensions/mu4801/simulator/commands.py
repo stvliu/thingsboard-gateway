@@ -4,7 +4,6 @@ import struct
 from dataclasses import dataclass
 import datetime
 
-
 class DataFlag(Enum):
     NORMAL = 0  # 数据标志,0表示正常
 
@@ -34,8 +33,6 @@ class SystemControlState(Enum):
 
 class SystemControlType(Enum):
     RESET = 0xE1         # 系统复位
-    BATTERY_OFF = 0xED   # 电池下电
-    BATTERY_ON = 0xEE    # 电池上电
     LOAD1_OFF = 0xE5     # 负载1下电
     LOAD1_ON = 0xE6      # 负载1上电
     LOAD2_OFF = 0xE7     # 负载2下电
@@ -44,7 +41,9 @@ class SystemControlType(Enum):
     LOAD3_ON = 0xEA      # 负载3上电
     LOAD4_OFF = 0xEB     # 负载4下电
     LOAD4_ON = 0xEC      # 负载4上电
-
+    BATTERY_OFF = 0xED   # 电池下电
+    BATTERY_ON = 0xEE    # 电池上电
+    
 class VoltageStatus(Enum):
     NORMAL = 0   # 正常
     UNDER = 1    # 欠压
@@ -221,7 +220,7 @@ class GetAcAlarmStatusResponse:
 
     def to_bytes(self):
         print(f"将GetAcAlarmStatusResponse转换为字节串")
-        return struct.pack('<BBBBBBBBBBBBBB', self.data_flag.value, self.number_of_inputs,
+        return struct.pack('<BBBBBBBBBBBBB', self.data_flag.value, self.number_of_inputs,
                            self.voltage_a_status.value, self.voltage_b_status.value, self.voltage_c_status.value,  
                            self.frequency_status.value, self.fuse_count, self.user_defined_params_count,
                            self.ac_arrester_status.value, self.ac_comm_failure_status.value,
@@ -234,7 +233,7 @@ class GetAcAlarmStatusResponse:
         (data_flag, number_of_inputs, voltage_a_status, voltage_b_status, voltage_c_status,
          frequency_status, fuse_count, user_defined_params_count, ac_arrester_status,  
          ac_comm_failure_status, ac_input_switch_status, ac_output_switch_status,
-         ac_power_status) = struct.unpack('<BBBBBBBBBBBBBB', data)
+         ac_power_status) = struct.unpack('<BBBBBBBBBBBBB', data)
         return cls(DataFlag(data_flag), number_of_inputs, VoltageStatus(voltage_a_status), VoltageStatus(voltage_b_status),
                    VoltageStatus(voltage_c_status), FrequencyStatus(frequency_status), fuse_count, user_defined_params_count,
                    AlarmStatus(ac_arrester_status), AlarmStatus(ac_comm_failure_status), 
@@ -482,44 +481,46 @@ class GetDcAnalogDataResponse:
 
     def to_bytes(self):  
         print(f"将GetDcAnalogDataResponse转换为字节串")
-        data = bytearray(struct.pack('<BBffBBfB', self.data_flag.value, self.battery_group_count, 
-                                    self.dc_voltage, self.total_load_current,
-                                    self.battery_group_1_number, self.load_branch_count,  
-                                    self.battery_group_1_current, self.user_defined_params_count))
+        data = bytearray(struct.pack('<BBff', self.data_flag.value, self.battery_group_count, 
+                                    self.dc_voltage, self.total_load_current))
+        data.extend(struct.pack('<BB', self.battery_group_1_number, self.load_branch_count))
+        data.extend(struct.pack('<f', self.battery_group_1_current))
+        data.extend(struct.pack('<B', self.user_defined_params_count))  
         data.extend(struct.pack('<ffff', self.load_branch_1_current, self.load_branch_2_current, 
-                                self.load_branch_3_current, self.load_branch_4_current))  
-        data.extend(struct.pack('<fffff', self.battery_total_current, self.battery_group_1_capacity,
-                                self.battery_group_1_voltage, self.battery_group_1_mid_voltage,  
-                                self.battery_group_2_mid_voltage))
-        data.extend(struct.pack('<ffff', self.battery_group_3_mid_voltage, self.battery_group_4_mid_voltage, 
-                                self.battery_group_1_temperature, self.env_temp_1))  
-        data.extend(struct.pack('<fffffff', self.env_temp_2, self.env_humidity_1, self.total_load_power,
-                                self.load_power_1, self.load_power_2, self.load_power_3, self.load_power_4))
-        data.extend(struct.pack('<fffff', self.total_load_energy, self.load_energy_1, self.load_energy_2, 
-                                self.load_energy_3, self.load_energy_4))
-        return bytes(data)  
+                                self.load_branch_3_current, self.load_branch_4_current))
+        data.extend(struct.pack('<H', 0))  # 添加用户自定义数量P的占位符
+        data.extend(struct.pack('<ffffff', self.battery_total_current, self.battery_group_1_capacity,
+                                self.battery_group_1_voltage, self.battery_group_1_mid_voltage,
+                                self.battery_group_2_mid_voltage, self.battery_group_3_mid_voltage))
+        data.extend(struct.pack('<fff', self.battery_group_4_mid_voltage, self.battery_group_1_temperature,
+                                self.env_temp_1))
+        data.extend(struct.pack('<fffff', self.env_temp_2, self.env_humidity_1, self.total_load_power,
+                                self.load_power_1, self.load_power_2))
+        data.extend(struct.pack('<fffff', self.load_power_3, self.load_power_4, self.total_load_energy,
+                                self.load_energy_1, self.load_energy_2))
+        data.extend(struct.pack('<fff', self.load_energy_3, self.load_energy_4, 0.0))  # 添加占位符
+        return bytes(data) 
 
     @classmethod
     def from_bytes(cls, data):
         print(f"从字节串{data.hex()}构建GetDcAnalogDataResponse")
         (data_flag, battery_group_count, dc_voltage, total_load_current,
         battery_group_1_number, load_branch_count, battery_group_1_current,
-        user_defined_params_count) = struct.unpack('<BBffBBfB', data[:20])
-        offset = 20
+        user_defined_params_count) = struct.unpack('<BBffBBfB', data[:17])
+        offset = 17
         (load_branch_1_current, load_branch_2_current, load_branch_3_current,  
         load_branch_4_current) = struct.unpack('<ffff', data[offset:offset+16])
-        offset += 16
-        (battery_total_current, battery_group_1_capacity, battery_group_1_voltage,  
-        battery_group_1_mid_voltage, battery_group_2_mid_voltage) = struct.unpack('<fffff', data[offset:offset+20])  
+        offset += 18  # 跳过用户自定义数量P的2字节
+        (battery_total_current, battery_group_1_capacity, battery_group_1_voltage,
+        battery_group_1_mid_voltage, battery_group_2_mid_voltage, battery_group_3_mid_voltage) = struct.unpack('<ffffff', data[offset:offset+24])
+        offset += 24  
+        (battery_group_4_mid_voltage, battery_group_1_temperature, env_temp_1) = struct.unpack('<fff', data[offset:offset+12])  
+        offset += 12
+        (env_temp_2, env_humidity_1, total_load_power, load_power_1, load_power_2) = struct.unpack('<fffff', data[offset:offset+20])
         offset += 20
-        (battery_group_3_mid_voltage, battery_group_4_mid_voltage, battery_group_1_temperature,  
-        env_temp_1) = struct.unpack('<ffff', data[offset:offset+16])
-        offset += 16  
-        (env_temp_2, env_humidity_1, total_load_power, load_power_1, load_power_2, 
-        load_power_3, load_power_4) = struct.unpack('<fffffff', data[offset:offset+28])
-        offset += 28
-        (total_load_energy, load_energy_1, load_energy_2, load_energy_3,  
-        load_energy_4) = struct.unpack('<fffff', data[offset:offset+20])
+        (load_power_3, load_power_4, total_load_energy, load_energy_1, load_energy_2) = struct.unpack('<fffff', data[offset:offset+20])
+        offset += 20
+        (load_energy_3, load_energy_4) = struct.unpack('<ff', data[offset:offset+8])
         return cls(DataFlag(data_flag), dc_voltage, total_load_current, battery_group_count,
                 battery_group_1_number, battery_group_1_current, load_branch_count,
                 load_branch_1_current, load_branch_2_current, load_branch_3_current,  
@@ -533,16 +534,20 @@ class GetDcAnalogDataResponse:
 
 @dataclass    
 class GetDcAlarmStatusResponse:
-    def __init__(self, data_flag: DataFlag, dc_voltage_status: VoltageStatus, battery_fuse_count: int,
-                 user_defined_params_count: int, dc_arrester_status: AlarmStatus, load_fuse_status: AlarmStatus, 
+    def __init__(self, data_flag: DataFlag, dc_voltage_status: VoltageStatus, 
+                 battery_fuse_count: int, user_defined_params_count: int,
+                 dc_arrester_status: AlarmStatus, load_fuse_status: AlarmStatus,
                  battery_group_1_fuse_status: AlarmStatus, battery_group_2_fuse_status: AlarmStatus,
                  battery_group_3_fuse_status: AlarmStatus, battery_group_4_fuse_status: AlarmStatus,
-                 blvd_status: LVDStatus, llvd1_status: LVDStatus, llvd2_status: LVDStatus, llvd3_status: LVDStatus,
-                 llvd4_status: LVDStatus, battery_temp_status: TempStatus, battery_temp_sensor_1_status: SensorStatus,
-                 env_temp_status: TempStatus, env_temp_sensor_1_status: SensorStatus, env_temp_sensor_2_status: SensorStatus,
-                 env_humidity_status: AlarmStatus, env_humidity_sensor_1_status: SensorStatus, door_status: AlarmStatus, 
-                 water_status: AlarmStatus, smoke_status: AlarmStatus, digital_input_status_1: AlarmStatus,
-                 digital_input_status_2: AlarmStatus, digital_input_status_3: AlarmStatus, digital_input_status_4: AlarmStatus,
+                 blvd_status: LVDStatus, llvd1_status: LVDStatus, llvd2_status: LVDStatus,
+                 llvd3_status: LVDStatus, llvd4_status: LVDStatus,
+                 battery_temp_status: TempStatus, battery_temp_sensor_1_status: SensorStatus,
+                 env_temp_status: TempStatus, env_temp_sensor_1_status: SensorStatus,
+                 env_temp_sensor_2_status: SensorStatus, env_humidity_status: AlarmStatus,
+                 env_humidity_sensor_1_status: SensorStatus, door_status: AlarmStatus,
+                 water_status: AlarmStatus, smoke_status: AlarmStatus,
+                 digital_input_status_1: AlarmStatus, digital_input_status_2: AlarmStatus,
+                 digital_input_status_3: AlarmStatus, digital_input_status_4: AlarmStatus,
                  digital_input_status_5: AlarmStatus, digital_input_status_6: AlarmStatus):
         self.data_flag = data_flag   # 数据标志,固定为0,1字节  
         self.dc_voltage_status = dc_voltage_status  # 直流电压状态,1字节
@@ -578,12 +583,43 @@ class GetDcAlarmStatusResponse:
         print(f"初始化GetDcAlarmStatusResponse, data_flag={data_flag}, dc_voltage_status={dc_voltage_status}, battery_fuse_count={battery_fuse_count}, user_defined_params_count={user_defined_params_count}, dc_arrester_status={dc_arrester_status}, load_fuse_status={load_fuse_status}, battery_group_1_fuse_status={battery_group_1_fuse_status}, battery_group_2_fuse_status={battery_group_2_fuse_status}, battery_group_3_fuse_status={battery_group_3_fuse_status}, battery_group_4_fuse_status={battery_group_4_fuse_status}, blvd_status={blvd_status}, llvd1_status={llvd1_status}, llvd2_status={llvd2_status}, llvd3_status={llvd3_status}, llvd4_status={llvd4_status}, battery_temp_status={battery_temp_status}, battery_temp_sensor_1_status={battery_temp_sensor_1_status}, env_temp_status={env_temp_status}, env_temp_sensor_1_status={env_temp_sensor_1_status}, env_temp_sensor_2_status={env_temp_sensor_2_status}, env_humidity_status={env_humidity_status}, env_humidity_sensor_1_status={env_humidity_sensor_1_status}, door_status={door_status}, water_status={water_status}, smoke_status={smoke_status}, digital_input_status_1={digital_input_status_1}, digital_input_status_2={digital_input_status_2}, digital_input_status_3={digital_input_status_3}, digital_input_status_4={digital_input_status_4}, digital_input_status_5={digital_input_status_5}, digital_input_status_6={digital_input_status_6}")
 
     def to_bytes(self):
-        print(f"将GetDcAlarmStatusResponse转换为字节串") 
+        print(f"将GetDcAlarmStatusResponse转换为字节串")
+        print(f"data_flag: {self.data_flag}")
+        print(f"dc_voltage_status: {self.dc_voltage_status}")
+        print(f"battery_fuse_count: {self.battery_fuse_count}")
+        print(f"user_defined_params_count: {self.user_defined_params_count}")
+        print(f"dc_arrester_status: {self.dc_arrester_status}")
+        print(f"load_fuse_status: {self.load_fuse_status}")
+        print(f"battery_group_1_fuse_status: {self.battery_group_1_fuse_status}")
+        print(f"battery_group_2_fuse_status: {self.battery_group_2_fuse_status}")
+        print(f"battery_group_3_fuse_status: {self.battery_group_3_fuse_status}")
+        print(f"battery_group_4_fuse_status: {self.battery_group_4_fuse_status}")
+        print(f"blvd_status: {self.blvd_status}")
+        print(f"llvd1_status: {self.llvd1_status}")
+        print(f"llvd2_status: {self.llvd2_status}")
+        print(f"llvd3_status: {self.llvd3_status}")
+        print(f"llvd4_status: {self.llvd4_status}")
+        print(f"battery_temp_status: {self.battery_temp_status}")
+        print(f"battery_temp_sensor_1_status: {self.battery_temp_sensor_1_status}")
+        print(f"env_temp_status: {self.env_temp_status}")
+        print(f"env_temp_sensor_1_status: {self.env_temp_sensor_1_status}")
+        print(f"env_temp_sensor_2_status: {self.env_temp_sensor_2_status}")
+        print(f"env_humidity_status: {self.env_humidity_status}")
+        print(f"env_humidity_sensor_1_status: {self.env_humidity_sensor_1_status}")
+        print(f"door_status: {self.door_status}")
+        print(f"water_status: {self.water_status}")
+        print(f"smoke_status: {self.smoke_status}")
+        print(f"digital_input_status_1: {self.digital_input_status_1}")
+        print(f"digital_input_status_2: {self.digital_input_status_2}")
+        print(f"digital_input_status_3: {self.digital_input_status_3}")
+        print(f"digital_input_status_4: {self.digital_input_status_4}")
+        print(f"digital_input_status_5: {self.digital_input_status_5}")
+        print(f"digital_input_status_6: {self.digital_input_status_6}")
         data = bytearray(struct.pack('<BBBB', self.data_flag.value, self.dc_voltage_status.value,
-                                    self.battery_fuse_count, self.user_defined_params_count))
-        data.extend(struct.pack('<BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB',
+                             self.battery_fuse_count, self.user_defined_params_count))
+        data.extend(struct.pack('<BBBBBBBBBBBBBBBBBBBBBBBBBBB',
                                 self.dc_arrester_status.value, self.load_fuse_status.value,
-                                self.battery_group_1_fuse_status.value, self.battery_group_2_fuse_status.value, 
+                                self.battery_group_1_fuse_status.value, self.battery_group_2_fuse_status.value,
                                 self.battery_group_3_fuse_status.value, self.battery_group_4_fuse_status.value,
                                 self.blvd_status.value, self.llvd1_status.value, self.llvd2_status.value,
                                 self.llvd3_status.value, self.llvd4_status.value, self.battery_temp_status.value,
@@ -594,8 +630,7 @@ class GetDcAlarmStatusResponse:
                                 self.digital_input_status_1.value, self.digital_input_status_2.value,
                                 self.digital_input_status_3.value, self.digital_input_status_4.value,
                                 self.digital_input_status_5.value, self.digital_input_status_6.value))
-        return bytes(data)
-        
+ 
     @classmethod
     def from_bytes(cls, data):
         print(f"从字节串{data.hex()}构建GetDcAlarmStatusResponse")
@@ -606,7 +641,7 @@ class GetDcAlarmStatusResponse:
         env_temp_status, env_temp_sensor_1_status, env_temp_sensor_2_status, env_humidity_status,
         env_humidity_sensor_1_status, door_status, water_status, smoke_status, digital_input_status_1,
         digital_input_status_2, digital_input_status_3, digital_input_status_4, digital_input_status_5,
-        digital_input_status_6) = struct.unpack('<BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB', data)
+        digital_input_status_6) = struct.unpack('<BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB', data)
         return cls(DataFlag(data_flag), VoltageStatus(dc_voltage_status), battery_fuse_count,
                 user_defined_params_count, AlarmStatus(dc_arrester_status), AlarmStatus(load_fuse_status), 
                 AlarmStatus(battery_group_1_fuse_status), AlarmStatus(battery_group_2_fuse_status),
@@ -672,11 +707,19 @@ class GetDcConfigParamsResponse:
 
     def to_bytes(self):
         print(f"将GetDcConfigParamsResponse转换为字节串") 
+        print(f"time_equalize_charge_enable: {self.time_equalize_charge_enable}, type: {type(self.time_equalize_charge_enable)}")
+        print(f"time_equalize_duration: {self.time_equalize_duration}, type: {type(self.time_equalize_duration)}")
+        print(f"time_equalize_interval: {self.time_equalize_interval}, type: {type(self.time_equalize_interval)}")
+        print(f"battery_group_number: {self.battery_group_number}, type: {type(self.battery_group_number)}")
+        print(f"battery_over_temp: {self.battery_over_temp}, type: {type(self.battery_over_temp)}")
+        print(f"battery_under_temp: {self.battery_under_temp}, type: {type(self.battery_under_temp)}")
+        print(f"env_over_temp: {self.env_over_temp}, type: {type(self.env_over_temp)}")
+        print(f"env_under_temp: {self.env_under_temp}, type: {type(self.env_under_temp)}")
         data = bytearray(struct.pack('<ff', self.dc_over_voltage, self.dc_under_voltage))
-        data.extend(struct.pack('<BHHBBBBB', self.time_equalize_charge_enable.value, self.time_equalize_duration,
+        data.extend(struct.pack('<BHHBffff', self.time_equalize_charge_enable.value, self.time_equalize_duration,
                                 self.time_equalize_interval, self.battery_group_number, self.battery_over_temp,
                                 self.battery_under_temp, self.env_over_temp, self.env_under_temp))  
-        data.extend(struct.pack('<fffffffffffffffffffffff', self.env_over_humidity, self.battery_charge_current_limit,
+        data.extend(struct.pack('<ffffffffffffffffffffffff', self.env_over_humidity, self.battery_charge_current_limit,
                                 self.float_voltage, self.equalize_voltage, self.battery_off_voltage, self.battery_on_voltage,
                                 self.llvd1_off_voltage, self.llvd1_on_voltage, self.llvd2_off_voltage, self.llvd2_on_voltage,
                                 self.llvd3_off_voltage, self.llvd3_on_voltage, self.llvd4_off_voltage, self.llvd4_on_voltage,  
@@ -696,7 +739,7 @@ class GetDcConfigParamsResponse:
             llvd1_on_voltage, llvd2_off_voltage, llvd2_on_voltage, llvd3_off_voltage, llvd3_on_voltage,
             llvd4_off_voltage, llvd4_on_voltage, battery_capacity, battery_test_stop_voltage,
             battery_temp_coeff, battery_temp_center, float_to_equalize_coeff, equalize_to_float_coeff,
-            llvd1_off_time, llvd2_off_time, llvd3_off_time, llvd4_off_time, load_off_mode) = struct.unpack('<ffBHHBBBBBfffffffffffffffffffffffB', data)
+            llvd1_off_time, llvd2_off_time, llvd3_off_time, llvd4_off_time, load_off_mode) = struct.unpack('<ffBHHBffffffffffffffffffffffffffffB', data)
         return cls(dc_over_voltage, dc_under_voltage, EnableStatus(time_equalize_charge_enable),
                     time_equalize_duration, time_equalize_interval, battery_group_number,
                     battery_over_temp, battery_under_temp, env_over_temp, env_under_temp,
