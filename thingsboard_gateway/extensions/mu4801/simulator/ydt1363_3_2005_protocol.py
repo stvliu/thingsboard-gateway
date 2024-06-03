@@ -16,7 +16,7 @@ EOI = 0x0D
 PROTOCOL_VERSION = 0x21
 # 帧结构中各字段的索引
 SOI_INDEX = 0  # SOI字段的索引
-VER_INDEX = 1  # 版本号字段的索引  
+VER_INDEX = 1  # 版本号字段的索引 
 ADR_INDEX = 2  # 设备地址字段的索引
 CID1_INDEX = 3  # 设备类型标识字段的索引
 CID2_INDEX = 4  # 控制标识字段的索引
@@ -379,7 +379,7 @@ class Commands:
 # 协议类
 class Protocol:
     def __init__(self, device_addr = 1,  port=None, baudrate=9600, bytesize=serial.EIGHTBITS, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE, timeout=None, config=None):
-        logger.debug(f"Initializing Protocol with config={config}, port={port}, baudrate={baudrate}, bytesize={bytesize}, parity={parity}, stopbits={stopbits}, timeout={timeout}")
+        logger.debug(f"Initializing Protocol with port={port}, baudrate={baudrate}, bytesize={bytesize}, parity={parity}, stopbits={stopbits}, timeout={timeout}")
         self._commands = Commands(config)
         self._frame_codec = FrameCodec()
         self._data_codec = DataCodec()
@@ -501,7 +501,7 @@ class Protocol:
             self._send_frame(response_frame)
             logger.debug(f"Response sent")
         except ProtocolError as e:
-            logger.error(f"Failed to send response: {e}")
+            logger.error(f"Failed to send response: {e}", exc_info=True)
             raise RTNFormatError() from e
     
     def _send_error_response(self, rtn_code):
@@ -635,17 +635,31 @@ class Protocol:
     
     def _encode_response_data(self, command, data):
         logger.debug(f"Encoding response data for {command}: {data}")
+        
+        logger.debug(f"Checking if command {command} has response_class")
         if command.response_class:
+            logger.debug(f"Command {command} has response_class: {command.response_class}")
             try:
+                logger.debug(f"Checking if data {data} is instance of {command.response_class}")
                 if isinstance(data, command.response_class):
+                    logger.debug(f"Data {data} is instance of {command.response_class}, encoding to bytes")
                     response_data = data.to_bytes()
                 else:
+                    logger.debug(f"Data {data} is not instance of {command.response_class}, encoding with data codec")
                     response_data = self._data_codec.to_bytes(data)
+                
+                logger.debug(f"Checking if encoded response data is None")
+                if response_data is None:  # 添加检查
+                    logger.error(f"Failed to encode response data: {data}", exc_info=True)
+                    raise ProtocolError(f"Failed to encode response data: {data}")
+                
             except Exception as e:
-                logger.error(f"Error encoding response data: {e}")
+                logger.error(f"Error encoding response data: {e}", exc_info=True)
                 raise ProtocolError(f"Error encoding response data: {e}")
         else:
+            logger.debug(f"Command {command} does not have response_class, setting response_data to empty bytes")
             response_data = b''
+            
         logger.debug(f"Encoded response data: {response_data.hex()}")
         return response_data
 

@@ -24,7 +24,7 @@ class MU4801Simulator:
         }
         
         # 使用对应的数据类初始化模拟数据
-        self.ac_data = GetAcAnalogDataResponse(
+        self.ac_data = AcAnalogData(
             data_flag=DataFlag.NORMAL,
             number_of_inputs=1,
             voltage_a=220.0,
@@ -34,7 +34,7 @@ class MU4801Simulator:
             user_defined_params_count=30
         )
         
-        self.ac_alarm_status = GetAcAlarmStatusResponse(
+        self.ac_alarm_status = AcAlarmStatus(
             data_flag=DataFlag.NORMAL,
             number_of_inputs=1,
             voltage_a_status=VoltageStatus.NORMAL,
@@ -50,12 +50,12 @@ class MU4801Simulator:
             ac_power_status=AlarmStatus.NORMAL
         )
         
-        self.ac_config_params = GetAcConfigParamsResponse(
+        self.ac_config_params = AcConfigParams(
             ac_over_voltage=260.0,
             ac_under_voltage=180.0
         )
         
-        self.rect_data = GetRectAnalogDataResponse(
+        self.rect_data = RectAnalogData(
             data_flag=DataFlag.NORMAL,
             output_voltage=53.5,
             module_count=3,
@@ -67,7 +67,7 @@ class MU4801Simulator:
             module_input_voltage_ab=[380.0, 380.0, 380.0]
         )
         
-        self.rect_status = GetRectSwitchStatusResponse(
+        self.rect_status = RectSwitchStatus(
             data_flag=DataFlag.NORMAL,
             module_count=3,
             module_run_status=[SwitchStatus.ON, SwitchStatus.ON, SwitchStatus.ON],
@@ -76,7 +76,7 @@ class MU4801Simulator:
             user_defined_params_count=[16, 16, 16]
         )
         
-        self.rect_alarm_status = GetRectAlarmStatusResponse(
+        self.rect_alarm_status = RectAlarmStatus(
             data_flag=DataFlag.NORMAL,
             module_count=3,
             module_failure_status=[AlarmStatus.NORMAL, AlarmStatus.NORMAL, AlarmStatus.NORMAL],
@@ -86,7 +86,7 @@ class MU4801Simulator:
             module_fan_status=[AlarmStatus.NORMAL, AlarmStatus.NORMAL, AlarmStatus.NORMAL]
         )
         
-        self.dc_data = GetDcAnalogDataResponse(
+        self.dc_data = DcAnalogData(
             data_flag=DataFlag.NORMAL,
             dc_voltage=53.5,
             total_load_current=120.0,
@@ -122,7 +122,7 @@ class MU4801Simulator:
             load_energy_4=25.0
         )
         
-        self.dc_alarm_status = GetDcAlarmStatusResponse(
+        self.dc_alarm_status = DcAlarmStatus(
             data_flag=DataFlag.NORMAL,
             dc_voltage_status=VoltageStatus.NORMAL,
             battery_fuse_count=0,
@@ -156,7 +156,7 @@ class MU4801Simulator:
             digital_input_status_6=AlarmStatus.NORMAL,
         )
         
-        self.dc_config_params = GetDcConfigParamsResponse(
+        self.dc_config_params = DcConfigParams(
             dc_over_voltage=57.6,
             dc_under_voltage=43.2,
             time_equalize_charge_enable=EnableStatus.DISABLE,
@@ -194,7 +194,7 @@ class MU4801Simulator:
             load_off_mode=LoadOffMode.VOLTAGE
         )
         
-        self.energy_params = GetEnergyParamsResponse(
+        self.energy_params = EnergyParams(
             energy_saving=EnableStatus.ENABLE,
             min_working_modules=2,
             module_switch_cycle=180,
@@ -241,7 +241,7 @@ class MU4801Simulator:
     def handle_get_ac_config_params(self):
         return self.ac_config_params
         
-    def handle_set_ac_config_params(self, request: SetAcConfigParamsRequest):
+    def handle_set_ac_config_params(self, request: AcConfigParams):
         self.ac_config_params = request
         self._log.info(f"AC config updated: {request.to_dict()}")
         
@@ -254,7 +254,7 @@ class MU4801Simulator:
     def handle_get_rect_alarm_status(self):
         return self.rect_alarm_status
         
-    def handle_control_rect_module(self, request: ControlRectModuleRequest):
+    def handle_control_rect_module(self, request: ControlRectModule):
         module_id = request.module_id
         control_type = request.control_type
         self._log.info(f"Rectifier module {module_id} turned {'on' if control_type == RectModuleControlType.ON else 'off'}")
@@ -268,27 +268,27 @@ class MU4801Simulator:
     def handle_get_dc_config_params(self):
         return self.dc_config_params
         
-    def handle_set_dc_config_params(self, request: SetDcConfigParamsRequest):
+    def handle_set_dc_config_params(self, request: DcConfigParams):
         self.dc_config_params = request
         self._log.info(f"DC config updated: {request.to_dict()}")
         
-    def handle_set_system_control_state(self, request: SetSystemControlStateRequest):
+    def handle_set_system_control_state(self, request: SystemControlState):
         self.system_control_state = request.state
         self._log.info(f"System control state set to: {self.system_control_stat.to_dict()}")
         
     def handle_get_system_control_state(self):
-        return GetSystemControlStateResponse(state=self.system_control_state)
+        return SystemControlState(state=self.system_control_state)
         
-    def handle_set_alarm_sound_enable(self, request: SetAlarmSoundEnableRequest):
+    def handle_set_alarm_sound_enable(self, request: AlarmSoundEnable):
         self._log.info(f"Alarm sound {'enabled' if request.enable == EnableStatus.ENABLE else 'disabled'}")
         
     def handle_get_energy_params(self):
         return self.energy_params
         
-    def handle_set_energy_params(self, request: SetEnergyParamsRequest):
+    def handle_set_energy_params(self, request: EnergyParams):
         self._log.info(f"Energy params updated: {request.to_dict()}")
         
-    def handle_system_control(self, request: SystemControlRequest): 
+    def handle_system_control(self, request: SystemControl): 
         control_type = request.control_type
         if control_type == SystemControlType.RESET:
             self._log.info("System reset")

@@ -108,7 +108,7 @@ class MU4801Monitor:
                 try:
                     over_volt = float(input("请输入交流过压值(V): "))
                     under_volt = float(input("请输入交流欠压值(V): "))
-                    self.protocol.send_command('setAcConfigParams', SetAcConfigParamsRequest(
+                    self.protocol.send_command('setAcConfigParams', AcConfigParams(
                         ac_over_voltage=over_volt,
                         ac_under_voltage=under_volt
                     ))
@@ -148,7 +148,7 @@ class MU4801Monitor:
                     print("无效的控制类型")
                     continue
 
-                self.protocol.send_command('controlRectModule', ControlRectModuleRequest(
+                self.protocol.send_command('controlRectModule', ControlRectModule (
                     module_id=module_id,
                     control_type=ctrl_code,
                     control_value=0
@@ -195,15 +195,15 @@ class MU4801Monitor:
                 print(f"电池组2熔丝状态: {dc_alarm.battery_group_2_fuse_status.name}")
                 print(f"电池组3熔丝状态: {dc_alarm.battery_group_3_fuse_status.name}")
                 print(f"电池组4熔丝状态: {dc_alarm.battery_group_4_fuse_status.name}")
-                print(f"BLVD即将下电状态: {LVDStatus(AlarmStatus.IMPENDING).name}")
+                print(f"BLVD即将下电状态: {LVDStatus.IMPENDING.name}")
                 print(f"BLVD下电状态: {dc_alarm.blvd_status.name}")
-                print(f"负载即将下电LLVD1状态: {LVDStatus(AlarmStatus.IMPENDING).name}")
+                print(f"负载即将下电LLVD1状态: {LVDStatus.IMPENDING.name}")
                 print(f"负载下电LLVD1状态: {dc_alarm.llvd1_status.name}")
-                print(f"负载即将下电LLVD2状态: {LVDStatus(AlarmStatus.IMPENDING).name}")
+                print(f"负载即将下电LLVD2状态: {LVDStatus.IMPENDING.name}")
                 print(f"负载下电LLVD2状态: {dc_alarm.llvd2_status.name}")
-                print(f"负载即将下电LLVD3状态: {LVDStatus(AlarmStatus.IMPENDING).name}")
+                print(f"负载即将下电LLVD3状态: {LVDStatus.IMPENDING.name}")
                 print(f"负载下电LLVD3状态: {dc_alarm.llvd3_status.name}")
-                print(f"负载即将下电LLVD4状态: {LVDStatus(AlarmStatus.IMPENDING).name}")
+                print(f"负载即将下电LLVD4状态: {LVDStatus.IMPENDING.name}")
                 print(f"负载下电LLVD4状态: {dc_alarm.llvd4_status.name}")
                 print(f"电池温度状态: {dc_alarm.battery_temp_status.name}")
                 print(f"电池温度传感器1状态: {dc_alarm.battery_temp_sensor_1_status.name}")
@@ -297,7 +297,7 @@ class MU4801Monitor:
                     llvd3_off_time = float(input("请输入LLVD3下电时间(min): "))
                     llvd4_off_time = float(input("请输入LLVD4下电时间(min): "))
                     load_off_mode = LoadOffMode(int(input("请输入负载下电模式(0-电压模式, 1-时间模式): ")))
-                    self.protocol.send_command('setDcConfigParams', SetDcConfigParamsRequest(
+                    self.protocol.send_command('setDcConfigParams', DcConfigParams(
                             dc_over_voltage=over_volt,
                             dc_under_voltage=under_volt,
                             time_equalize_charge_enable=time_equalize_enable,
@@ -349,31 +349,31 @@ class MU4801Monitor:
                 try:
                     cmd = int(input("请选择控制命令编号: "))
                     if cmd == 1:
-                        self.protocol.send_command('systemControl', SystemControlRequest(
+                        self.protocol.send_command('systemControl', SystemControl(
                             control_type=SystemControlType.RESET
                         ))
                     elif cmd == 2:
-                        self.protocol.send_command('systemControl', SystemControlRequest(
+                        self.protocol.send_command('systemControl', SystemControl(
                             control_type=SystemControlType.LOAD1_OFF
                         ))  
                     elif cmd == 3:
-                        self.protocol.send_command('systemControl', SystemControlRequest(
+                        self.protocol.send_command('systemControl', SystemControl(
                             control_type=SystemControlType.LOAD1_ON
                         ))
                     elif cmd == 4:
-                        self.protocol.send_command('systemControl', SystemControlRequest(
+                        self.protocol.send_command('systemControl', SystemControl(
                             control_type=SystemControlType.LOAD2_OFF
                         ))
                     elif cmd == 5:
-                        self.protocol.send_command('systemControl', SystemControlRequest(
+                        self.protocol.send_command('systemControl', SystemControl(
                             control_type=SystemControlType.LOAD2_ON
                         ))
                     elif cmd == 6:
-                        self.protocol.send_command('systemControl', SystemControlRequest(
+                        self.protocol.send_command('systemControl', SystemControl(
                             control_type=SystemControlType.LOAD3_OFF
                         ))
-                    elif cmd == 6:
-                        self.protocol.send_command('systemControl', SystemControlRequest(
+                    elif cmd == 7:
+                        self.protocol.send_command('systemControl', SystemControl(
                             control_type=SystemControlType.LOAD3_ON
                         ))
                     else:
