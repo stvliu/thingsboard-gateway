@@ -3,17 +3,18 @@ import logging
 import datetime
 
 # 导入相关的数据类
-from commands import *
+from models import *
 
 # 日志配置
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(name)s %(levelname)s %(message)s')
+logger = logging.getLogger(__name__)
 
 class MU4801Monitor:
     def __init__(self, device_addr, port):
         self._log = logging.getLogger(self.__class__.__name__)
-        self.protocol = MU4801Protocol(device_addr, port)
-        self.protocol.connect()
-        self.serial = self.protocol._serial
+        self._protocol = MU4801Protocol(device_addr, port)
+        self._protocol.connect()
+
         
     def show_menu(self):
         print("请选择要执行的操作:")
@@ -48,14 +49,14 @@ class MU4801Monitor:
                 break
             elif choice == '1':  # 读取当前时间
                 print("读取当前时间:")
-                dt = self.protocol.send_command('getDateTime')
+                dt = self._protocol.send_command('getDateTime')
                 print(f"当前时间: {dt.datetime}")
             elif choice == '2':  # 设置当前时间
                 print("设置当前时间:")
                 try:
                     dt_str = input("请输入日期时间(格式: YYYY-MM-DD hh:mm:ss): ")
                     dt = datetime.datetime.strptime(dt_str, '%Y-%m-%d %H:%M:%S')
-                    self.protocol.send_command('setDateTime', DateTime(
+                    self._protocol.send_command('setDateTime', DateTime(
                         year=dt.year,
                         month=dt.month,
                         day=dt.day,
@@ -68,28 +69,28 @@ class MU4801Monitor:
                     print("无效的日期时间格式")
             elif choice == '3':  # 读取协议版本号
                 print("读取协议版本号:")
-                version = self.protocol.send_command('getProtocolVersion')
+                version = self._protocol.send_command('getProtocolVersion')
                 print(f"协议版本号: {version.version}")
             elif choice == '4':  # 读取设备地址
                 print("读取设备地址:")
-                addr = self.protocol.send_command('getDeviceAddress')
+                addr = self._protocol.send_command('getDeviceAddress')
                 print(f"设备地址: {addr.address}")
             elif choice == '5':  # 读取厂家信息
                 print("读取厂家信息:")
-                info = self.protocol.send_command('getManufacturerInfo')
+                info = self._protocol.send_command('getManufacturerInfo')
                 print(f"设备名称: {info.collector_name}")
                 print(f"软件版本: {info.software_version}")
                 print(f"制造商: {info.manufacturer}")
             elif choice == '6':  # 读取交流数据
                 print("读取交流数据:")
-                ac_data = self.protocol.send_command('getAcAnalogData')
+                ac_data = self._protocol.send_command('getAcAnalogData')
                 print(f"A相电压: {ac_data.voltage_a:.2f} V")
                 print(f"B相电压: {ac_data.voltage_b:.2f} V")
                 print(f"C相电压: {ac_data.voltage_c:.2f} V")  
                 print(f"频率: {ac_data.frequency:.2f} Hz")
             elif choice == '7':  # 读取交流告警状态
                 print("读取交流告警状态:")
-                ac_alarm = self.protocol.send_command('getAcAlarmStatus')
+                ac_alarm = self._protocol.send_command('getAcAlarmStatus')
                 print(f"A相电压状态: {ac_alarm.voltage_a_status.name}")
                 print(f"B相电压状态: {ac_alarm.voltage_b_status.name}")
                 print(f"C相电压状态: {ac_alarm.voltage_c_status.name}")
@@ -100,7 +101,7 @@ class MU4801Monitor:
                 print(f"交流第一路输入状态: {ac_alarm.ac_power_status.name}")
             elif choice == '8':  # 读取交流配置参数
                 print("读取交流配置参数:")
-                ac_config = self.protocol.send_command('getAcConfigParams')
+                ac_config = self._protocol.send_command('getAcConfigParams')
                 print(f"交流过压值: {ac_config.ac_over_voltage:.2f} V")
                 print(f"交流欠压值: {ac_config.ac_under_voltage:.2f} V")
             elif choice == '9':  # 设置交流配置参数
@@ -108,7 +109,7 @@ class MU4801Monitor:
                 try:
                     over_volt = float(input("请输入交流过压值(V): "))
                     under_volt = float(input("请输入交流欠压值(V): "))
-                    self.protocol.send_command('setAcConfigParams', AcConfigParams(
+                    self._protocol.send_command('setAcConfigParams', AcConfigParams(
                         ac_over_voltage=over_volt,
                         ac_under_voltage=under_volt
                     ))
@@ -117,18 +118,18 @@ class MU4801Monitor:
                     print("无效的参数值")
             elif choice == '10':  # 读取整流模块数据
                 print("读取整流模块数据:")
-                rect_data = self.protocol.send_command('getRectAnalogData')
+                rect_data = self._protocol.send_command('getRectAnalogData')
                 print(f"输出电压: {rect_data.output_voltage:.2f} V")
                 for i, current in enumerate(rect_data.module_currents, 1):
                     print(f"模块{i}电流: {current:.2f} A")
             elif choice == '11':  # 读取整流模块状态
                 print("读取整流模块状态:")
-                rect_status = self.protocol.send_command('getRectSwitchStatus')
+                rect_status = self._protocol.send_command('getRectSwitchStatus')
                 for i, status in enumerate(rect_status.module_run_status, 1):
                     print(f"模块{i}运行状态: {'开机' if status == SwitchStatus.ON else '关机'}")
             elif choice == '12':  # 读取整流模块告警
                 print("读取整流模块告警:")
-                rect_alarm = self.protocol.send_command('getRectAlarmStatus')
+                rect_alarm = self._protocol.send_command('getRectAlarmStatus')
                 for i, alarm in enumerate(rect_alarm.module_failure_status, 1):
                     print(f"模块{i}故障状态: {'正常' if alarm == AlarmStatus.NORMAL else '故障'}")
                 for i, alarm in enumerate(rect_alarm.module_comm_failure_status, 1):
@@ -148,7 +149,7 @@ class MU4801Monitor:
                     print("无效的控制类型")
                     continue
 
-                self.protocol.send_command('controlRectModule', ControlRectModule (
+                self._protocol.send_command('controlRectModule', ControlRectModule (
                     module_id=module_id,
                     control_type=ctrl_code,
                     control_value=0
@@ -156,7 +157,7 @@ class MU4801Monitor:
                 print(f"整流模块{module_id}{'开机' if ctrl_code == RectModuleControlType.ON else '关机'}成功")
             elif choice == '14':  # 读取直流数据
                 print("读取直流数据:")
-                dc_data = self.protocol.send_command('getDcAnalogData')
+                dc_data = self._protocol.send_command('getDcAnalogData')
                 print(f"电池电压: {dc_data.dc_voltage:.2f} V")
                 print(f"负载总电流: {dc_data.total_load_current:.2f} A")
                 print(f"电池组1电流: {dc_data.battery_group_1_current:.2f} A")
@@ -187,7 +188,7 @@ class MU4801Monitor:
                 print(f"负载4电量: {dc_data.load_energy_4:.2f} kWh")
             elif choice == '15':  # 读取直流告警状态
                 print("读取直流告警状态:")
-                dc_alarm = self.protocol.send_command('getDcAlarmStatus')
+                dc_alarm = self._protocol.send_command('getDcAlarmStatus')
                 print(f"直流电压状态: {dc_alarm.dc_voltage_status.name}")
                 print(f"直流防雷器状态: {dc_alarm.dc_arrester_status.name}")
                 print(f"负载熔丝状态: {dc_alarm.load_fuse_status.name}")
@@ -223,7 +224,7 @@ class MU4801Monitor:
                 print(f"数字输入6状态: {dc_alarm.digital_input_status_6.name}")
             elif choice == '16':  # 读取直流配置参数
                 print("读取直流配置参数:")
-                dc_config = self.protocol.send_command('getDcConfigParams')
+                dc_config = self._protocol.send_command('getDcConfigParams')
                 print(f"直流过压值: {dc_config.dc_over_voltage:.2f} V")
                 print(f"直流欠压值: {dc_config.dc_under_voltage:.2f} V")
                 print(f"定时均充使能: {'使能' if dc_config.time_equalize_charge_enable == EnableStatus.ENABLE else '禁止'}")
@@ -297,7 +298,7 @@ class MU4801Monitor:
                     llvd3_off_time = float(input("请输入LLVD3下电时间(min): "))
                     llvd4_off_time = float(input("请输入LLVD4下电时间(min): "))
                     load_off_mode = LoadOffMode(int(input("请输入负载下电模式(0-电压模式, 1-时间模式): ")))
-                    self.protocol.send_command('setDcConfigParams', DcConfigParams(
+                    self._protocol.send_command('setDcConfigParams', DcConfigParams(
                             dc_over_voltage=over_volt,
                             dc_under_voltage=under_volt,
                             time_equalize_charge_enable=time_equalize_enable,
@@ -349,31 +350,31 @@ class MU4801Monitor:
                 try:
                     cmd = int(input("请选择控制命令编号: "))
                     if cmd == 1:
-                        self.protocol.send_command('systemControl', SystemControl(
+                        self._protocol.send_command('systemControl', SystemControl(
                             control_type=SystemControlType.RESET
                         ))
                     elif cmd == 2:
-                        self.protocol.send_command('systemControl', SystemControl(
+                        self._protocol.send_command('systemControl', SystemControl(
                             control_type=SystemControlType.LOAD1_OFF
                         ))  
                     elif cmd == 3:
-                        self.protocol.send_command('systemControl', SystemControl(
+                        self._protocol.send_command('systemControl', SystemControl(
                             control_type=SystemControlType.LOAD1_ON
                         ))
                     elif cmd == 4:
-                        self.protocol.send_command('systemControl', SystemControl(
+                        self._protocol.send_command('systemControl', SystemControl(
                             control_type=SystemControlType.LOAD2_OFF
                         ))
                     elif cmd == 5:
-                        self.protocol.send_command('systemControl', SystemControl(
+                        self._protocol.send_command('systemControl', SystemControl(
                             control_type=SystemControlType.LOAD2_ON
                         ))
                     elif cmd == 6:
-                        self.protocol.send_command('systemControl', SystemControl(
+                        self._protocol.send_command('systemControl', SystemControl(
                             control_type=SystemControlType.LOAD3_OFF
                         ))
                     elif cmd == 7:
-                        self.protocol.send_command('systemControl', SystemControl(
+                        self._protocol.send_command('systemControl', SystemControl(
                             control_type=SystemControlType.LOAD3_ON
                         ))
                     else:
@@ -392,5 +393,5 @@ if __name__ == '__main__':
     if not port:
         port = default_port
     logging.info(f"Using serial port: {port}") 
-    simulator = MU4801Monitor(device_addr, port)
-    simulator.run()
+    monitor = MU4801Monitor(device_addr, port)
+    monitor.run()

@@ -5,17 +5,17 @@ import time
 import datetime
 
 # 导入相关的数据类
-from commands import *
+from models import *
 
 # 日志配置
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(name)s %(levelname)s %(message)s')
+logger = logging.getLogger(__name__)
 
 class MU4801Simulator:
     def __init__(self, device_addr, port):
         self._log = logging.getLogger(self.__class__.__name__)
-        self.protocol = MU4801Protocol(device_addr, port)
-        self.protocol.connect()
-        self.serial = self.protocol._serial
+        self._protocol = MU4801Protocol(device_addr, port)
+        self._protocol.connect()
         
         self.device_info = {
             'collector_name': 'MU4801A',
@@ -222,7 +222,7 @@ class MU4801Simulator:
         return ProtocolVersion(version='V2.1')
         
     def handle_get_device_address(self):
-        return DeviceAddress(address=self.protocol.device_addr)
+        return DeviceAddress(address=self._protocol.device_addr)
         
     def handle_get_manufacturer_info(self):
         return ManufacturerInfo(**self.device_info)
@@ -316,7 +316,7 @@ class MU4801Simulator:
     def run(self):
         while True:
             try:
-                command, command_data = self.protocol.receive_command()
+                command, command_data = self._protocol.receive_command()
                 if not command:
                     continue
                 
@@ -374,7 +374,7 @@ class MU4801Simulator:
                     elif command.cid2 == '0x92':  # 系统控制
                         self.handle_system_control(command_data) 
 
-                self.protocol.send_response(command, '0x00', response_data)  
+                self._protocol.send_response(command, '0x00', response_data)  
 
             except Exception as e:
                 self._log.error(f"An error occurred: {e}", exc_info=True)
