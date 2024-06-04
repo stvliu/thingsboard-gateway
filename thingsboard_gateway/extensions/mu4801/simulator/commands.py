@@ -11,7 +11,6 @@ logger = logging.getLogger(__name__)
 class Commands:
     def __init__(self, config):
         logger.debug(f"Initializing Commands with config: {config}")
-        self._enums = {}
         self._commands_by_cid = {}
         self._commands_by_key = {}
         self._attributes = self._parse_commands(config['attributes'])
@@ -60,17 +59,3 @@ class Commands:
         command = self._commands_by_key.get(command_key)
         logger.debug(f"Found command: {command}")
         return command
-
-    # def get_enums(self):
-    #     return self._enums
-    
-    # def _collect_enums(self, data_class, enums):
-    #     from dataclasses import fields
-    #     for field in fields(data_class):
-    #         if field.type is Enum:
-    #             enums.update(field.type.enum_dict)
-    #     from dataclasses import fields
-    #     for field in fields(data_class):
-    #         if field.type is Enum:
-    #             enums.update(field.type.enum_dict)
-   

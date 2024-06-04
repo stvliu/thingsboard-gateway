@@ -964,8 +964,7 @@ class SystemControl:
        return {
            "control_type": self.control_type.name  
        }
-
-        
+ 
 # 命令类        
 class Command:
     def __init__(self, cid1, cid2, key, name, request_class, response_class):
@@ -975,4 +974,3 @@ class Command:
         self.name = name
         self.request_class = request_class
         self.response_class = response_class
-        
