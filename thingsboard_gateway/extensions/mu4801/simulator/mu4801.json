@@ -62,9 +62,7 @@
             "key": "getDcAnalogData",
             "name": "获取直流配电模拟量",
             "response": "DcAnalogData" 
-        }
-    ],
-    "alarms": [
+        },
         {
             "cid1": "0x40",
             "cid2": "0x44",
@@ -86,6 +84,8 @@
             "name": "获取直流告警状态",
             "response": "DcAlarmStatus"
         }
+    ],
+    "attributeUpdates": [
     ],
     "serverSideRpc": [
         {

@@ -15,12 +15,27 @@ class Commands:
         self._commands_by_key = {}
         self._attributes = self._parse_commands(config['attributes'])
         self._timeseries = self._parse_commands(config['timeseries'])
-        self._alarms = self._parse_commands(config['alarms'])
+        self._attribute_updates = self._parse_commands(config['attributeUpdates']) 
         self._server_side_rpc = self._parse_commands(config['serverSideRpc'])
-        for command in self._attributes + self._timeseries + self._alarms + self._server_side_rpc:
+        for command in self._attributes + self._timeseries + self._attribute_updates + self._server_side_rpc:
             self._commands_by_cid[(command.cid1, command.cid2)] = command
             self._commands_by_key[command.key] = command
-
+    @property
+    def attributes(self):
+        return self._attributes
+    
+    @property
+    def timeseries(self):
+        return self._timeseries
+    
+    @property
+    def server_side_rpc(self):
+        return self._server_side_rpc
+    
+    @property
+    def attribute_updates(self):
+        return self._attribute_updates
+    
     def _parse_commands(self, cmd_configs):
         commands = []
         for cmd_config in cmd_configs:

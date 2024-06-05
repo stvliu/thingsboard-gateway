@@ -1,7 +1,7 @@
 import logging
 import struct
-from exceptions import *
-from constants import *
+from thingsboard_gateway.extensions.mu4801.protocol.exceptions import *
+from thingsboard_gateway.extensions.mu4801.protocol.constants import *
 
 # 日志配置
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(name)s %(levelname)s %(message)s')

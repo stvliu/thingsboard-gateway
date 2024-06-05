@@ -149,11 +149,13 @@ class Dht11Connector(Connector, Thread):
                     # 读取DHT11传感器数据 (Read data from the DHT11 sensor)
                     humidity, temperature = Adafruit_DHT.read_retry(Adafruit_DHT.DHT11, device['pin'])
                     
-                    if humidity is not None and temperature is not None:
+                    if humidity and temperature:
                         data = {'name': device['name'], 'temperature': temperature, 'humidity': humidity, 'ts': int(time.time() * 1000)}
                         # 转换数据格式 (Convert data format)
-                        converted_data = self.__converter.convert(device, data)
                         
+                        converted_data = self.__converter.convert(device, data)
+    
+                        self._log.debug(f"Device {self.name} data_type: {type(converted_data)}")
                         # 发送数据到ThingsBoard (Send data to ThingsBoard)
                         self.__gateway.send_to_storage(self.name, self.get_id(), converted_data)
                         #self.__gateway.send_to_storage(self.name, device['name'], converted_data)

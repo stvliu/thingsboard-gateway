@@ -1,15 +1,14 @@
 import serial
 import logging
-from exceptions import *
-from constants import *
-from frame_codec import *
+from thingsboard_gateway.extensions.mu4801.protocol.exceptions import *
+from thingsboard_gateway.extensions.mu4801.protocol.constants import *
+from thingsboard_gateway.extensions.mu4801.protocol.frame_codec import *
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(name)s %(levelname)s %(message)s')
 logger = logging.getLogger(__name__)
 
 class SerialLink:
-    def __init__(self, device_addr, port, baudrate=9600, bytesize=serial.EIGHTBITS, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE, timeout=None):
-        self.device_addr = device_addr
+    def __init__(self, port, baudrate=9600, bytesize=serial.EIGHTBITS, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE, timeout=None):
         self.port = port
         self.baudrate = baudrate
         self.bytesize = bytesize

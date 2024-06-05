@@ -1,38 +1,33 @@
-import struct
-import datetime
 import logging
-from dataclasses import dataclass
-from typing import List, Dict, Union, Optional
 import serial
-from enum import Enum
-from constants import *
-from exceptions import *
-from models import *
-from frame_codec import FrameCodec
-from data_codec import DataCodec
-from commands import Commands
-from serial_link import SerialLink
+from thingsboard_gateway.extensions.mu4801.protocol.constants import *
+from thingsboard_gateway.extensions.mu4801.protocol.exceptions import *
+from thingsboard_gateway.extensions.mu4801.protocol.models import *
+from thingsboard_gateway.extensions.mu4801.protocol.frame_codec import FrameCodec
+from thingsboard_gateway.extensions.mu4801.protocol.data_codec import DataCodec
+from thingsboard_gateway.extensions.mu4801.protocol.commands import Commands
+from thingsboard_gateway.extensions.mu4801.protocol.serial_link import SerialLink
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(name)s %(levelname)s %(message)s')
 logger = logging.getLogger(__name__)
      
 # 协议类
 class Ydt1363Protocol:
-    def __init__(self, device_addr = 1,  port=None, baudrate=9600, bytesize=serial.EIGHTBITS, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE, timeout=None, config=None):
+    def __init__(self, config, device_addr, port, baudrate=9600, bytesize=serial.EIGHTBITS, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE, timeout=None):
         logger.debug(f"Initializing Protocol with port={port}, baudrate={baudrate}, bytesize={bytesize}, parity={parity}, stopbits={stopbits}, timeout={timeout}")
-        self._device_addr = device_addr
-        self._port = port
-        self._baudrate = baudrate
-        self._bytesize = bytesize
-        self._parity = parity
-        self._stopbits = stopbits
-        self._timeout = timeout
         self._config = config
-
+        self._device_addr = device_addr
         self._commands = Commands(config)
         self._frame_codec = FrameCodec()
         self._data_codec = DataCodec()
-        self._serial_link = SerialLink(device_addr, port)
+        self._serial_link = SerialLink(
+            port= port ,
+            baudrate = baudrate,
+            bytesize = bytesize,
+            parity = parity,
+            stopbits = stopbits,
+            timeout = timeout
+        )
 
     @property
     def device_addr(self):

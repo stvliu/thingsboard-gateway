@@ -1,0 +1,229 @@
+# mu4801_connector.py
+import asyncio
+import time
+import serial
+from random import choice
+from string import ascii_lowercase
+from threading import Thread
+from thingsboard_gateway.connectors.connector import Connector
+from thingsboard_gateway.tb_utility.tb_utility import TBUtility
+from thingsboard_gateway.gateway.statistics_service import StatisticsService
+from thingsboard_gateway.tb_utility.tb_logger import init_logger
+
+from thingsboard_gateway.extensions.mu4801.mu4801_uplink_converter import Mu4801UplinkConverter
+from thingsboard_gateway.extensions.mu4801.mu4801_downlink_converter import Mu4801DownlinkConverter
+from thingsboard_gateway.extensions.mu4801.protocol.mu4801_protocol import MU4801Protocol
+
+
+DEFAULT_BAUDRATE: int = 9600
+DEFAULT_PORT: str = '/dev/ttyUSB0'
+DEFAULT_DEVICE_ADDRESS: int = 1
+DEFAULT_TIMEOUT: float =1
+DEFAULT_POLL_INTERVAL: float = 2
+
+class Mu4801Connector(Thread, Connector):
+    DEFAULT_BAUDRATE = 9600
+    DEFAULT_BYTESIZE = serial.EIGHTBITS
+    DEFAULT_PARITY = serial.PARITY_NONE
+    DEFAULT_STOPBITS = serial.STOPBITS_ONE
+    DEFAULT_TIMEOUT = 1
+    DEFAULT_DEVICE_ADDRESS = 1
+    DEFAULT_POLL_INTERVAL = 5
+    DEFAULT_COMMAND_TIMEOUT = 1
+    DEFAULT_MAX_COMMAND_ATTEMPTS = 3
+    HEARTBEAT_INTERVAL = 10
+
+    def __init__(self, gateway, config, connector_type):
+        super().__init__()
+        self.statistics = {'MessagesReceived': 0, 'MessagesSent': 0}
+        self.__gateway = gateway
+        self.__connector_type = connector_type
+        self.__config = config
+        self.__id = self.__config.get('id')
+        self.name = config.get("name", 'MU4801 ' + ''.join(choice(ascii_lowercase) for _ in range(5)))
+        self._log = init_logger(gateway, self.name, config.get('logLevel', 'INFO'))
+        self._log.info("Initializing MU4801 connector")
+
+        self.__devices = self.__config["devices"]
+        self.__connected = False
+        self.__stopped = False
+        self.daemon = True
+
+        self.__serial_config = None
+        self.__parse_config()
+        self.__init_serial_config()
+        self.__init_converters()
+
+        self.__last_heartbeat_time = 0
+
+        self.__loop = asyncio.new_event_loop()
+
+        self._log.info("[%s] MU4801 connector initialized.", self.get_name())
+
+    def open(self):
+        self.__stopped = False
+        self.start()
+    
+    def run(self):
+        self._connected = True
+        try:
+            self.__loop.run_until_complete(self._run())
+        except Exception as e:
+            self._log.exception(e)
+
+    async def _run(self):
+        self._log.info(f"[{self.name}] Starting MU4801 connector")
+
+        while not self.__stopped:
+            try:
+                if not self.__connected:
+                    self.__connect()
+
+                if self.__connected:
+                    for device in self.__devices:
+                        device_data = self.__read_device_data(device)
+                        if device_data:
+                            self._collect_statistic_and_send(self.get_name(), self.get_id(), device_data)
+                current_time = time.time()
+                if current_time - self.__last_heartbeat_time >= self.HEARTBEAT_INTERVAL:
+                    self.__send_heartbeat()
+                    self.__last_heartbeat_time = current_time
+
+                time.sleep(self.__config.get('pollInterval', self.DEFAULT_POLL_INTERVAL))
+
+            except Exception as e:
+                self._log.exception(f"[{self.name}] Error in MU4801 connector: {str(e)}")
+
+        self._log.info(f"[{self.name}] MU4801 connector stopped")
+
+    def close(self):
+        self.__stopped = True
+        self.__disconnect()
+
+    def get_id(self):
+        return self.__id
+    
+    def get_name(self):
+        return self.name
+
+    def get_type(self):
+        return self.__connector_type
+
+    def get_config(self):
+        return self.__config
+
+    def get_gateway(self):
+        return self.__gateway
+        
+    def is_connected(self):
+        return self.__protocol and self.__protocol.is_connected()
+
+    def is_stopped(self):
+        return self.__stopped
+    
+    @StatisticsService.CollectAllReceivedBytesStatistics(start_stat_type='allReceivedBytesFromTB')
+    def on_attributes_update(self, content):
+        pass
+
+    @StatisticsService.CollectAllReceivedBytesStatistics(start_stat_type='allReceivedBytesFromTB')
+    def server_side_rpc_handler(self, content):
+        pass
+
+    def __parse_config(self):
+        pass
+
+    def __init_serial_config(self):
+        self.__serial_config = {
+            'port': self.__config.get('port', '/dev/ttyUSB0'),
+            'baudrate': self.__config.get('baudrate', self.DEFAULT_BAUDRATE),
+            'bytesize': self.__config.get('bytesize', self.DEFAULT_BYTESIZE),
+            'parity': self.__config.get('parity', self.DEFAULT_PARITY),
+            'stopbits': self.__config.get('stopbits', self.DEFAULT_STOPBITS),
+            'timeout': self.__config.get('timeout', self.DEFAULT_TIMEOUT),
+            'deviceAddress': self.__config.get('deviceAddress', self.DEFAULT_DEVICE_ADDRESS)
+        }
+    
+    def __init_converters(self):
+        self.__uplink_converter = Mu4801UplinkConverter(self, self._log)
+        self.__downlink_converter = Mu4801DownlinkConverter(self, self._log)
+
+    def __connect(self):
+        try:
+            self._log.info(f"[{self.name}] Connecting to serial port {self.__serial_config['port']}")
+            self.__protocol = MU4801Protocol(
+                device_addr=self.__serial_config['deviceAddress'],
+                port=self.__serial_config['port'],
+                baudrate=self.__serial_config['baudrate'],
+                bytesize=self.__serial_config['bytesize'],
+                parity=self.__serial_config['parity'],
+                stopbits=self.__serial_config['stopbits'],
+                timeout=self.__serial_config['timeout']
+            )
+            self.__protocol.connect()
+            self.__connected = True
+        except Exception as e:
+            self._log.error(f"[{self.name}] Error connecting to serial port: {str(e)}")
+            self.__connected = False
+
+    def __disconnect(self):
+        if self.__protocol:
+            self.__protocol.disconnect()
+            self.__connected = False
+            self._log.info(f"[{self.name}] Disconnected from serial port")
+
+    def __read_device_data(self, device_config):
+        device_name = device_config['deviceName']
+        device_data = {'deviceName': device_name, 'deviceType': device_config['deviceType'], 'attributes': {}, 'telemetry': {}}
+
+        for attribute_config in device_config.get('attributes', []):
+            try:
+                attribute_value = self.__read_attribute(attribute_config)
+                if attribute_value is not None:
+                    device_data['attributes'][attribute_config['key']] = attribute_value
+            except Exception as e:
+                self._log.error(f"[{self.name}] Error reading attribute '{attribute_config['key']}' for device '{device_name}': {str(e)}")
+
+        for telemetry_config in device_config.get('timeseries', []):
+            try:
+                telemetry_values = self.__read_telemetry(telemetry_config)
+                if telemetry_values:
+                    device_data['telemetry'].update(telemetry_values)
+            except Exception as e:
+                self._log.error(f"[{self.name}] Error reading telemetry for device '{device_name}': {str(e)}")
+
+        return device_data
+
+    def __read_attribute(self, attribute_config):
+        command_key = attribute_config['key']
+        value = self.__protocol.send_command(command_key)
+        return self.__uplink_converter.convert(attribute_config, value)
+
+    def __read_telemetry(self, telemetry_config):
+        command = telemetry_config['command']
+        value = self.__protocol.send_command(command)
+        return self.__uplink_converter.convert(telemetry_config, value)
+
+    def __process_rpc_requests(self, device):
+        device_name = device['deviceName']
+        rpc_requests = self.__gateway.get_rpc_requests(device_name)
+        for rpc_request in rpc_requests:
+            try:
+                rpc_config = next((c for c in device.get('serverSideRpc', []) if c['method'] == rpc_request['method']), None)
+                if rpc_config:
+                    command_config = rpc_config.copy()
+                    command_config['params'] = rpc_request['params']
+                    command = self.__downlink_converter.convert(command_config)
+                    reply = self.__protocol.send_command(command)
+                    self.__gateway.send_rpc_reply(device_name, rpc_request['requestId'], self.__uplink_converter.convert(command_config, reply))
+                else:
+                    self._log.error(f"[{self.name}] RPC method '{rpc_request['method']}' not found in config for device '{device_name}'")
+            except Exception as e:
+                self._log.error(f"[{self.name}] Error processing RPC request for device '{device_name}': {str(e)}")
+
+    def __send_heartbeat(self):
+        self.__gateway.send_to_storage(self.name, {'deviceName': 'MU4801 Connector', 'deviceType': 'Connector', 'telemetry': {'heartbeat': int(time.time() * 1000)}})
+
+    def _collect_statistic_and_send(self, connector_name, connector_id, data):
+        self.statistics["MessagesReceived"] = self.statistics["MessagesReceived"] + 1
+        self.__gateway.send_to_storage(connector_name, connector_id, data)
+        self.statistics["MessagesSent"] = self.statistics["MessagesSent"] + 1
