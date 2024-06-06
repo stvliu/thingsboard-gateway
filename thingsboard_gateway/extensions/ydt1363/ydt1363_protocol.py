@@ -1,23 +1,25 @@
 import logging
 import serial
-from thingsboard_gateway.extensions.mu4801.protocol.constants import *
-from thingsboard_gateway.extensions.mu4801.protocol.exceptions import *
-from thingsboard_gateway.extensions.mu4801.protocol.models import *
-from thingsboard_gateway.extensions.mu4801.protocol.frame_codec import FrameCodec
-from thingsboard_gateway.extensions.mu4801.protocol.data_codec import DataCodec
-from thingsboard_gateway.extensions.mu4801.protocol.commands import Commands
-from thingsboard_gateway.extensions.mu4801.protocol.serial_link import SerialLink
+from thingsboard_gateway.extensions.ydt1363.constants import *
+from thingsboard_gateway.extensions.ydt1363.exceptions import *
+from thingsboard_gateway.extensions.ydt1363.frame_codec import FrameCodec
+from thingsboard_gateway.extensions.ydt1363.data_codec import DataCodec
+from thingsboard_gateway.extensions.ydt1363.commands import Commands
+from thingsboard_gateway.extensions.ydt1363.serial_link import SerialLink
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(name)s %(levelname)s %(message)s')
 logger = logging.getLogger(__name__)
-     
+
+DEFAULT_MODEL_PACKAGE = "thingsboard_gateway.extensions.ydt1363.models"
+
 # 协议类
 class Ydt1363Protocol:
     def __init__(self, config, device_addr, port, baudrate=9600, bytesize=serial.EIGHTBITS, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE, timeout=None):
         logger.debug(f"Initializing Protocol with port={port}, baudrate={baudrate}, bytesize={bytesize}, parity={parity}, stopbits={stopbits}, timeout={timeout}")
         self._config = config
+        self._models_package =self._config.get("models_package", DEFAULT_MODEL_PACKAGE)
         self._device_addr = device_addr
-        self._commands = Commands(config)
+        self._commands = Commands(models_package = self._models_package, config = config)
         self._frame_codec = FrameCodec()
         self._data_codec = DataCodec()
         self._serial_link = SerialLink(
@@ -258,3 +260,13 @@ class Ydt1363Protocol:
 
     def _is_unidirectional_command(self, command):
         return command.response_type is None
+    
+# 命令类        
+class Command:
+    def __init__(self, cid1, cid2, key, name, request_class, response_class):
+        self.cid1 = cid1
+        self.cid2 = cid2
+        self.key = key
+        self.name = name
+        self.request_class = request_class
+        self.response_class = response_class

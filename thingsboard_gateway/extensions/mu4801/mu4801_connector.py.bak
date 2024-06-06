@@ -12,7 +12,7 @@ from thingsboard_gateway.tb_utility.tb_logger import init_logger
 
 from thingsboard_gateway.extensions.mu4801.mu4801_uplink_converter import Mu4801UplinkConverter
 from thingsboard_gateway.extensions.mu4801.mu4801_downlink_converter import Mu4801DownlinkConverter
-from thingsboard_gateway.extensions.mu4801.protocol.mu4801_protocol import MU4801Protocol
+from thingsboard_gateway.extensions.ydt1363.mu4801_protocol import MU4801Protocol
 
 
 DEFAULT_BAUDRATE: int = 9600

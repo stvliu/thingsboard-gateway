@@ -1,8 +1,8 @@
 import serial
 import logging
-from thingsboard_gateway.extensions.mu4801.protocol.exceptions import *
-from thingsboard_gateway.extensions.mu4801.protocol.constants import *
-from thingsboard_gateway.extensions.mu4801.protocol.frame_codec import *
+from thingsboard_gateway.extensions.ydt1363.exceptions import *
+from thingsboard_gateway.extensions.ydt1363.constants import *
+from thingsboard_gateway.extensions.ydt1363.frame_codec import *
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(name)s %(levelname)s %(message)s')
 logger = logging.getLogger(__name__)

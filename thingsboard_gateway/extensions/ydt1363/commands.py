@@ -1,7 +1,6 @@
 import logging
-from thingsboard_gateway.extensions.mu4801.protocol.exceptions import *
-from thingsboard_gateway.extensions.mu4801.protocol.constants import *
-from thingsboard_gateway.extensions.mu4801.protocol.models import Command
+from thingsboard_gateway.extensions.ydt1363.exceptions import *
+from thingsboard_gateway.extensions.ydt1363.constants import *
 
 # 日志配置
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(name)s %(levelname)s %(message)s')
@@ -9,8 +8,10 @@ logger = logging.getLogger(__name__)
 
 # 命令管理器
 class Commands:
-    def __init__(self, config):
+    def __init__(self, models_package: str, config):
         logger.debug(f"Initializing Commands with config: {config}")
+
+        self._models_package = models_package
         self._commands_by_cid = {}
         self._commands_by_key = {}
         self._attributes = self._parse_commands(config['attributes'])
@@ -33,13 +34,13 @@ class Commands:
             
             request_class = None
             if request_class_name:
-                request_module = __import__('thingsboard_gateway.extensions.mu4801.protocol.models', fromlist=[request_class_name])
+                request_module = __import__(self._models_package, fromlist=[request_class_name])
                 request_class = getattr(request_module, request_class_name)
                 # self._collect_enums(request_class, self._enums)
                 
             response_class = None  
             if response_class_name:
-                response_module = __import__('thingsboard_gateway.extensions.mu4801.protocol.models', fromlist=[response_class_name])
+                response_module = __import__(self._models_package, fromlist=[response_class_name])
                 response_class = getattr(response_module, response_class_name)
                 # self._collect_enums(response_class, self._enums)
                 
@@ -59,3 +60,13 @@ class Commands:
         command = self._commands_by_key.get(command_key)
         logger.debug(f"Found command: {command}")
         return command
+     
+# 命令类        
+class Command:
+    def __init__(self, cid1, cid2, key, name, request_class, response_class):
+        self.cid1 = cid1
+        self.cid2 = cid2
+        self.key = key
+        self.name = name
+        self.request_class = request_class
+        self.response_class = response_class

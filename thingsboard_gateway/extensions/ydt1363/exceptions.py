@@ -1,4 +1,4 @@
-from thingsboard_gateway.extensions.mu4801.protocol.constants import *
+from thingsboard_gateway.extensions.ydt1363.constants import *
 
 # 异常类
 class ProtocolError(Exception):

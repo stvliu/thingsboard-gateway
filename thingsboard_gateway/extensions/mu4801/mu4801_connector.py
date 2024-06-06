@@ -12,7 +12,7 @@ from thingsboard_gateway.tb_utility.tb_logger import init_logger
 
 from thingsboard_gateway.extensions.mu4801.mu4801_uplink_converter import Mu4801UplinkConverter
 from thingsboard_gateway.extensions.mu4801.mu4801_downlink_converter import Mu4801DownlinkConverter
-from thingsboard_gateway.extensions.mu4801.protocol.mu4801_protocol import MU4801Protocol
+from thingsboard_gateway.extensions.mu4801.mu4801_protocol import MU4801Protocol
 
 DEFAULT_PORT: str = '/dev/ttyUSB0'
 DEFAULT_BAUDRATE = 9600
@@ -52,41 +52,6 @@ class Mu4801Connector(Thread, Connector):
 
     def open(self):
         self.__loop.run_until_complete(self.__run())
-
-    async def __run(self):
-        while True:
-            try:
-                if not self.__connected:
-                    self.__connect()
-
-                if self.__connected:
-                    await self.__poll_devices()
-
-                await asyncio.sleep(self.__config.get('pollInterval', DEFAULT_POLL_INTERVAL))
-            except Exception as e:
-                self._log.exception(f"Error in Mu4801 connector: {e}")
-                await asyncio.sleep(self.RECONNECT_DELAY)  
-
-    async def __poll_devices(self):
-        for device in self.__config['devices']:
-            self.__process_device(device)
-
-    def __process_device(self, device):
-        device_name = device['deviceName']
-        device_type = device.get('deviceType', 'default')
-        self._log.debug(f"Processing device {device_name}")
-        device_data = {'deviceName': device_name, 'deviceType': device_type, 'attributes': {}, 'telemetry': {}}
-
-        for attribute_config in device.get('attributes', []):
-            attribute_data = self.__read_attribute(attribute_config)
-            if attribute_data:
-                device_data['attributes'].update(attribute_data)
-
-        for telemetry_config in device.get('timeseries', []):
-            telemetry_data = self.__read_telemetry(telemetry_config)
-            if telemetry_data:
-                device_data['telemetry'].update(telemetry_data)
-        self._collect_statistic_and_send(self.get_name(), self.get_id(), device_data)
 
     def close(self):
         self.__stopped = True
@@ -144,8 +109,8 @@ class Mu4801Connector(Thread, Connector):
         }
     
     def __init_converters(self):
-        self.__uplink_converter = Mu4801UplinkConverter(self, self._log)
-        self.__downlink_converter = Mu4801DownlinkConverter(self, self._log)
+        self.__uplink_converter = Mu4801UplinkConverter(self.__config, self._log)
+        self.__downlink_converter = Mu4801DownlinkConverter(self.__config, self._log)
 
     def __connect(self):
         try:
@@ -166,21 +131,56 @@ class Mu4801Connector(Thread, Connector):
             self._log.error(f"[{self.name}] Error connecting to serial port: {str(e)}")
             self.__connected = False
 
+
+    async def __run(self):
+        while True:
+            try:
+                if not self.__connected:
+                    self.__connect()
+
+                if self.__connected:
+                    await self.__poll_devices()
+
+                await asyncio.sleep(self.__config.get('pollInterval', DEFAULT_POLL_INTERVAL))
+            except Exception as e:
+                self._log.exception(f"Error in Mu4801 connector: {e}")
+                await asyncio.sleep(RECONNECT_DELAY)  
+
+    async def __poll_devices(self):
+        for device in self.__config['devices']:
+            self.__process_device(device)
+
+    def __process_device(self, device):
+        device_name = device['deviceName']
+        device_type = device.get('deviceType', 'default')
+        self._log.debug(f"Processing device {device_name}")
+        device_data = {'deviceName': device_name, 'deviceType': device_type, 'attributes': {}, 'telemetry': {}}
+
+        for attribute_config in device.get('attributes', []):
+            attribute_data = self.__read_device_data(attribute_config)
+            if attribute_data:
+                device_data['attributes'].update(attribute_data)
+
+        for telemetry_config in device.get('timeseries', []):
+            telemetry_data = self.__read_device_data(telemetry_config)
+            if telemetry_data:
+                device_data['telemetry'].update(telemetry_data)
+        self._collect_statistic_and_send(self.get_name(), self.get_id(), device_data)
+
     def __disconnect(self):
         if self.__protocol:
             self.__protocol.disconnect()
             self.__connected = False
             self._log.info(f"[{self.name}] Disconnected from serial port")
 
-    def __read_attribute(self, attribute_config):
-        command_key = attribute_config['key']
+    def __read_device_data(self, command_config):
+        command_key = command_config['key']
         value = self.__protocol.send_command(command_key)
-        return self.__uplink_converter.convert(attribute_config, value)
+        if value:
+            return value.to_dict()
+        else:
+            return {} 
 
-    def __read_telemetry(self, telemetry_config):
-        command_key = telemetry_config['key']
-        value = self.__protocol.send_command(command_key)
-        return self.__uplink_converter.convert(telemetry_config, value)
 
     # def _collect_statistic_and_send(self, connector_name, connector_id, data):
     #     self.statistics["MessagesReceived"] = self.statistics["MessagesReceived"] + 1
@@ -209,24 +209,14 @@ class Mu4801Connector(Thread, Connector):
         self.statistics["MessagesReceived"] = self.statistics["MessagesReceived"] + 1
         
         # 调试日志:打印接收到的原始数据
-        self._log.debug(f"[{connector_name}] Received data from device: {data}")
+        # self._log.debug(f"[{connector_name}] Received data from device: {data}")
         
-        data_dict = {
-            'deviceName': data['deviceName'], 
-            'deviceType': data['deviceType'],
-            'attributes': [{
-                k: v
-            } for k, v in data['attributes'].items()],
-            'telemetry': [{
-                'ts': int(time.time() * 1000),
-                'values': data['telemetry']
-            }]
-        }
+        data=self.__uplink_converter.convert(config = self.__config, data = data)
         
         # 调试日志:打印转换后的数据
-        self._log.debug(f"[{connector_name}] Converted data: {data_dict}")
+        # self._log.debug(f"[{connector_name}] Converted data: {data}")
         
-        self.__gateway.send_to_storage(connector_name, connector_id, data_dict)
+        self.__gateway.send_to_storage(connector_name, connector_id, data)
         self.statistics["MessagesSent"] = self.statistics["MessagesSent"] + 1
         
         # 调试日志:确认数据已发送

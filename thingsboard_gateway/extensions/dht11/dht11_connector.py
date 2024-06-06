@@ -155,7 +155,6 @@ class Dht11Connector(Connector, Thread):
                         
                         converted_data = self.__converter.convert(device, data)
     
-                        self._log.debug(f"Device {self.name} data_type: {type(converted_data)}")
                         # 发送数据到ThingsBoard (Send data to ThingsBoard)
                         self.__gateway.send_to_storage(self.name, self.get_id(), converted_data)
                         #self.__gateway.send_to_storage(self.name, device['name'], converted_data)

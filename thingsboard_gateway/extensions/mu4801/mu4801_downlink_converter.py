@@ -1,11 +1,11 @@
 from thingsboard_gateway.connectors.converter import Converter
 from thingsboard_gateway.gateway.statistics_service import StatisticsService
-from thingsboard_gateway.extensions.mu4801.protocol.models import *
+from thingsboard_gateway.extensions.mu4801.mu4801_models import *
 import datetime
 
 class Mu4801DownlinkConverter(Converter):
-    def __init__(self, connector, log):
-        self.__connector = connector
+    def __init__(self, config, log):
+        self._config = config
         self._log = log
 
     @StatisticsService.CollectStatistics(start_stat_type='allReceivedBytesFromTB',

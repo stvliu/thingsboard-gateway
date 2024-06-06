@@ -24,7 +24,7 @@ class SNMPUplinkConverter(Converter):
     @StatisticsService.CollectStatistics(start_stat_type='receivedBytesFromDevices',
                                          end_stat_type='convertedBytesFromDevice')
     def convert(self, config, data):
-        result = {
+        iresult = {
             "deviceName": self.__config["deviceName"],
             "deviceType": self.__config["deviceType"],
             "attributes": [],

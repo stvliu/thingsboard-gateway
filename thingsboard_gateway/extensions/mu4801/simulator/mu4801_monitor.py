@@ -1,4 +1,4 @@
-from mu4801_protocol import MU4801Protocol
+from.ydt1363.import MU4801Protocol
 import logging
 import datetime
 
