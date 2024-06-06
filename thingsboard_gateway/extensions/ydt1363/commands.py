@@ -10,17 +10,35 @@ logger = logging.getLogger(__name__)
 class Commands:
     def __init__(self, models_package: str, config):
         logger.debug(f"Initializing Commands with config: {config}")
-
+        logger.debug(f"Models package: {models_package}")
         self._models_package = models_package
         self._commands_by_cid = {}
         self._commands_by_key = {}
-        self._attributes = self._parse_commands(config['attributes'])
-        self._timeseries = self._parse_commands(config['timeseries'])
-        self._attribute_updates = self._parse_commands(config['attributeUpdates']) 
-        self._server_side_rpc = self._parse_commands(config['serverSideRpc'])
-        for command in self._attributes + self._timeseries + self._attribute_updates + self._server_side_rpc:
+        
+        logger.debug("Parsing attributes...")
+        self._attributes = self._parse_commands(config.get('attributes', []))
+        logger.debug(f"Parsed {len(self._attributes)} attributes")
+        
+        logger.debug("Parsing timeseries...")
+        self._timeseries = self._parse_commands(config.get('timeseries', []))
+        logger.debug(f"Parsed {len(self._timeseries)} timeseries")
+        
+        logger.debug("Parsing attribute updates...")
+        self._attribute_updates = self._parse_commands(config.get('attributeUpdates', []))
+        logger.debug(f"Parsed {len(self._attribute_updates)} attribute updates")
+        
+        logger.debug("Parsing server-side RPCs...")
+        self._server_side_rpc = self._parse_commands(config.get('serverSideRpc', []))
+        logger.debug(f"Parsed {len(self._server_side_rpc)} server-side RPCs")
+        
+        all_commands = self._attributes + self._timeseries + self._attribute_updates + self._server_side_rpc
+        logger.debug(f"Building command dictionaries for {len(all_commands)} total commands...")
+        
+        for command in all_commands:
             self._commands_by_cid[(command.cid1, command.cid2)] = command
             self._commands_by_key[command.key] = command
+        
+        logger.info(f"Initialized Commands with {len(all_commands)} total commands")
 
     def _parse_commands(self, cmd_configs):
         commands = []

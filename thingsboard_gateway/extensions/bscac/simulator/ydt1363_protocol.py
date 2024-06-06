@@ -29,7 +29,8 @@ class Ydt1363Protocol:
         self._timeout = timeout
         self._config = config
 
-        self._commands = Commands(config)
+        self._models_package =self._config.get("models_package", "models")
+        self._commands = Commands(models_package = self._models_package, config = config)
         self._frame_codec = FrameCodec()
         self._data_codec = DataCodec()
         self._serial_link = SerialLink(device_addr, port)

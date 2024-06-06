@@ -10,15 +10,15 @@ from thingsboard_gateway.extensions.ydt1363.serial_link import SerialLink
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(name)s %(levelname)s %(message)s')
 logger = logging.getLogger(__name__)
 
-DEFAULT_MODEL_PACKAGE = "thingsboard_gateway.extensions.ydt1363.models"
+DEFAULT_MODEL_PACKAGE = "models"
 
 # 协议类
 class Ydt1363Protocol:
     def __init__(self, config, device_addr, port, baudrate=9600, bytesize=serial.EIGHTBITS, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE, timeout=None):
         logger.debug(f"Initializing Protocol with port={port}, baudrate={baudrate}, bytesize={bytesize}, parity={parity}, stopbits={stopbits}, timeout={timeout}")
         self._config = config
-        self._models_package =self._config.get("models_package", DEFAULT_MODEL_PACKAGE)
         self._device_addr = device_addr
+        self._models_package =self._config.get("models_package", DEFAULT_MODEL_PACKAGE)
         self._commands = Commands(models_package = self._models_package, config = config)
         self._frame_codec = FrameCodec()
         self._data_codec = DataCodec()

@@ -125,7 +125,7 @@ class ProtocolVersion:
         return cls(version)
 
     def to_dict(self):
-        return {"version": self.version} 
+        return {"protocol_version": self.version} 
 
 @dataclass    
 class DeviceAddress:
