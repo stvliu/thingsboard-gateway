@@ -11,177 +11,177 @@
     "pollInterval": 5,
     "logLevel": "DEBUG",
     "devices": [
-      {
-        "deviceName": "Mu4801_1",
-        "attributes": [
-          {
-            "cid1": "0x40",
-            "cid2": "0x51",
-            "key": "getManufacturerInfo",
-            "name": "获取厂家信息",
-            "response": "ManufacturerInfo"
-          },
-          {
-            "cid1": "0x40",
-            "cid2": "0x4F",
-            "key": "getProtocolVersion",
-            "name": "获取协议版本号",
-            "response": "ProtocolVersion"
-          },
-          {
-            "cid1": "0x40",
-            "cid2": "0x50",
-            "key": "getDeviceAddress",
-            "name": "获取本机地址",
-            "response": "DeviceAddress"
-          }
-        ],
-        "timeseries": [
-          {
-            "cid1": "0x40",
-            "cid2": "0x41",
-            "key": "getAcAnalogData",
-            "name": "获取交流模拟量",
-            "response": "AcAnalogData"
-          },
-          {
-            "cid1": "0x41",
-            "cid2": "0x41",
-            "key": "getRectAnalogData",
-            "name": "获取整流模块模拟量",
-            "response": "RectAnalogData"
-          },
-          {
-            "cid1": "0x41",
-            "cid2": "0x43",
-            "key": "getRectSwitchStatus",
-            "name": "获取整流模块开关输入状态",
-            "response": "RectSwitchStatus"
-          },
-          {
-            "cid1": "0x42",
-            "cid2": "0x41",
-            "key": "getDcAnalogData",
-            "name": "获取直流配电模拟量",
-            "response": "DcAnalogData"
-          },
-          {
-            "cid1": "0x40",
-            "cid2": "0x44",
-            "key": "getAcAlarmStatus",
-            "name": "获取交流告警状态",
-            "response": "AcAlarmStatus"
-          },
-          {
-            "cid1": "0x41",
-            "cid2": "0x44",
-            "key": "getRectAlarmStatus",
-            "name": "获取整流模块告警状态",
-            "response": "RectAlarmStatus"
-          },
-          {
-            "cid1": "0x42",
-            "cid2": "0x44",
-            "key": "getDcAlarmStatus",
-            "name": "获取直流告警状态",
-            "response": "DcAlarmStatus"
-          }
-        ],
-        "attributeUpdates": [],
-        "serverSideRpc": [
-          {
-            "cid1": "0x40",
-            "cid2": "0x46",
-            "key": "getAcConfigParams",
-            "name": "获取交流配电参数",
-            "response": "AcConfigParams"
-          },
-          {
-            "cid1": "0x40",
-            "cid2": "0x48",
-            "key": "setAcConfigParams",
-            "name": "设置交流配电参数",
-            "request": "AcConfigParams"
-          },
-          {
-            "cid1": "0x40",
-            "cid2": "0x4D",
-            "key": "getDateTime",
-            "name": "获取当前时间",
-            "response": "DateTime"
-          },
-          {
-            "cid1": "0x40",
-            "cid2": "0x4E",
-            "key": "setDateTime",
-            "name": "设置当前时间",
-            "request": "DateTime"
-          },
-          {
-            "cid1": "0x41",
-            "cid2": "0x45",
-            "key": "controlRectModule",
-            "name": "遥控整流模块",
-            "request": "ControlRectModule"
-          },
-          {
-            "cid1": "0x42",
-            "cid2": "0x46",
-            "key": "getDcConfigParams",
-            "name": "获取直流配电参数",
-            "response": "DcConfigParams"
-          },
-          {
-            "cid1": "0x42",
-            "cid2": "0x48",
-            "key": "setDcConfigParams",
-            "name": "设置直流配电参数",
-            "request": "DcConfigParams"
-          },
-          {
-            "cid1": "0x42",
-            "cid2": "0x80",
-            "key": "setSystemControlState",
-            "name": "修改系统控制状态",
-            "request": "SystemControlState"
-          },
-          {
-            "cid1": "0x42",
-            "cid2": "0x81",
-            "key": "getSystemControlState",
-            "name": "读取系统控制状态",
-            "response": "SystemControlState"
-          },
-          {
-            "cid1": "0x42",
-            "cid2": "0x84",
-            "key": "setAlarmSoundEnable",
-            "name": "后台告警音使能控制",
-            "request": "AlarmSoundEnable"
-          },
-          {
-            "cid1": "0x42",
-            "cid2": "0x90",
-            "key": "getEnergyParams",
-            "name": "读取节能参数",
-            "response": "EnergyParams"
-          },
-          {
-            "cid1": "0x42",
-            "cid2": "0x91",
-            "key": "setEnergyParams",
-            "name": "设置节能参数",
-            "request": "EnergyParams"
-          },
-          {
-            "cid1": "0x42",
-            "cid2": "0x92",
-            "key": "systemControl",
-            "name": "系统控制",
-            "request": "SystemControl"
-          }
-        ],
-        "models_package": "thingsboard_gateway.extensions.mu4801.mu4801_models"
-      }
-    ],
-  }
+        {
+            "deviceName": "Mu4801_1",
+            "models_package": "thingsboard_gateway.extensions.mu4801.mu4801_models",
+            "attributes": [
+                {
+                    "cid1": "0x40",
+                    "cid2": "0x51",
+                    "key": "getManufacturerInfo",
+                    "name": "获取厂家信息",
+                    "response": "ManufacturerInfo"
+                },
+                {
+                    "cid1": "0x40",
+                    "cid2": "0x4F",
+                    "key": "getProtocolVersion",
+                    "name": "获取协议版本号",
+                    "response": "ProtocolVersion"
+                },
+                {
+                    "cid1": "0x40",
+                    "cid2": "0x50",
+                    "key": "getDeviceAddress",
+                    "name": "获取本机地址",
+                    "response": "DeviceAddress"
+                }
+            ],
+            "timeseries": [
+                {
+                    "cid1": "0x40",
+                    "cid2": "0x41",
+                    "key": "getAcAnalogData",
+                    "name": "获取交流模拟量",
+                    "response": "AcAnalogData"
+                },
+                {
+                    "cid1": "0x41",
+                    "cid2": "0x41",
+                    "key": "getRectAnalogData",
+                    "name": "获取整流模块模拟量",
+                    "response": "RectAnalogData"
+                },
+                {
+                    "cid1": "0x41",
+                    "cid2": "0x43",
+                    "key": "getRectSwitchStatus",
+                    "name": "获取整流模块开关输入状态",
+                    "response": "RectSwitchStatus"
+                },
+                {
+                    "cid1": "0x42",
+                    "cid2": "0x41",
+                    "key": "getDcAnalogData",
+                    "name": "获取直流配电模拟量",
+                    "response": "DcAnalogData"
+                },
+                {
+                    "cid1": "0x40",
+                    "cid2": "0x44",
+                    "key": "getAcAlarmStatus",
+                    "name": "获取交流告警状态",
+                    "response": "AcAlarmStatus"
+                },
+                {
+                    "cid1": "0x41",
+                    "cid2": "0x44",
+                    "key": "getRectAlarmStatus",
+                    "name": "获取整流模块告警状态",
+                    "response": "RectAlarmStatus"
+                },
+                {
+                    "cid1": "0x42",
+                    "cid2": "0x44",
+                    "key": "getDcAlarmStatus",
+                    "name": "获取直流告警状态",
+                    "response": "DcAlarmStatus"
+                }
+            ],
+            "attributeUpdates": [],
+            "serverSideRpc": [
+                {
+                    "cid1": "0x40",
+                    "cid2": "0x46",
+                    "key": "getAcConfigParams",
+                    "name": "获取交流配电参数",
+                    "response": "AcConfigParams"
+                },
+                {
+                    "cid1": "0x40",
+                    "cid2": "0x48",
+                    "key": "setAcConfigParams",
+                    "name": "设置交流配电参数",
+                    "request": "AcConfigParams"
+                },
+                {
+                    "cid1": "0x40",
+                    "cid2": "0x4D",
+                    "key": "getDateTime",
+                    "name": "获取当前时间",
+                    "response": "DateTime"
+                },
+                {
+                    "cid1": "0x40",
+                    "cid2": "0x4E",
+                    "key": "setDateTime",
+                    "name": "设置当前时间",
+                    "request": "DateTime"
+                },
+                {
+                    "cid1": "0x41",
+                    "cid2": "0x45",
+                    "key": "controlRectModule",
+                    "name": "遥控整流模块",
+                    "request": "ControlRectModule"
+                },
+                {
+                    "cid1": "0x42",
+                    "cid2": "0x46",
+                    "key": "getDcConfigParams",
+                    "name": "获取直流配电参数",
+                    "response": "DcConfigParams"
+                },
+                {
+                    "cid1": "0x42",
+                    "cid2": "0x48",
+                    "key": "setDcConfigParams",
+                    "name": "设置直流配电参数",
+                    "request": "DcConfigParams"
+                },
+                {
+                    "cid1": "0x42",
+                    "cid2": "0x80",
+                    "key": "setSystemControlState",
+                    "name": "修改系统控制状态",
+                    "request": "SystemControlState"
+                },
+                {
+                    "cid1": "0x42",
+                    "cid2": "0x81",
+                    "key": "getSystemControlState",
+                    "name": "读取系统控制状态",
+                    "response": "SystemControlState"
+                },
+                {
+                    "cid1": "0x42",
+                    "cid2": "0x84",
+                    "key": "setAlarmSoundEnable",
+                    "name": "后台告警音使能控制",
+                    "request": "AlarmSoundEnable"
+                },
+                {
+                    "cid1": "0x42",
+                    "cid2": "0x90",
+                    "key": "getEnergyParams",
+                    "name": "读取节能参数",
+                    "response": "EnergyParams"
+                },
+                {
+                    "cid1": "0x42",
+                    "cid2": "0x91",
+                    "key": "setEnergyParams",
+                    "name": "设置节能参数",
+                    "request": "EnergyParams"
+                },
+                {
+                    "cid1": "0x42",
+                    "cid2": "0x92",
+                    "key": "systemControl",
+                    "name": "系统控制",
+                    "request": "SystemControl"
+                }
+            ]
+        }
+    ]
+}

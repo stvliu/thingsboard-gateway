@@ -1,0 +1,96 @@
+{
+    "name": "Mu4801",
+    "type": "serial",
+    "deviceAddress": 1,
+    "port": "/dev/ttyS4",
+    "baudrate": 9600,
+    "timeout": 10,
+    "bytesize": 8,
+    "parity": "N",
+    "stopbits": 1,
+    "pollInterval": 5,
+    "logLevel": "DEBUG",
+    "devices": [
+        {
+            "deviceName": "HAYDEN Cabinet AC #1",
+            "models_package": "thingsboard_gateway.extensions.hdcac.hdcac_models",
+            "attributes": [
+                {
+                    "name": "获取设备厂家信息",
+                    "cid1": "0x60",
+                    "cid2": "0x51",
+                    "key": "getManufacturerInfo",
+                    "response": "ManufacturerInfo"
+                }
+            ],
+            "timeseries": [
+                {
+                    "name": "获取系统模拟量量化数据（定点数）",
+                    "cid1": "0x60",
+                    "cid2": "0x42",
+                    "key": "getAcAnalogData",
+                    "response": "AcAnalogData"
+                },
+                {
+                    "name": "获取机柜空调告警状态",
+                    "cid1": "0x60",
+                    "cid2": "0x44",
+                    "key": "getAcAlarmStatus",
+                    "response": "AcAlarmStatus"
+                },
+                {
+                    "name": "获取开关输入状态",
+                    "cid1": "0x60",
+                    "cid2": "0x43",
+                    "key": "getAcRunStatus",
+                    "response": "AcRunStatus"
+                }
+            ],
+            "attributeUpdates": [],
+            "serverSideRpc": [
+                {
+                    "name": "遥控",
+                    "cid1": "0x60",
+                    "cid2": "0x45",
+                    "key": "remoteControl",
+                    "request": "RemoteControl"
+                },
+                {
+                    "name": "获取参数（定点数）",
+                    "cid1": "0x60",
+                    "cid2": "0x47",
+                    "key": "getAcConfigParams",
+                    "response": "AcConfigParams"
+                },
+                {
+                    "name": "设定参数（定点数）",
+                    "cid1": "0x60",
+                    "cid2": "0x49",
+                    "key": "setAcConfigParams",
+                    "request": "ConfigParam"
+                },
+                {
+                    "name": "获取监测模块时间",
+                    "cid1": "0x60",
+                    "cid2": "0x4D",
+                    "key": "getDateTime",
+                    "response": "DateTime"
+                },
+                {
+                    "name": "设定监测模块时间",
+                    "cid1": "0x60",
+                    "cid2": "0x4E",
+                    "key": "setDateTime",
+                    "request": "DateTime"
+                },
+                {
+                    "name": "设定设备地址",
+                    "cid1": "0x60",
+                    "cid2": "0x80",
+                    "key": "setDeviceAddress",
+                    "request": "DeviceAddress"
+                }
+            ]
+        }
+    ]
+}

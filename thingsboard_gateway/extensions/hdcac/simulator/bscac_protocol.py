@@ -13,5 +13,8 @@ class BscAcProtocol(Ydt1363Protocol):
         self._log = logging.getLogger(self.__class__.__name__)
         with open(config_file, 'r') as f:
             config = json.load(f)
-        config['models_package'] = 'models'
+        config['models_package'] = self._get_models_package()
         super().__init__(device_addr, port, config=config)
+
+    def _get_models_package(self):
+        return 'models'

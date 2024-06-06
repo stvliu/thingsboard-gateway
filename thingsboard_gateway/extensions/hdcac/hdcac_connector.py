@@ -1,5 +1,4 @@
-# mu4801_connector.py
-import time
+# hdcac_connector.py
 import time
 import serial
 from random import choice
@@ -10,9 +9,9 @@ from thingsboard_gateway.tb_utility.tb_utility import TBUtility
 from thingsboard_gateway.gateway.statistics_service import StatisticsService
 from thingsboard_gateway.tb_utility.tb_logger import init_logger
 
-from thingsboard_gateway.extensions.mu4801.mu4801_uplink_converter import Mu4801UplinkConverter
-from thingsboard_gateway.extensions.mu4801.mu4801_downlink_converter import Mu4801DownlinkConverter
-from thingsboard_gateway.extensions.mu4801.mu4801_protocol import MU4801Protocol
+from thingsboard_gateway.extensions.hdcac.hdcac_uplink_converter import HdcAcUplinkConverter
+from thingsboard_gateway.extensions.hdcac.hdcac_downlink_converter import HdcAcDownlinkConverter
+from thingsboard_gateway.extensions.hdcac.hdcac_protocol import HdcAcProtocol
 
 DEFAULT_PORT: str = '/dev/ttyUSB0'
 DEFAULT_BAUDRATE = 9600
@@ -23,7 +22,7 @@ DEFAULT_TIMEOUT = 1
 DEFAULT_DEVICE_ADDRESS = 1
 DEFAULT_POLL_INTERVAL = 5
 RECONNECT_DELAY = 5.0  # 重连延迟
-class Mu4801Connector(Thread, Connector):
+class HdcAcConnector(Thread, Connector):
 
     def __init__(self, gateway, config, connector_type):
         super().__init__()
@@ -32,9 +31,9 @@ class Mu4801Connector(Thread, Connector):
         self.__connector_type = connector_type
         self.__config = config
         self.__id = self.__config.get('id')
-        self.name = config.get("name", 'MU4801 ' + ''.join(choice(ascii_lowercase) for _ in range(5)))
+        self.name = config.get("name", 'HdcAc ' + ''.join(choice(ascii_lowercase) for _ in range(5)))
         self._log = init_logger(gateway, self.name, config.get('logLevel', 'INFO'))
-        self._log.info("Initializing MU4801 connector")
+        self._log.info("Initializing HdcAc connector")
         self.__devices = self.__config["devices"]
         self.__connected = False
         self.__stopped = False
@@ -47,16 +46,16 @@ class Mu4801Connector(Thread, Connector):
 
         # self.__loop = asyncio.new_event_loop()
 
-        self._log.info("[%s] MU4801 connector initialized.", self.get_name())
+        self._log.info("[%s] HdcAc connector initialized.", self.get_name())
 
     def open(self):
         # self.__loop.run_until_complete(self.__run())
         self._log.info("[%s] Starting...", self.get_name())
         self.__stopped = False
         self.start()
-
+    
     def run(self):
-        self._log.info(f"[{self.name}] Starting MU4801 connector")
+        self._log.info(f"[{self.name}] Starting HdcAc connector")
         self.__run()
 
     def close(self):
@@ -115,13 +114,13 @@ class Mu4801Connector(Thread, Connector):
         }
     
     def __init_converters(self):
-        self.__uplink_converter = Mu4801UplinkConverter(self.__config, self._log)
-        self.__downlink_converter = Mu4801DownlinkConverter(self.__config, self._log)
+        self.__uplink_converter = HdcAcUplinkConverter(self.__config, self._log)
+        self.__downlink_converter = HdcAcDownlinkConverter(self.__config, self._log)
 
     def __connect(self):
         try:
             self._log.info(f"[{self.name}] Connecting to serial port {self.__serial_config['port']}")
-            self.__protocol = MU4801Protocol(
+            self.__protocol = HdcAcProtocol(
                 config=self.__devices[0],
                 device_addr=self.__serial_config['deviceAddress'],
                 port=self.__serial_config['port'],
@@ -143,13 +142,11 @@ class Mu4801Connector(Thread, Connector):
             try:
                 if not self.__connected:
                     self.__connect()
-
                 if self.__connected:
                     self.__poll_devices()
-
                 time.sleep(self.__config.get('pollInterval', DEFAULT_POLL_INTERVAL))
             except Exception as e:
-                self._log.exception(f"Error in Mu4801 connector: {e}")
+                self._log.exception(f"Error in HdcAc connector: {e}")
                 time.sleep(RECONNECT_DELAY)  
 
     def __poll_devices(self):

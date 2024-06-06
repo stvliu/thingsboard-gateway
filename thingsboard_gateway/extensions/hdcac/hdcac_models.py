@@ -1,5 +1,4 @@
 from enum import Enum
-from typing import List
 import struct  
 from dataclasses import dataclass
 import datetime
@@ -307,14 +306,14 @@ class SoftwareVersion():
     
 @dataclass
 class ManufacturerInfo:
-    def __init__(self, collector_name: str, software_version: SoftwareVersion, manufacturer: str):
-        self.collector_name = collector_name    # 采集器名称,10字节
+    def __init__(self, device_name: str, software_version: SoftwareVersion, manufacturer: str):
+        self.device_name = device_name    # 设备名称,10字节
         self.software_version = software_version  # 厂商软件版本,2字节
         self.manufacturer = manufacturer    # 厂商名称,20字节
 
     def to_bytes(self):
         data = bytearray()
-        data.extend((self.collector_name.encode('ascii')[:10]).ljust(10, b'\x00'))
+        data.extend((self.device_name.encode('ascii')[:10]).ljust(10, b'\x00'))
         data.extend(self.software_version.to_bytes())
         data.extend((self.manufacturer.encode('ascii')[:20]).ljust(20, b'\x00'))
         return bytes(data)
@@ -328,7 +327,7 @@ class ManufacturerInfo:
 
     def to_dict(self):
         return {
-            "collector_name": self.collector_name,
+            "collector_name": self.device_name,
             "software_version": self.software_version.to_dict(),
             "manufacturer": self.manufacturer
         }

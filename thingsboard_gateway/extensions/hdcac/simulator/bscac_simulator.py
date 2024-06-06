@@ -19,7 +19,7 @@ class BscAcSimulator:
         
         self.device_info = {
             'device_name': 'AC',
-            'software_version': '1.00',
+            'software_version': SoftwareVersion(1,10),
             'manufacturer': 'HAYDEN SUZHOU'
         }
         

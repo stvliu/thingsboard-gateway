@@ -122,7 +122,15 @@ class Ydt1363Protocol:
         self._serial_link.send_frame(frame)
     
     def _receive_frame(self):
-        return self._serial_link.receive_frame()
+        try:
+            return self._serial_link.receive_frame()
+        except ConnectionError as e:
+            logger.error(f"Connection error while receiving frame: {e}")
+            # 可以在这里添加重连逻辑,或者抛出异常由更上层处理
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error while receiving frame: {e}", exc_info=True)
+            raise
 
     def _build_command_frame(self, command, data):
         """
