@@ -1,5 +1,5 @@
 {
-    "key": "Mu4801",
+    "name": "Mu4801",
     "type": "serial",
     "deviceAddress": 1,
     "port": "/dev/ttyS2",

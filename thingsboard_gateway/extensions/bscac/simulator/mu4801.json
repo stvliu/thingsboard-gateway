@@ -1,5 +1,5 @@
 {
-    "name": "Mu4801",
+    "name": "Black Shield Cabinet Air Conditioner",
     "type": "serial", 
     "deviceAddress": 1,
     "port": "/dev/ttyS2",
