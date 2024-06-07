@@ -1,5 +1,5 @@
 {
-    "name": "Mu4801",
+    "name": "HdcAc",
     "type": "serial",
     "deviceAddress": 1,
     "port": "/dev/ttyS4",
@@ -9,10 +9,10 @@
     "parity": "N",
     "stopbits": 1,
     "pollInterval": 5,
-    "logLevel": "DEBUG",
+    "logLevel": "INFO",
     "devices": [
         {
-            "deviceName": "HAYDEN Cabinet AC #1",
+            "deviceName": "黑盾机柜空调#1",
             "models_package": "thingsboard_gateway.extensions.hdcac.hdcac_models",
             "attributes": [
                 {

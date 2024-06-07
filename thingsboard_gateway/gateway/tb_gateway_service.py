@@ -80,6 +80,9 @@ DEFAULT_CONNECTORS = {
     "socket": "SocketConnector",
     "xmpp": "XMPPConnector",
     "ocpp": "OcppConnector",
+    "mu4801": "Mu4801Connector",
+    "hdcac": "HdcAcConnector",
+    "dht11": "Dht11Connector",
 }
 
 DEFAULT_STATISTIC = {

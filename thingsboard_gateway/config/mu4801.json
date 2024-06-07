@@ -9,10 +9,10 @@
     "parity": "N",
     "stopbits": 1,
     "pollInterval": 5,
-    "logLevel": "DEBUG",
+    "logLevel": "INFO",
     "devices": [
         {
-            "deviceName": "Mu4801_1",
+            "deviceName": "Mu4801电源模块#1",
             "models_package": "thingsboard_gateway.extensions.mu4801.mu4801_models",
             "attributes": [
                 {
