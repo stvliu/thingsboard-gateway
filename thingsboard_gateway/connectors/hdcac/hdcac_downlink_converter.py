@@ -1,6 +1,6 @@
 from thingsboard_gateway.connectors.converter import Converter
 from thingsboard_gateway.gateway.statistics_service import StatisticsService
-from thingsboard_gateway.extensions.hdcac.hdcac_models import *
+from thingsboard_gateway.connectors.hdcac.hdcac_models import *
 import datetime
 
 class HdcAcDownlinkConverter(Converter):

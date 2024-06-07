@@ -1,9 +1,9 @@
 import serial
 import time
 import logging
-from thingsboard_gateway.extensions.ydt1363.exceptions import *
-from thingsboard_gateway.extensions.ydt1363.constants import *
-from thingsboard_gateway.extensions.ydt1363.frame_codec import *
+from thingsboard_gateway.connectors.ydt1363.exceptions import *
+from thingsboard_gateway.connectors.ydt1363.constants import *
+from thingsboard_gateway.connectors.ydt1363.frame_codec import *
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(name)s %(levelname)s %(message)s')
 logger = logging.getLogger(__name__)

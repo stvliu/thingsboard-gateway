@@ -6,7 +6,7 @@ This file contains the uplink data converter for the DHT11 connector.
 from thingsboard_gateway.gateway.statistics_service import StatisticsService
 
 # 导入Dht11Converter类 (Import Dht11Converter class)
-from thingsboard_gateway.extensions.dht11.dht11_converter import Dht11Converter
+from thingsboard_gateway.connectors.dht11.dht11_converter import Dht11Converter
 
 class Dht11UplinkConverter(Dht11Converter):
     """

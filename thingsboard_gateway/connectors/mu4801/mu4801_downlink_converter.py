@@ -1,6 +1,6 @@
 from thingsboard_gateway.connectors.converter import Converter
 from thingsboard_gateway.gateway.statistics_service import StatisticsService
-from thingsboard_gateway.extensions.mu4801.mu4801_models import *
+from thingsboard_gateway.connectors.mu4801.mu4801_models import *
 import datetime
 
 class Mu4801DownlinkConverter(Converter):

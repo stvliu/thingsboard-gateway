@@ -10,9 +10,9 @@ from thingsboard_gateway.tb_utility.tb_utility import TBUtility
 from thingsboard_gateway.gateway.statistics_service import StatisticsService
 from thingsboard_gateway.tb_utility.tb_logger import init_logger
 
-from thingsboard_gateway.extensions.mu4801.mu4801_uplink_converter import Mu4801UplinkConverter
-from thingsboard_gateway.extensions.mu4801.mu4801_downlink_converter import Mu4801DownlinkConverter
-from thingsboard_gateway.extensions.mu4801.mu4801_protocol import MU4801Protocol
+from thingsboard_gateway.connectors.mu4801.mu4801_uplink_converter import Mu4801UplinkConverter
+from thingsboard_gateway.connectors.mu4801.mu4801_downlink_converter import Mu4801DownlinkConverter
+from thingsboard_gateway.connectors.mu4801.mu4801_protocol import MU4801Protocol
 
 DEFAULT_PORT: str = '/dev/ttyUSB0'
 DEFAULT_BAUDRATE = 9600

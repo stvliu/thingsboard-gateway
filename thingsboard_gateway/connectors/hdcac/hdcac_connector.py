@@ -9,9 +9,9 @@ from thingsboard_gateway.tb_utility.tb_utility import TBUtility
 from thingsboard_gateway.gateway.statistics_service import StatisticsService
 from thingsboard_gateway.tb_utility.tb_logger import init_logger
 
-from thingsboard_gateway.extensions.hdcac.hdcac_uplink_converter import HdcAcUplinkConverter
-from thingsboard_gateway.extensions.hdcac.hdcac_downlink_converter import HdcAcDownlinkConverter
-from thingsboard_gateway.extensions.hdcac.hdcac_protocol import HdcAcProtocol
+from thingsboard_gateway.connectors.hdcac.hdcac_uplink_converter import HdcAcUplinkConverter
+from thingsboard_gateway.connectors.hdcac.hdcac_downlink_converter import HdcAcDownlinkConverter
+from thingsboard_gateway.connectors.hdcac.hdcac_protocol import HdcAcProtocol
 
 DEFAULT_PORT: str = '/dev/ttyUSB0'
 DEFAULT_BAUDRATE = 9600

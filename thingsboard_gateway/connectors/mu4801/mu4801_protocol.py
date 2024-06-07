@@ -1,6 +1,6 @@
 import serial
 import logging
-from thingsboard_gateway.extensions.ydt1363.ydt1363_protocol import Ydt1363Protocol
+from thingsboard_gateway.connectors.ydt1363.ydt1363_protocol import Ydt1363Protocol
 # 日志配置
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(name)s %(levelname)s %(message)s')
 
@@ -21,7 +21,7 @@ class MU4801Protocol(Ydt1363Protocol):
         )
 
     def _get_models_package(self):
-        return 'thingsboard_gateway.extensions.mu4801.mu4801_models'
+        return 'thingsboard_gateway.connectors.mu4801.mu4801_models'
 
     
 

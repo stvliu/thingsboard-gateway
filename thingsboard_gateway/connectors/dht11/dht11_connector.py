@@ -7,7 +7,7 @@ import time
 import Adafruit_DHT
 from threading import Thread
 from thingsboard_gateway.connectors.connector import Connector
-from thingsboard_gateway.extensions.dht11.dht11_uplink_converter import Dht11UplinkConverter
+from thingsboard_gateway.connectors.dht11.dht11_uplink_converter import Dht11UplinkConverter
 from thingsboard_gateway.tb_utility.tb_loader import TBModuleLoader
 from thingsboard_gateway.gateway.statistics_service import StatisticsService
 from thingsboard_gateway.tb_utility.tb_logger import init_logger

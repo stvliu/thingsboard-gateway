@@ -1,6 +1,6 @@
 import logging
-from thingsboard_gateway.extensions.ydt1363.exceptions import *
-from thingsboard_gateway.extensions.ydt1363.constants import *
+from thingsboard_gateway.connectors.ydt1363.exceptions import *
+from thingsboard_gateway.connectors.ydt1363.constants import *
 
 # 日志配置
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(name)s %(levelname)s %(message)s')

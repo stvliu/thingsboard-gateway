@@ -1,11 +1,11 @@
 import logging
 import serial
-from thingsboard_gateway.extensions.ydt1363.constants import *
-from thingsboard_gateway.extensions.ydt1363.exceptions import *
-from thingsboard_gateway.extensions.ydt1363.frame_codec import FrameCodec
-from thingsboard_gateway.extensions.ydt1363.data_codec import DataCodec
-from thingsboard_gateway.extensions.ydt1363.commands import Commands
-from thingsboard_gateway.extensions.ydt1363.serial_link import SerialLink
+from thingsboard_gateway.connectors.ydt1363.constants import *
+from thingsboard_gateway.connectors.ydt1363.exceptions import *
+from thingsboard_gateway.connectors.ydt1363.frame_codec import FrameCodec
+from thingsboard_gateway.connectors.ydt1363.data_codec import DataCodec
+from thingsboard_gateway.connectors.ydt1363.commands import Commands
+from thingsboard_gateway.connectors.ydt1363.serial_link import SerialLink
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(name)s %(levelname)s %(message)s')
 logger = logging.getLogger(__name__)
