@@ -8,8 +8,8 @@ from models import *
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(name)s %(levelname)s %(message)s')
 logger = logging.getLogger(__name__)
 
-class BscAcProtocol(Ydt1363Protocol):
-    def __init__(self, device_addr, port, config_file='bscac.json'):
+class HdcAcProtocol(Ydt1363Protocol):
+    def __init__(self, device_addr, port, config_file='hdcac.json'):
         self._log = logging.getLogger(self.__class__.__name__)
         with open(config_file, 'r') as f:
             config = json.load(f)

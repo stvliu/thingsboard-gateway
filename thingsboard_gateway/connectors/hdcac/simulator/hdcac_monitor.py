@@ -1,4 +1,4 @@
-from bscac_protocol import BscAcProtocol
+from thingsboard_gateway.connectors.hdcac.simulator.hdcac_protocol import HdcAcProtocol
 import logging
 import datetime
 
@@ -9,10 +9,10 @@ from models import *
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(name)s %(levelname)s %(message)s')
 logger = logging.getLogger(__name__)
 
-class BscAcMonitor:
+class HdcAcMonitor:
     def __init__(self, device_addr, port):
         self._log = logging.getLogger(self.__class__.__name__) 
-        self._protocol = BscAcProtocol(device_addr, port)
+        self._protocol = HdcAcProtocol(device_addr, port)
         self._protocol.connect()
 
     def show_menu(self):
@@ -166,5 +166,5 @@ if __name__ == '__main__':
     if not port:
         port = default_port
     logging.info(f"Using serial port: {port}") 
-    monitor = BscAcMonitor(device_addr, port)
+    monitor = HdcAcMonitor(device_addr, port)
     monitor.run()

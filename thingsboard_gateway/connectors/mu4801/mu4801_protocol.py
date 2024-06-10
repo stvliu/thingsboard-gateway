@@ -22,7 +22,3 @@ class MU4801Protocol(Ydt1363Protocol):
 
     def _get_models_package(self):
         return 'thingsboard_gateway.connectors.mu4801.mu4801_models'
-
-    
-
-        

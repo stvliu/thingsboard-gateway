@@ -28,7 +28,7 @@ class HdcAcConnector(Thread, Connector):
         super().__init__()
         self.statistics = {'MessagesReceived': 0, 'MessagesSent': 0}
         self.__gateway = gateway
-        self.__connector_type = connector_type
+        self._connector_type = connector_type
         self.__config = config
         self.__id = self.__config.get('id')
         self.name = config.get("name", 'HdcAc ' + ''.join(choice(ascii_lowercase) for _ in range(5)))
@@ -69,7 +69,7 @@ class HdcAcConnector(Thread, Connector):
         return self.name
 
     def get_type(self):
-        return self.__connector_type
+        return self._connector_type
 
     def get_config(self):
         return self.__config

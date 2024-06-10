@@ -1,5 +1,6 @@
 import time
 from thingsboard_gateway.gateway.statistics_service import StatisticsService
+from thingsboard_gateway.connectors.mu4801.mu4801_constants import *
 
 class Mu4801UplinkConverter:
     def __init__(self, config, log):

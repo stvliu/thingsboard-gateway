@@ -19,15 +19,22 @@ class Mu4801DownlinkConverter(Converter):
             'setSystemControlState': self.__convert_system_control_state,
             'setAlarmSoundEnable': self.__convert_alarm_sound_enable,
             'setEnergyParams': self.__convert_energy_params,
-            'systemControl': self.__convert_system_control
+            'systemControl': self.__convert_system_control,
+            'getEnergyParams': self.__convert_get_energy_params
         }
 
         converter_func = converter_map.get(config['key'], None)
         if converter_func:
-            return converter_func(data)
+            if data is None:  # 检查data是否为None
+                if config['key'].startswith('get'):  # 如果是读取命令
+                    return None  # 返回None,表示这个命令不需要参数
+                else:  # 如果是设置命令
+                    raise ValueError(f"Command {config['key']} requires parameters but got None")
+            else:
+                return converter_func(data)  # 如果data不为None,则正常调用转换函数
         else:
             self._log.error(f"Unknown command key: {config['key']}")
-            return None
+            raise Exception(f"Unknown command key: {config['key']}")
 
     def __convert_ac_config_params(self, data):
         return AcConfigParams(
@@ -109,3 +116,7 @@ class Mu4801DownlinkConverter(Converter):
         
     def __convert_system_control(self, data):
         return SystemControl(control_type=SystemControlType(data.get('control_type')))
+
+    def __convert_get_energy_params(self, data):
+        # getEnergyParams命令不需要参数,所以这个方法什么也不做
+        return None
