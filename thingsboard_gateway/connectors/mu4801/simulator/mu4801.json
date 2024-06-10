@@ -1,6 +1,6 @@
 {
     "name": "Mu4801",
-    "type": "serial", 
+    "type": "serial",
     "deviceAddress": 1,
     "port": "/dev/ttyS2",
     "baudrate": 9600,
@@ -14,7 +14,7 @@
     "attributes": [
         {
             "cid1": "0x40",
-            "cid2": "0x51", 
+            "cid2": "0x51",
             "key": "getManufacturerInfo",
             "name": "获取厂家信息",
             "response": "ManufacturerInfo"
@@ -27,7 +27,7 @@
             "response": "ProtocolVersion"
         },
         {
-            "cid1": "0x40", 
+            "cid1": "0x40",
             "cid2": "0x50",
             "key": "getDeviceAddress",
             "name": "获取本机地址",
@@ -44,7 +44,7 @@
         },
         {
             "cid1": "0x41",
-            "cid2": "0x41", 
+            "cid2": "0x41",
             "key": "getRectAnalogData",
             "name": "获取整流模块模拟量",
             "response": "RectAnalogData"
@@ -61,10 +61,8 @@
             "cid2": "0x41",
             "key": "getDcAnalogData",
             "name": "获取直流配电模拟量",
-            "response": "DcAnalogData" 
-        }
-    ],
-    "alarms": [
+            "response": "DcAnalogData"
+        },
         {
             "cid1": "0x40",
             "cid2": "0x44",
@@ -82,7 +80,7 @@
         {
             "cid1": "0x42",
             "cid2": "0x44",
-            "key": "getDcAlarmStatus", 
+            "key": "getDcAlarmStatus",
             "name": "获取直流告警状态",
             "response": "DcAlarmStatus"
         }
@@ -110,7 +108,7 @@
             "response": "DateTime"
         },
         {
-            "cid1": "0x40", 
+            "cid1": "0x40",
             "cid2": "0x4E",
             "key": "setDateTime",
             "name": "设置当前时间",
@@ -134,7 +132,7 @@
             "cid1": "0x42",
             "cid2": "0x48",
             "key": "setDcConfigParams",
-            "name": "设置直流配电参数", 
+            "name": "设置直流配电参数",
             "request": "DcConfigParams"
         },
         {
@@ -148,7 +146,7 @@
             "cid1": "0x42",
             "cid2": "0x81",
             "key": "getSystemControlState",
-            "name": "读取系统控制状态", 
+            "name": "读取系统控制状态",
             "response": "SystemControlState"
         },
         {
@@ -159,7 +157,7 @@
             "request": "AlarmSoundEnable"
         },
         {
-            "cid1": "0x42", 
+            "cid1": "0x42",
             "cid2": "0x90",
             "key": "getEnergyParams",
             "name": "读取节能参数",

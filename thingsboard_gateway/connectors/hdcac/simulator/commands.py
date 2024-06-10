@@ -1,6 +1,6 @@
 import logging
-from thingsboard_gateway.extensions.ydt1363.exceptions import *
-from thingsboard_gateway.extensions.ydt1363.constants import *
+from exceptions import *
+from constants import *
 
 # 日志配置
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(name)s %(levelname)s %(message)s')
@@ -39,7 +39,6 @@ class Commands:
             self._commands_by_key[command.key] = command
         
         logger.info(f"Initialized Commands with {len(all_commands)} total commands")
-
 
     def _parse_commands(self, cmd_configs):
         commands = []

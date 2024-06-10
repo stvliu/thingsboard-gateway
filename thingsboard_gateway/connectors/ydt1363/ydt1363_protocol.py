@@ -234,9 +234,10 @@ class Ydt1363Protocol:
 
         :param rtn_code: 错误码。
         """
+        rtn_code_hex=f'0x{rtn_code:02x}' if not isinstance(rtn_code, str) else rtn_code
         response_frame = self._frame_codec.encode_frame(
             '0x00',  # 使用一个虚拟的CID1
-            rtn_code,  # 错误码作为RTN
+            rtn_code_hex,  # 错误码作为RTN
             b'',  # 错误响应没有数据
             self._device_addr
         )

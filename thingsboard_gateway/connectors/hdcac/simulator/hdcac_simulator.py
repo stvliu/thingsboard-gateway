@@ -1,11 +1,10 @@
-from thingsboard_gateway.connectors.hdcac.simulator.hdcac_protocol import HdcAcProtocol
+from hdcac_protocol import HdcAcProtocol
 import logging
 import random
-import time
 import datetime
 
 # 导入相关的数据类
-from models import *
+from hdcac_models import *
 
 # 日志配置
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(name)s %(levelname)s %(message)s')

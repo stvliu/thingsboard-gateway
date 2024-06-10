@@ -1,13 +1,7 @@
-import struct
-import datetime
 import logging
-from dataclasses import dataclass
-from typing import List, Dict, Union, Optional
 import serial
-from enum import Enum
 from constants import *
 from exceptions import *
-from models import *
 from frame_codec import FrameCodec
 from data_codec import DataCodec
 from commands import Commands
@@ -15,25 +9,27 @@ from serial_link import SerialLink
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(name)s %(levelname)s %(message)s')
 logger = logging.getLogger(__name__)
-     
+
+DEFAULT_MODEL_PACKAGE = "hdcac_models"
+
 # 协议类
 class Ydt1363Protocol:
-    def __init__(self, device_addr = 1,  port=None, baudrate=9600, bytesize=serial.EIGHTBITS, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE, timeout=None, config=None):
+    def __init__(self, config, device_addr, port, baudrate=9600, bytesize=serial.EIGHTBITS, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE, timeout=None):
         logger.debug(f"Initializing Protocol with port={port}, baudrate={baudrate}, bytesize={bytesize}, parity={parity}, stopbits={stopbits}, timeout={timeout}")
-        self._device_addr = device_addr
-        self._port = port
-        self._baudrate = baudrate
-        self._bytesize = bytesize
-        self._parity = parity
-        self._stopbits = stopbits
-        self._timeout = timeout
         self._config = config
-
-        self._models_package =self._config.get("models_package", "models")
+        self._device_addr = device_addr
+        self._models_package =self._config.get("models_package", DEFAULT_MODEL_PACKAGE)
         self._commands = Commands(models_package = self._models_package, config = config)
         self._frame_codec = FrameCodec()
         self._data_codec = DataCodec()
-        self._serial_link = SerialLink(device_addr, port)
+        self._serial_link = SerialLink(
+            port= port ,
+            baudrate = baudrate,
+            bytesize = bytesize,
+            parity = parity,
+            stopbits = stopbits,
+            timeout = timeout
+        )
 
     @property
     def device_addr(self):
@@ -126,7 +122,15 @@ class Ydt1363Protocol:
         self._serial_link.send_frame(frame)
     
     def _receive_frame(self):
-        return self._serial_link.receive_frame()
+        try:
+            return self._serial_link.receive_frame()
+        except ConnectionError as e:
+            logger.error(f"Connection error while receiving frame: {e}")
+            # 可以在这里添加重连逻辑,或者抛出异常由更上层处理
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error while receiving frame: {e}", exc_info=True)
+            raise
 
     def _build_command_frame(self, command, data):
         """
@@ -230,9 +234,10 @@ class Ydt1363Protocol:
 
         :param rtn_code: 错误码。
         """
+        rtn_code_hex=f'0x{rtn_code:02x}' if not isinstance(rtn_code, str) else rtn_code
         response_frame = self._frame_codec.encode_frame(
             '0x00',  # 使用一个虚拟的CID1
-            rtn_code,  # 错误码作为RTN
+            rtn_code_hex,  # 错误码作为RTN
             b'',  # 错误响应没有数据
             self._device_addr
         )
@@ -264,3 +269,13 @@ class Ydt1363Protocol:
 
     def _is_unidirectional_command(self, command):
         return command.response_type is None
+    
+# 命令类        
+class Command:
+    def __init__(self, cid1, cid2, key, name, request_class, response_class):
+        self.cid1 = cid1
+        self.cid2 = cid2
+        self.key = key
+        self.name = name
+        self.request_class = request_class
+        self.response_class = response_class
