@@ -108,7 +108,7 @@ class SerialLink:
             except serial.SerialException as e:
                 logger.error(f"Serial communication error: {e}")
                 time.sleep(self.reconnect_interval)
-                self._reconnec();
+                self._reconnect();
                 continue
             except Exception as e:
                 logger.error(f"Unexpected error while receiving frame: {e}", exc_info=True)
