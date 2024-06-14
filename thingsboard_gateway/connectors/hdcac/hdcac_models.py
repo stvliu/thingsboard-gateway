@@ -9,17 +9,21 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(name)s %(levelnam
 logger = logging.getLogger(__name__)
 
 class DataFlag(Enum):
+    """数据标志枚举类"""
     NORMAL = 0  # 数据标志,0表示正常
 
 class AlarmStatus(Enum):
+    """告警状态枚举类"""
     NORMAL = 0   # 正常  
     ALARM = 0xF0    # 告警
     INVALID = 0x20  # 无效值
 
 class SwitchStatus(Enum):
+    """开关状态枚举类"""
     OFF = 0       # 关
     ON = 1      # 开
     INVALID = 0x20  # 无效值
+    CUSTOM = 0x80  # 用户自定义起始值
 
 class EnableStatus(Enum):  
     DISABLE = 0  # 禁止
@@ -36,9 +40,11 @@ class SensorStatus(Enum):
     ALARM = 0xF0  # 故障
     INVALID = 0x20  # 无效值
 
+
 @dataclass
 class AcAnalogData:
-    def __init__(self, data_flag: DataFlag, cabinet_temp: float, supply_temp: float,
+    """空调模拟量数据类"""
+    def __init__(self, data_flag: DataFlag, cabinet_temp: int, supply_temp: int,
                  voltage: int, current: int):
         self.data_flag = data_flag   # 数据标志,固定为0,1字节
         self.cabinet_temp = cabinet_temp   # 机柜温度,2字节有符号整数
@@ -47,13 +53,13 @@ class AcAnalogData:
         self.current = current   # 工作电流,2字节无符号整数
 
     def to_bytes(self):
-        return struct.pack('<BhhHH', self.data_flag.value, int(self.cabinet_temp*10), 
-                           int(self.supply_temp*10), self.voltage, self.current)
+        return struct.pack('<BhhHH', self.data_flag.value, self.cabinet_temp, 
+                           self.supply_temp, self.voltage, self.current)
   
     @classmethod
     def from_bytes(cls, data):
         data_flag, cabinet_temp, supply_temp, voltage, current = struct.unpack('<BhhHH', data)
-        return cls(DataFlag(data_flag), cabinet_temp/10.0, supply_temp/10.0, voltage, current) 
+        return cls(DataFlag(data_flag), cabinet_temp, supply_temp, voltage, current) 
         
     def to_dict(self):
         return {
@@ -66,6 +72,7 @@ class AcAnalogData:
         
 @dataclass    
 class AcAlarmStatus:
+    """空调告警状态类"""
     def __init__(self, data_flag: DataFlag, compressor_alarm: AlarmStatus,
                  high_temp: AlarmStatus, low_temp: AlarmStatus,  
                  heater_alarm: AlarmStatus, sensor_fault: AlarmStatus,
@@ -111,6 +118,7 @@ class AcAlarmStatus:
 
 @dataclass
 class AcRunStatus:
+    """空调运行状态类"""
     def __init__(self, air_conditioner: SwitchStatus, indoor_fan: SwitchStatus, 
                  outdoor_fan: SwitchStatus, heater: SwitchStatus):
         self.air_conditioner = air_conditioner  # 空调开关机状态,1字节
@@ -138,12 +146,13 @@ class AcRunStatus:
         
 @dataclass
 class AcConfigParams:
+   """空调配置参数类"""
    def __init__(self, start_temp: int, temp_hysteresis: int, heater_start_temp: int,
                 heater_hysteresis: int, high_temp_alarm: int, low_temp_alarm: int):
-       self.start_temp = start_temp   # 空调开启温度,2字节有符号整数,0.1度
-       self.temp_hysteresis = temp_hysteresis   # 空调停止回差,2字节有符号整数,0.1度  
-       self.heater_start_temp = heater_start_temp # 加热开启温度,2字节有符号整数,0.1度
-       self.heater_hysteresis = heater_hysteresis   # 加热停止回差,2字节有符号整数,0.1度
+       self.start_temp = start_temp   # 空调开启温度,2字节有符号整数
+       self.temp_hysteresis = temp_hysteresis   # 空调停止回差,2字节有符号整数
+       self.heater_start_temp = heater_start_temp # 加热开启温度,2字节有符号整数
+       self.heater_hysteresis = heater_hysteresis   # 加热停止回差,2字节有符号整数
        self.high_temp_alarm = high_temp_alarm   # 高温告警点,2字节有符号整数,0.1度 
        self.low_temp_alarm = low_temp_alarm     # 低温告警点,2字节有符号整数,0.1度
        
@@ -160,15 +169,16 @@ class AcConfigParams:
 
    def to_dict(self):
        return {
-           "start_temp": self.start_temp / 10.0,
-           "temp_hysteresis": self.temp_hysteresis / 10.0, 
-           "heater_start_temp": self.heater_start_temp / 10.0,
-           "heater_hysteresis": self.heater_hysteresis / 10.0,
-           "high_temp_alarm": self.high_temp_alarm / 10.0,
-           "low_temp_alarm": self.low_temp_alarm / 10.0
+           "start_temp": self.start_temp,
+           "temp_hysteresis": self.temp_hysteresis, 
+           "heater_start_temp": self.heater_start_temp,
+           "heater_hysteresis": self.heater_hysteresis,
+           "high_temp_alarm": self.high_temp_alarm,
+           "low_temp_alarm": self.low_temp_alarm
        }
 
 class RemoteCommand(Enum):
+    """遥控命令枚举类"""
     ON = 0x10         # 开机 
     OFF = 0x1F        # 关机
     COOLING_ON = 0x20  # 制冷开  
@@ -178,6 +188,7 @@ class RemoteCommand(Enum):
 
 @dataclass
 class RemoteControl:
+   """遥控控制类"""
    def __init__(self, command: RemoteCommand):
        self.command = command   # 遥控命令,1字节
    
@@ -193,7 +204,8 @@ class RemoteControl:
        return {"command": self.command.name}
 
 @dataclass  
-class DateTime:  
+class DateTime:
+    """日期时间类"""  
     def __init__(self, year: int, month: int, day: int, hour: int, minute: int, second: int):
         self.year = year
         self.month = month
@@ -225,6 +237,7 @@ class DateTime:
         }
 
 class ConfigParamType(Enum):
+    """配置参数类型枚举类"""
     AC_START_TEMP = 0x80       # 空调开启温度
     AC_TEMP_HYSTERESIS = 0x81  # 空调停止回差  
     HEAT_START_TEMP = 0x82     # 加热开启温度
@@ -234,9 +247,10 @@ class ConfigParamType(Enum):
 
 @dataclass
 class ConfigParam:
+    """配置参数类"""
     def __init__(self, param_type: ConfigParamType, param_value: int):
         self.param_type = param_type    # 参数类型,1字节
-        self.param_value = param_value  # 参数值,2字节有符号整数,0.1度
+        self.param_value = param_value  # 参数值,2字节有符号整数
         
     def to_bytes(self):
         return struct.pack('<Bh', self.param_type.value, self.param_value)
@@ -249,11 +263,12 @@ class ConfigParam:
     def to_dict(self):
         return {
             "param_type": self.param_type.name,
-            "param_value": self.param_value / 10.0
+            "param_value": self.param_value
         }
         
 @dataclass
 class DeviceAddress:
+    """设备地址类"""
     def __init__(self, address: int):
         self.address = address  # 新设备地址,1字节
 
@@ -270,6 +285,7 @@ class DeviceAddress:
 
 @dataclass
 class ProtocolVersion:
+    """通信协议版本号类"""
     def __init__(self, version: str):
         self.version = version
 
@@ -282,13 +298,14 @@ class ProtocolVersion:
         return cls(version)
 
     def to_dict(self):
-        return {"version": self.version} 
+        return {"protocol_version": self.version} 
 
 @dataclass
 class SoftwareVersion():
+    """软件版本信息类"""
     def __init__(self, major: int, minor: int):
-        self.major = major
-        self.minor = minor
+        self.major = major  # 主版本号,1字节
+        self.minor = minor  # 次版本号,1字节
 
     def to_bytes(self):
         return struct.pack('BB', self.major, self.minor)
@@ -306,6 +323,7 @@ class SoftwareVersion():
     
 @dataclass
 class ManufacturerInfo:
+    """设备厂商信息类"""
     def __init__(self, device_name: str, software_version: SoftwareVersion, manufacturer: str):
         self.device_name = device_name    # 设备名称,10字节
         self.software_version = software_version  # 厂商软件版本,2字节
@@ -331,19 +349,3 @@ class ManufacturerInfo:
             "software_version": self.software_version.to_dict(),
             "manufacturer": self.manufacturer
         }
-
-@dataclass
-class ProtocolVersion:
-    def __init__(self, version: str):
-        self.version = version
-
-    def to_bytes(self):
-        return self.version.encode('ascii')
-
-    @classmethod
-    def from_bytes(cls, data):
-        version = data.decode('ascii')
-        return cls(version)
-
-    def to_dict(self):
-        return {"protocol_version": self.version} 

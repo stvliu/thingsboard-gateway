@@ -25,10 +25,10 @@ class HdcAcSimulator:
         # 使用对应的数据类初始化模拟数据
         self.ac_analog_data = AcAnalogData(
             data_flag=DataFlag.NORMAL,
-            cabinet_temp=25.0,
-            supply_temp=20.0,
+            cabinet_temp=24,
+            supply_temp=24,
             voltage=220,
-            current=10  
+            current=26  
         )
         
         self.ac_run_status = AcRunStatus(
@@ -51,20 +51,30 @@ class HdcAcSimulator:
         )  
         
         self.ac_config_params = AcConfigParams(
-            start_temp=270,  
+            start_temp=27,  
             temp_hysteresis=10,
-            heater_start_temp=180,
+            heater_start_temp=28,
             heater_hysteresis=20,
-            high_temp_alarm=320,
-            low_temp_alarm=160
+            high_temp_alarm=30,
+            low_temp_alarm=16
         )
         
     def handle_get_ac_analog_data(self):
-        # 模拟一些随机波动
-        self.ac_analog_data.cabinet_temp += random.uniform(-1.0, 1.0)
-        self.ac_analog_data.supply_temp += random.uniform(-0.5, 0.5)
-        self.ac_analog_data.voltage += random.randint(-5, 5)  
-        self.ac_analog_data.current += random.randint(-1, 1)
+        # supply_temp在18到26之间变化,每次+1或-1
+        supply_temp_change = random.choice([-1, 1])
+        self.ac_analog_data.supply_temp = max(18, min(self.ac_analog_data.supply_temp + supply_temp_change, 26))
+        # cabinet_temp在-18到30之间变化,每次+1或-1
+        cabinet_temp_change = random.choice([-1, 1])
+        self.ac_analog_data.cabinet_temp = max(20, min(self.ac_analog_data.supply_temp + cabinet_temp_change, 30))
+        
+        # 交流电压voltage在210到230之间变化,每次+1或-1
+        voltage_change = random.choice([-1, 1])
+        self.ac_analog_data.voltage = max(210, min(self.ac_analog_data.voltage + voltage_change, 230))
+        
+        # 工作电流current在210到230之间变化,每次+1或-1
+        current_change = random.choice([-1, 1])
+        self.ac_analog_data.current = max(210, min(self.ac_analog_data.current + current_change, 230))
+        
         return self.ac_analog_data
         
     def handle_get_ac_run_status(self):

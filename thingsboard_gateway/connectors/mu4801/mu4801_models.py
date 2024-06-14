@@ -10,33 +10,41 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(name)s %(levelnam
 logger = logging.getLogger(__name__)
 
 class DataFlag(Enum):
+    """数据标志枚举类"""
     NORMAL = 0  # 数据标志,0表示正常
 
 class AlarmStatus(Enum):
+    """告警状态枚举类"""
     NORMAL = 0   # 正常  
     ALARM = 1    # 告警
 
 class SwitchStatus(Enum):
+    """开关状态枚举类"""
     ON = 0       # 开
     OFF = 1      # 关
 
-class EnableStatus(Enum):  
+class EnableStatus(Enum):
+    """使能状态枚举类"""  
     DISABLE = 0  # 禁止
     ENABLE = 1   # 使能
 
 class LoadOffMode(Enum):
+    """负载下电模式枚举类"""
     VOLTAGE = 0  # 负载下电模式 - 电压模式
     TIME = 1     # 负载下电模式 - 时间模式
 
-class RectModuleControlType(Enum):   
+class RectModuleControlType(Enum):
+    """整流模块控制类型枚举类"""   
     ON = 0x20    # 开机
     OFF = 0x2F   # 关机
 
 class SystemControlState(Enum):
+    """系统控制状态枚举类"""
     AUTO = 0xE0   # 自动控制状态  
     MANUAL = 0xE1 # 手动控制状态
 
 class SystemControlType(Enum):
+    """系统控制类型枚举类"""
     RESET = 0xE1         # 系统复位
     LOAD1_OFF = 0xE5     # 负载1下电  
     LOAD1_ON = 0xE6      # 负载1上电
@@ -50,37 +58,44 @@ class SystemControlType(Enum):
     BATTERY_ON = 0xEE    # 电池上电
     
 class VoltageStatus(Enum):
+    """电压状态枚举类"""
     NORMAL = 0   # 正常  
     UNDER = 1    # 欠压
     OVER = 2     # 过压
 
 class FrequencyStatus(Enum):  
+    """频率状态枚举类"""
     NORMAL = 0   # 正常
     UNDER = 1    # 过低
     OVER = 2     # 过高
 
 class ChargeStatus(Enum):
+    """充电状态枚举类"""
     FLOAT = 0    # 浮充  
     EQUALIZE = 1 # 均充
     TEST = 2     # 测试
 
 class TempStatus(Enum):
+    """温度状态枚举类"""
     NORMAL = 0   # 正常
     OVER = 1     # 过温   
     UNDER = 2    # 欠温
 
 class SensorStatus(Enum):
+    """传感器状态枚举类"""
     NORMAL = 0   # 正常
     BREAK = 1    # 未接
     FAULT = 2    # 故障
 
-class LVDStatus(Enum):  
+class LVDStatus(Enum):
+    """低压断开状态枚举类"""  
     NORMAL = 0      # 正常
     IMPENDING = 1   # 即将下电
     OFF = 2         # 已下电
 
 @dataclass
-class DateTime:  
+class DateTime:
+    """日期时间类"""  
     def __init__(self, year: int, month: int, day: int, hour: int, minute: int, second: int):
         self.year = year
         self.month = month
@@ -113,6 +128,7 @@ class DateTime:
 
 @dataclass
 class ProtocolVersion:
+    """通信协议版本类"""
     def __init__(self, version: str):
         self.version = version
 
@@ -129,6 +145,7 @@ class ProtocolVersion:
 
 @dataclass    
 class DeviceAddress:
+    """设备地址类"""
     def __init__(self, address: int):
         self.address = address  # 设备地址,1字节
 
@@ -145,9 +162,10 @@ class DeviceAddress:
 
 @dataclass
 class SoftwareVersion():
+    """软件版本类"""
     def __init__(self, major: int, minor: int):
-        self.major = major
-        self.minor = minor
+        self.major = major  # 主版本号,1字节
+        self.minor = minor  # 次版本号,1字节
 
     def to_bytes(self):
         return struct.pack('BB', self.major, self.minor)
@@ -165,6 +183,7 @@ class SoftwareVersion():
     
 @dataclass
 class ManufacturerInfo:
+    """设备制造商信息类"""
     def __init__(self, collector_name: str, software_version: SoftwareVersion, manufacturer: str):
         self.collector_name = collector_name    # 采集器名称,10字节
         self.software_version = software_version  # 厂商软件版本,2字节
@@ -193,6 +212,7 @@ class ManufacturerInfo:
 
 @dataclass
 class AcAnalogData:
+    """交流模拟量数据类"""
     def __init__(self, data_flag: DataFlag, number_of_inputs: int, voltage_a: float, voltage_b: float, voltage_c: float,
                  frequency: float, user_defined_params_count: int):
         self.data_flag = data_flag   # 数据标志,固定为0,1字节
@@ -235,6 +255,7 @@ class AcAnalogData:
 
 @dataclass  
 class AcAlarmStatus:
+    """交流告警状态类"""
     def __init__(self, data_flag: DataFlag, number_of_inputs: int, voltage_a_status: VoltageStatus,
                  voltage_b_status: VoltageStatus, voltage_c_status: VoltageStatus,  
                  frequency_status: FrequencyStatus, fuse_count: int, user_defined_params_count: int,  
@@ -293,7 +314,8 @@ class AcAlarmStatus:
         }
 
 @dataclass
-class AcConfigParams:  
+class AcConfigParams:
+    """交流配置参数类"""  
     def __init__(self, ac_over_voltage: float, ac_under_voltage: float):
         self.ac_over_voltage = ac_over_voltage   # 交流输入线/相电压上限,4字节浮点数
         self.ac_under_voltage = ac_under_voltage  # 交流输入线/相电压下限,4字节浮点数
@@ -314,6 +336,7 @@ class AcConfigParams:
     
 @dataclass  
 class RectAnalogData:
+    """整流模块模拟量数据类"""
     def __init__(self, data_flag: DataFlag, output_voltage: float, module_count: int, module_currents: List[float],
                  user_defined_params_count: List[int], module_current_limit: List[float], module_voltage: List[float], 
                  module_temperature: List[float], module_input_voltage_ab: List[float]):
@@ -377,6 +400,7 @@ class RectAnalogData:
 
 @dataclass
 class RectSwitchStatus:  
+    """整流模块开关量状态类"""
     def __init__(self, data_flag: DataFlag, module_count: int, module_run_status: List[SwitchStatus],
                  module_limit_status: List[SwitchStatus], module_charge_status: List[ChargeStatus],
                  user_defined_params_count: List[int]):
@@ -423,7 +447,8 @@ class RectSwitchStatus:
         }
 
 @dataclass
-class RectAlarmStatus:  
+class RectAlarmStatus:
+    """整流模块告警状态类"""  
     def __init__(self, data_flag: DataFlag, module_count: int, module_failure_status: List[AlarmStatus],
                  user_defined_params_count: List[int], module_comm_failure_status: List[AlarmStatus], 
                  module_protection_status: List[AlarmStatus], module_fan_status: List[AlarmStatus]):
@@ -479,6 +504,7 @@ class RectAlarmStatus:
 
 @dataclass
 class ControlRectModule:
+    """遥控整流模块类"""
     def __init__(self, module_id: int, control_type: RectModuleControlType, control_value: int):  
         self.module_id = module_id   # 模块ID,1字节
         self.control_type = control_type  # 控制类型,1字节,开机20H,关机2FH
@@ -501,6 +527,7 @@ class ControlRectModule:
 
 @dataclass  
 class DcAnalogData:
+    """直流模拟量数据类"""
     def __init__(self, data_flag: DataFlag, dc_voltage: float, total_load_current: float, battery_group_count: int,
                  battery_group_1_number: int, battery_group_1_current: float, load_branch_count: int,
                  load_branch_1_current: float, load_branch_2_current: float, load_branch_3_current: float,
@@ -635,6 +662,7 @@ class DcAnalogData:
         
 @dataclass    
 class DcAlarmStatus:
+    """直流告警状态类"""
     def __init__(self, data_flag: DataFlag, dc_voltage_status: VoltageStatus, 
                  battery_fuse_count: int, user_defined_params_count: int,
                  dc_arrester_status: AlarmStatus, load_fuse_status: AlarmStatus,
@@ -761,6 +789,7 @@ class DcAlarmStatus:
 
 @dataclass
 class DcConfigParams:
+    """直流配置参数类"""  
     def __init__(self, dc_over_voltage: float, dc_under_voltage: float, time_equalize_charge_enable: EnableStatus,
                  time_equalize_duration: int, time_equalize_interval: int, battery_group_number: int, 
                  battery_over_temp: float, battery_under_temp: float, env_over_temp: float, env_under_temp: float,
@@ -883,6 +912,7 @@ class DcConfigParams:
 
 @dataclass
 class SystemControlState:
+   """系统控制状态类"""
    def __init__(self, state: SystemControlState):  
        self.state = state   # 系统控制状态,1字节
    
@@ -901,6 +931,7 @@ class SystemControlState:
 
 @dataclass
 class AlarmSoundEnable:
+   """告警音使能控制类"""
    def __init__(self, enable: EnableStatus):
        self.enable = enable   # 告警音使能,1字节  
    
@@ -919,6 +950,7 @@ class AlarmSoundEnable:
 
 @dataclass
 class EnergyParams:
+   """节能参数类"""
    def __init__(self, energy_saving: EnableStatus, min_working_modules: int, module_switch_cycle: int,
                 module_best_efficiency_point: int, module_redundancy_point: int):
        self.energy_saving = energy_saving   # 节能允许,1字节,0:使能,1:禁止  
@@ -949,6 +981,7 @@ class EnergyParams:
    
 @dataclass
 class SystemControl:
+   """系统控制类"""
    def __init__(self, control_type: SystemControlType):
        self.control_type = control_type   # 控制类型,1字节
    
