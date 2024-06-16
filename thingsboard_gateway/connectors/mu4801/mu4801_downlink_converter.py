@@ -107,7 +107,7 @@ class Mu4801DownlinkConverter(Converter):
     
     def __convert_energy_params(self, data):
         return EnergyParams(
-            energy_saving=EnableStatus(data.get('energy_saving')),
+            energy_saving=EnableStatus[data.get('energy_saving')],
             min_working_modules=data.get('min_working_modules'),
             module_switch_cycle=data.get('module_switch_cycle'),
             module_best_efficiency_point=data.get('module_best_efficiency_point'),

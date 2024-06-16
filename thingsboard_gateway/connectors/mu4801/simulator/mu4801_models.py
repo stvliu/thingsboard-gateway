@@ -38,7 +38,7 @@ class RectModuleControlType(Enum):
     ON = 0x20    # 开机
     OFF = 0x2F   # 关机
 
-class SystemControlState(Enum):
+class SystemControlStateModel(Enum):
     """系统控制状态枚举类"""
     AUTO = 0xE0   # 自动控制状态  
     MANUAL = 0xE1 # 手动控制状态
@@ -913,7 +913,7 @@ class DcConfigParams:
 @dataclass
 class SystemControlState:
    """系统控制状态类"""
-   def __init__(self, state: SystemControlState):  
+   def __init__(self, state: SystemControlStateModel):  
        self.state = state   # 系统控制状态,1字节
    
    def to_bytes(self):
@@ -922,11 +922,11 @@ class SystemControlState:
    @classmethod
    def from_bytes(cls, data):
        state, = struct.unpack('<B', data)  
-       return cls(SystemControlState(state))
+       return cls(SystemControlStateModel(state))
 
    def to_dict(self):
        return {
-           "state": self.state.name
+           "system_control_state": self.state.name
        }
 
 @dataclass

@@ -202,7 +202,7 @@ class MU4801Simulator:
             module_redundancy_point=100
         )
         
-        self.system_control_state = 0
+        self.system_control_state_model = SystemControlStateModel.AUTO
         
     def handle_get_time(self):
         now = datetime.datetime.now()
@@ -273,11 +273,11 @@ class MU4801Simulator:
         self._log.info(f"DC config updated: {request.to_dict()}")
         
     def handle_set_system_control_state(self, request: SystemControlState):
-        self.system_control_state = request.state
-        self._log.info(f"System control state set to: {self.system_control_stat.to_dict()}")
+        self.system_control_state_model = request.state
+        self._log.info(f"System control state set to: {self.system_control_state_model.name}")
         
     def handle_get_system_control_state(self):
-        return SystemControlState(state=self.system_control_state)
+        return SystemControlState(state=self.system_control_state_model)
         
     def handle_set_alarm_sound_enable(self, request: AlarmSoundEnable):
         self._log.info(f"Alarm sound {'enabled' if request.enable == EnableStatus.ENABLE else 'disabled'}")
@@ -341,10 +341,6 @@ class MU4801Simulator:
                         response_data = self.handle_get_ac_config_params()
                     elif command.cid2 == '0x48':  # 设置交流配电参数  
                         self.handle_set_ac_config_params(command_data)
-                    elif command.cid2 == '0x80':  # 修改系统控制状态
-                        self.handle_set_system_control_state(command_data)  
-                    elif command.cid2 == '0x81':  # 读取系统控制状态
-                        response_data = self.handle_get_system_control_state()
                     elif command.cid2 == '0x84':  # 后台告警音使能控制
                         self.handle_set_alarm_sound_enable(command_data)
                         
@@ -370,7 +366,11 @@ class MU4801Simulator:
                     elif command.cid2 == '0x90':  # 读取节能参数  
                         response_data = self.handle_get_energy_params()
                     elif command.cid2 == '0x91':  # 设置节能参数
-                        self.handle_set_energy_params(command_data)  
+                        self.handle_set_energy_params(command_data)
+                    elif command.cid2 == '0x80':  # 修改系统控制状态
+                        self.handle_set_system_control_state(command_data)  
+                    elif command.cid2 == '0x81':  # 读取系统控制状态
+                        response_data = self.handle_get_system_control_state()
                     elif command.cid2 == '0x92':  # 系统控制
                         self.handle_system_control(command_data) 
 

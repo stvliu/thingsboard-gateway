@@ -1,7 +1,7 @@
 # mu4801_connector.py
+from typing import Dict, Any
 import time
 import json
-
 from random import choice
 from string import ascii_lowercase
 from threading import Thread
@@ -36,6 +36,7 @@ class Mu4801Connector(Thread, Connector):
         self.__parse_config()
         self.__init_serial_config()
         self.__init_converters()
+        self.__device_params_manager= DeviceParamsManager(log = self._log)
 
         # self.__loop = asyncio.new_event_loop()
 
@@ -105,6 +106,7 @@ class Mu4801Connector(Thread, Connector):
             # 处理设备RPC
             device_name = server_rpc_request['device']
             rpc_data = server_rpc_request['data']
+            
 
             # 检查'data'字段是否是一个包含'method'和'id'的字典
             if not isinstance(rpc_data, dict) or 'method' not in rpc_data or 'id' not in rpc_data:
@@ -113,6 +115,7 @@ class Mu4801Connector(Thread, Connector):
 
             rpc_method = rpc_data['method']
             rpc_id = rpc_data['id']
+            rpc_params = rpc_data['params']
 
             # 根据设备名查找设备配置
             device = self.__get_device_by_name(device_name)
@@ -125,9 +128,15 @@ class Mu4801Connector(Thread, Connector):
             if not server_side_rpc_config:
                 self._handle_unknown_rpc_method(device_name, rpc_method, rpc_id)
                 return
-
+             # 更新参数
+            #self.__device_params_manager.update_param(device_name, rpc_config['key'], content['data']['params'])
+            self.__device_params_manager.merge_params(device_name, self.__get_model_name(server_side_rpc_config), rpc_params)
+            # 获取所有参数并发送给设备
+            params = self.__device_params_manager.get_params(device_name,self.__get_model_name(server_side_rpc_config))
             # 转换RPC数据
-            converted_data = self._convert_rpc_data(server_side_rpc_config, rpc_data, device_name, rpc_method, rpc_id)
+            converted_data = self.__downlink_converter.convert(server_side_rpc_config, params)
+            
+            #converted_data = self._convert_rpc_data(server_side_rpc_config, rpc_data, device_name, rpc_method, rpc_id)
 
             # 发送RPC命令
             self._send_rpc_command(server_side_rpc_config, converted_data, device_name, rpc_method, rpc_data, rpc_id)
@@ -266,11 +275,15 @@ class Mu4801Connector(Thread, Connector):
             attribute_data = self.__read_device_data(attribute_config)
             if attribute_data:
                 device_data['attributes'].update(attribute_data)
+                self.__device_params_manager.update_params(device_name, self.__get_model_name(attribute_config), attribute_data)
+
 
         for telemetry_config in device.get('timeseries', []):
             telemetry_data = self.__read_device_data(telemetry_config)
             if telemetry_data:
                 device_data['telemetry'].update(telemetry_data)
+                self.__device_params_manager.update_params(device_name, self.__get_model_name(telemetry_config), telemetry_data)
+
         self._collect_statistic_and_send(self.get_name(), self.get_id(), device_data)
 
     def __disconnect(self):
@@ -342,3 +355,53 @@ class Mu4801Connector(Thread, Connector):
         except Exception as e:
             self._log.exception(f"Error executing RPC {command_key}: {e}")
             return {"success": False, "error": str(e)}
+    
+    def __get_model_name(self, command_config):
+        if command_config.get('key').startswith('get'):
+            return command_config.get('response') 
+        else:
+            return command_config.get('request')
+
+
+class DeviceParamsManager:
+    def __init__(self, log):
+        self._device_params: Dict[str, Dict[str, Dict[str, Any]]] = {}
+        self._log = log
+        
+    def update_params(self, device_name: str, model_name: str, params: Dict[str, Any]):
+        self._log.debug(f"Updating parameters for device {device_name}, model {model_name} with {params}")
+        if device_name not in self._device_params:
+            self._log.debug(f"Creating new parameter dictionary for device {device_name}")
+            self._device_params[device_name] = {}
+        if model_name not in self._device_params[device_name]:
+            self._log.debug(f"Creating new parameter dictionary for model {model_name}")
+            self._device_params[device_name][model_name] = {}
+        self._device_params[device_name][model_name].update(params)
+        self._log.debug(f"Updated parameters for device {device_name}, model {model_name}")
+
+    def merge_params(self, device_name: str, model_name: str, params: Dict[str, Any]):
+        self._log.debug(f"Merging parameters for device {device_name}, model {model_name} with {params}")
+        if device_name not in self._device_params:
+            self._log.debug(f"Creating new parameter dictionary for device {device_name}")
+            self._device_params[device_name] = {}
+        if model_name not in self._device_params[device_name]:
+            self._log.debug(f"Creating new parameter dictionary for model {model_name}")
+            self._device_params[device_name][model_name] = {}
+        for key, value in params.items():
+            self._device_params[device_name][model_name][key] = value
+        self._log.debug(f"Merged parameters for device {device_name}, model {model_name}")
+
+    def get_params(self, device_name: str, model_name: str) -> Dict[str, Any]:
+        self._log.debug(f"Getting parameters for device {device_name}, model {model_name}")
+        if device_name in self._device_params and model_name in self._device_params[device_name]:
+            params = self._device_params[device_name][model_name]
+            self._log.debug(f"Found parameters for device {device_name}, model {model_name}: {params}")
+            return params
+        else:
+            self._log.warning(f"Attempt to get parameters for nonexistent device {device_name} or model {model_name}")
+            return {}
+
+    def has_model(self, device_name: str, model_name: str) -> bool:
+        has_model = device_name in self._device_params and model_name in self._device_params[device_name]
+        self._log.debug(f"Checking if model {model_name} exists for device {device_name}: {has_model}")
+        return has_model

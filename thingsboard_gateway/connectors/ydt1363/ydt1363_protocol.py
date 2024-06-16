@@ -173,7 +173,7 @@ class Ydt1363Protocol:
     def _encode_response_data(self, command, data):
         logger.debug(f"Encoding response data for {command}: {data}")
         logger.debug(f"Checking if command {command} has response_class")
-        if command.response_class:
+        if command.response_class and data:
             logger.debug(f"Command {command} has response_class: {command.response_class}")
             try:
                 logger.debug(f"Checking if data {data} is instance of {command.response_class}")
@@ -182,7 +182,7 @@ class Ydt1363Protocol:
                     response_data = data.to_bytes()
                 else:
                     logger.debug(f"Data {data} is not instance of {command.response_class}, encoding with data codec")
-                    response_data = self._data_codec.to_bytes(data)
+                    response_data = self._data_codec.encode(data)
                 
                 logger.debug(f"Checking if encoded response data is None")
                 if response_data is None:  # 添加检查
@@ -193,7 +193,7 @@ class Ydt1363Protocol:
                 logger.error(f"Error encoding response data: {e}", exc_info=True)
                 raise ProtocolError(f"Error encoding response data: {e}")
         else:
-            logger.debug(f"Command {command} does not have response_class, setting response_data to empty bytes")
+            logger.debug(f"Command {command} does not have response_class or data is None, setting response_data to empty bytes")
             response_data = b''
             
         logger.debug(f"Encoded response data: {response_data.hex()}")

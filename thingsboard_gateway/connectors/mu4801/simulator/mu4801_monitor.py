@@ -35,7 +35,9 @@ class MU4801Monitor:
         print("15. 读取直流告警状态")  
         print("16. 读取直流配置参数")
         print("17. 设置直流配置参数")
-        print("18. 系统控制命令")  
+        print("18. 读取系统控制状态")
+        print("19. 修改系统控制状态")
+        print("20. 系统控制命令")  
         print("0. 退出程序")
         
     def run(self):
@@ -338,7 +340,31 @@ class MU4801Monitor:
                     print("直流配置参数设置成功")
                 except ValueError:
                     print("无效的参数值")
-            elif choice == '18':  # 系统控制命令
+            elif choice == '18':  # 读取系统控制状态
+                print("读取系统控制状态:")
+                state = self._protocol.send_command('getSystemControlState')
+                print(f"当前系统控制状态: {state.state.name}")
+
+            elif choice == '19':  # 修改系统控制状态
+                print("修改系统控制状态:")
+                print("1. 自动控制状态")
+                print("2. 手动控制状态")
+                try:
+                    state = int(input("请选择新的控制状态编号: "))
+                    if state == 1:
+                        self._protocol.send_command('setSystemControlState', SystemControlState(
+                            state=SystemControlStateModel.AUTO
+                        ))
+                    elif state == 2:
+                        self._protocol.send_command('setSystemControlState', SystemControlState(
+                            state=SystemControlStateModel.MANUAL
+                        ))
+                    else:
+                        print("无效的状态编号")
+                except ValueError:
+                    print("无效的状态编号")
+
+            elif choice == '20':  # 系统控制命令
                 print("系统控制命令:")
                 print("1. 系统复位")
                 print("2. 负载1下电")
