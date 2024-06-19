@@ -128,16 +128,16 @@ class Mu4801Connector(Thread, Connector):
             if not server_side_rpc_config:
                 self._handle_unknown_rpc_method(device_name, rpc_method, rpc_id)
                 return
-             # 更新参数
-            #self.__device_params_manager.update_param(device_name, rpc_config['key'], content['data']['params'])
-            self.__device_params_manager.merge_params(device_name, self.__get_model_name(server_side_rpc_config), rpc_params)
-            # 获取所有参数并发送给设备
-            params = self.__device_params_manager.get_params(device_name,self.__get_model_name(server_side_rpc_config))
+            
+            params = rpc_params
+            # 补齐参数
+            if params:
+                 # 更新参数
+                self.__device_params_manager.merge_params(device_name, self.__get_model_name(server_side_rpc_config), rpc_params)
+                # 获取已补齐参数
+                params = self.__device_params_manager.get_params(device_name,self.__get_model_name(server_side_rpc_config))
             # 转换RPC数据
             converted_data = self.__downlink_converter.convert(server_side_rpc_config, params)
-            
-            #converted_data = self._convert_rpc_data(server_side_rpc_config, rpc_data, device_name, rpc_method, rpc_id)
-
             # 发送RPC命令
             self._send_rpc_command(server_side_rpc_config, converted_data, device_name, rpc_method, rpc_data, rpc_id)
         else:
@@ -203,12 +203,13 @@ class Mu4801Connector(Thread, Connector):
         try:
             response = self.__send_rpc_command(server_side_rpc_config, converted_data)
             responseJson = json.dumps(response);
-            self.__gateway.send_rpc_reply(device=device_name, req_id=rpc_id, content=responseJson, success_sent=True)
-            self._log.debug(f"RPC {rpc_method} executed with data {rpc_data}, response: {responseJson}")
+            self.__gateway.send_rpc_reply(device=device_name, req_id=rpc_id, content=response)
+            self._log.debug(f"RPC {rpc_method} successfully to device {device_name}, reply with data: {responseJson}")
         except Exception as e:
             error_msg = f"Failed to send RPC command for method {rpc_method} of device {device_name}: {e}"
             self._log.error(error_msg)
             self.__gateway.send_rpc_reply(device=device_name, req_id=rpc_id, content={"error": error_msg}, success_sent=False)
+    
     def __parse_config(self):
         pass
 
@@ -282,7 +283,7 @@ class Mu4801Connector(Thread, Connector):
             telemetry_data = self.__read_device_data(telemetry_config)
             if telemetry_data:
                 device_data['telemetry'].update(telemetry_data)
-                self.__device_params_manager.update_params(device_name, self.__get_model_name(telemetry_config), telemetry_data)
+                #self.__device_params_manager.update_params(device_name, self.__get_model_name(telemetry_config), telemetry_data)
 
         self._collect_statistic_and_send(self.get_name(), self.get_id(), device_data)
 
@@ -369,18 +370,22 @@ class DeviceParamsManager:
         self._log = log
         
     def update_params(self, device_name: str, model_name: str, params: Dict[str, Any]):
-        self._log.debug(f"Updating parameters for device {device_name}, model {model_name} with {params}")
+        #self._log.debug(f"Updating parameters for device {device_name}, model {model_name} with {params}")
+        if params is None:
+            return
         if device_name not in self._device_params:
-            self._log.debug(f"Creating new parameter dictionary for device {device_name}")
+            #self._log.debug(f"Creating new parameter dictionary for device {device_name}")
             self._device_params[device_name] = {}
         if model_name not in self._device_params[device_name]:
-            self._log.debug(f"Creating new parameter dictionary for model {model_name}")
+            #self._log.debug(f"Creating new parameter dictionary for model {model_name}")
             self._device_params[device_name][model_name] = {}
         self._device_params[device_name][model_name].update(params)
         self._log.debug(f"Updated parameters for device {device_name}, model {model_name}")
 
     def merge_params(self, device_name: str, model_name: str, params: Dict[str, Any]):
         self._log.debug(f"Merging parameters for device {device_name}, model {model_name} with {params}")
+        if params is None:
+            return
         if device_name not in self._device_params:
             self._log.debug(f"Creating new parameter dictionary for device {device_name}")
             self._device_params[device_name] = {}

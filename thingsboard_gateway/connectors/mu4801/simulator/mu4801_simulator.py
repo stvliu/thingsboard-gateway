@@ -286,6 +286,7 @@ class MU4801Simulator:
         return self.energy_params
         
     def handle_set_energy_params(self, request: EnergyParams):
+        self.energy_params = request
         self._log.info(f"Energy params updated: {request.to_dict()}")
         
     def handle_system_control(self, request: SystemControl): 

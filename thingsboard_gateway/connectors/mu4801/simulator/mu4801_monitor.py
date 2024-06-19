@@ -36,8 +36,10 @@ class MU4801Monitor:
         print("16. 读取直流配置参数")
         print("17. 设置直流配置参数")
         print("18. 读取系统控制状态")
-        print("19. 修改系统控制状态")
-        print("20. 系统控制命令")  
+        print("19. 修改系统控制状态") 
+        print("20. 读取节能参数")
+        print("21. 设置节能参数")
+        print("22. 系统控制命令")  
         print("0. 退出程序")
         
     def run(self):
@@ -363,8 +365,33 @@ class MU4801Monitor:
                         print("无效的状态编号")
                 except ValueError:
                     print("无效的状态编号")
-
-            elif choice == '20':  # 系统控制命令
+            elif choice == '20':  # 读取节能参数
+                print("读取节能参数:")
+                energy_params = self._protocol.send_command('getEnergyParams')
+                print(f"节能允许: {'使能' if energy_params.energy_saving == EnableStatus.ENABLE else '禁止'}")  
+                print(f"最小工作模块数: {energy_params.min_working_modules}")
+                print(f"模块循环开关周期: {energy_params.module_switch_cycle}天")
+                print(f"模块最佳效率点: {energy_params.module_best_efficiency_point}%")
+                print(f"模块冗余点: {energy_params.module_redundancy_point}%")
+            elif choice == '21':  # 设置节能参数
+                print("设置节能参数:")
+                try:
+                    energy_saving = EnableStatus(int(input("请输入节能允许(0-禁止, 1-使能): ")))
+                    min_working_modules = int(input("请输入最小工作模块数: "))
+                    module_switch_cycle = int(input("请输入模块循环开关周期(天): "))  
+                    module_best_efficiency_point = int(input("请输入模块最佳效率点(%): "))
+                    module_redundancy_point = int(input("请输入模块冗余点(%): "))
+                    self._protocol.send_command('setEnergyParams', EnergyParams(
+                        energy_saving=energy_saving,
+                        min_working_modules=min_working_modules,
+                        module_switch_cycle=module_switch_cycle,
+                        module_best_efficiency_point=module_best_efficiency_point,
+                        module_redundancy_point=module_redundancy_point
+                    ))
+                    print("节能参数设置成功")  
+                except ValueError:
+                    print("无效的参数值")
+            elif choice == '22':  # 系统控制命令
                 print("系统控制命令:")
                 print("1. 系统复位")
                 print("2. 负载1下电")
