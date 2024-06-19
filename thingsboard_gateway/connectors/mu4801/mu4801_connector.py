@@ -174,19 +174,19 @@ class Mu4801Connector(Thread, Connector):
         # 处理无效的RPC数据
         error_msg = f"Invalid 'data' field in RPC request: {rpc_data}"
         self._log.error(error_msg)
-        self.__gateway.send_rpc_reply(device=device_name, req_id=rpc_data.get('id'), content={"error": error_msg}, success_sent=False)
+        self.__gateway.send_rpc_reply(device=device_name, req_id=rpc_data.get('id'), content={"error": error_msg})
 
     def _handle_unknown_device(self, device_name, rpc_id):
         # 处理未知设备
         error_msg = f"Device {device_name} not found in config"
         self._log.error(error_msg)
-        self.__gateway.send_rpc_reply(device=device_name, req_id=rpc_id, content={"error": error_msg}, success_sent=False)
+        self.__gateway.send_rpc_reply(device=device_name, req_id=rpc_id, content={"error": error_msg})
 
     def _handle_unknown_rpc_method(self, device_name, rpc_method, rpc_id):
         # 处理未知的RPC方法
         error_msg = f"RPC method {rpc_method} not found in config for device {device_name}"
         self._log.error(error_msg)
-        self.__gateway.send_rpc_reply(device=device_name, req_id=rpc_id, content={"error": error_msg}, success_sent=False)
+        self.__gateway.send_rpc_reply(device=device_name, req_id=rpc_id, content={"error": error_msg})
 
     def _convert_rpc_data(self, server_side_rpc_config, rpc_data, device_name, rpc_method, rpc_id):
         # 转换RPC数据
@@ -195,7 +195,7 @@ class Mu4801Connector(Thread, Connector):
         except Exception as e:
             error_msg = f"Failed to convert RPC data for method {rpc_method} of device {device_name}: {e}"
             self._log.error(error_msg)
-            self.__gateway.send_rpc_reply(device=device_name, req_id=rpc_id, content={"error": error_msg}, success_sent=False)
+            self.__gateway.send_rpc_reply(device=device_name, req_id=rpc_id, content={"error": error_msg})
             return None
 
     def _send_rpc_command(self, server_side_rpc_config, converted_data, device_name, rpc_method, rpc_data, rpc_id):
@@ -208,7 +208,7 @@ class Mu4801Connector(Thread, Connector):
         except Exception as e:
             error_msg = f"Failed to send RPC command for method {rpc_method} of device {device_name}: {e}"
             self._log.error(error_msg)
-            self.__gateway.send_rpc_reply(device=device_name, req_id=rpc_id, content={"error": error_msg}, success_sent=False)
+            self.__gateway.send_rpc_reply(device=device_name, req_id=rpc_id, content={"error": error_msg})
     
     def __parse_config(self):
         pass
