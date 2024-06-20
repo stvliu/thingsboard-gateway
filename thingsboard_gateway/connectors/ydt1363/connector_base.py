@@ -1,4 +1,3 @@
-# hdcac_connector.py
 from typing import Dict, Any
 import time
 import json
@@ -10,13 +9,11 @@ from thingsboard_gateway.tb_utility.tb_utility import TBUtility
 from thingsboard_gateway.gateway.statistics_service import StatisticsService
 from thingsboard_gateway.tb_utility.tb_logger import init_logger
 
-from thingsboard_gateway.connectors.hdcac.hdcac_constants import *
-from thingsboard_gateway.connectors.hdcac.hdcac_uplink_converter import HdcAcUplinkConverter
-from thingsboard_gateway.connectors.hdcac.hdcac_downlink_converter import HdcAcDownlinkConverter
-from thingsboard_gateway.connectors.hdcac.hdcac_protocol import HdcAcProtocol
+from thingsboard_gateway.connectors.ydt1363.protocol_base import ProtocolBase
+from thingsboard_gateway.connectors.ydt1363.converter_base import ConverterBase
+from thingsboard_gateway.connectors.ydt1363.config_base import *
 
-class HdcAcConnector(Thread, Connector):
-
+class ConnectorBase(Thread, Connector):
     def __init__(self, gateway, config, connector_type):
         super().__init__()
         self.statistics = {'MessagesReceived': 0, 'MessagesSent': 0}
@@ -24,30 +21,27 @@ class HdcAcConnector(Thread, Connector):
         self._connector_type = connector_type
         self.__config = config
         self.__id = self.__config.get('id')
-        self.name = config.get("name", 'HdcAc ' + ''.join(choice(ascii_lowercase) for _ in range(5)))
+        self.name = config.get("name", self._get_default_name())
         self._log = init_logger(gateway, self.name, config.get('logLevel', 'INFO'))
-        self._log.info("Initializing HdcAc connector")
+        self._log.info(f"Initializing {self.name} connector")
         self.__devices = self.__config[DEVICES_PARAMETER]
         self.__connected = False
         self.__stopped = False
         self.daemon = True
 
-        self.__serial_config = None
-        self.__parse_config()
-        self.__init_serial_config()
+        self.__serial_config = self.__init_serial_config()
         self.__init_converters()
         self.__device_params_manager= DeviceParamsManager(log = self._log)
 
-        self._log.info("[%s] HdcAc connector initialized.", self.get_name())
+        self._log.info("[%s] %s connector initialized.", self.get_name(), self.name)
 
     def open(self):
-        # self.__loop.run_until_complete(self.__run())
         self._log.info("[%s] Starting...", self.get_name())
         self.__stopped = False
         self.start()
 
     def run(self):
-        self._log.info(f"[{self.name}] Starting HdcAc connector")
+        self._log.info(f"[{self.name}] Starting connector")
         self.__run()
 
     def close(self):
@@ -113,7 +107,7 @@ class HdcAcConnector(Thread, Connector):
 
             rpc_method = rpc_data['method']
             rpc_id = rpc_data['id']
-            rpc_params = rpc_data['params']
+            rpc_params = rpc_data.get('params')
 
             # 根据设备名查找设备配置
             device = self.__get_device_by_name(device_name)
@@ -137,7 +131,7 @@ class HdcAcConnector(Thread, Connector):
             # 转换RPC数据
             converted_data = self.__downlink_converter.convert(server_side_rpc_config, params)
             # 发送RPC命令
-            self._send_rpc_command(server_side_rpc_config, converted_data, device_name, rpc_method, rpc_data, rpc_id)
+            self._send_rpc_command(server_side_rpc_config, converted_data, device_name, rpc_method, rpc_data)
         else:
             self._handle_invalid_rpc_request(server_rpc_request)
             return
@@ -154,14 +148,6 @@ class HdcAcConnector(Thread, Connector):
             return 'method' in server_rpc_request
         except (ValueError, AttributeError):
             return False
-
-    def _extract_connector_rpc_method(self, rpc_method):
-        # 提取连接器RPC的方法名
-        return rpc_method.split('_', 1)[1]
-
-    def _extract_device_name(self, rpc_data):
-        # 提取设备名
-        return rpc_data['params'].split(' ')[0].split('=')[-1]
 
     def _handle_invalid_rpc_request(self, server_rpc_request):
         # 处理无效的RPC请求
@@ -185,24 +171,14 @@ class HdcAcConnector(Thread, Connector):
         error_msg = f"RPC method {rpc_method} not found in config for device {device_name}"
         self._log.error(error_msg)
         self.__gateway.send_rpc_reply(device=device_name, req_id=rpc_id, content={"error": error_msg})
-
-    def _convert_rpc_data(self, server_side_rpc_config, rpc_data, device_name, rpc_method, rpc_id):
-        # 转换RPC数据
-        try:
-            return self.__downlink_converter.convert(server_side_rpc_config, rpc_data.get('params'))
-        except Exception as e:
-            error_msg = f"Failed to convert RPC data for method {rpc_method} of device {device_name}: {e}"
-            self._log.error(error_msg)
-            self.__gateway.send_rpc_reply(device=device_name, req_id=rpc_id, content={"error": error_msg})
-            return None
-
-    def _send_rpc_command(self, server_side_rpc_config, converted_data, device_name, rpc_method, rpc_data, rpc_id):
+    
+    def _send_rpc_command(self, server_side_rpc_config, rpc_data, device_name, rpc_method, rpc_id):
         # 发送RPC命令
         try:
-            response = self.__send_rpc_command(server_side_rpc_config, converted_data)
+            response = self.__send_rpc_command(server_side_rpc_config, rpc_data)
             responseJson = json.dumps(response);
             self.__gateway.send_rpc_reply(device=device_name, req_id=rpc_id, content=response)
-            self._log.debug(f"RPC {rpc_method} successfully to device {device_name}, reply with data: {responseJson}")
+            self._log.debug(f"RPC {rpc_method} successfully sent to device {device_name}, reply with data: {responseJson}")
         except Exception as e:
             error_msg = f"Failed to send RPC command for method {rpc_method} of device {device_name}: {e}"
             self._log.error(error_msg)
@@ -212,7 +188,7 @@ class HdcAcConnector(Thread, Connector):
         pass
 
     def __init_serial_config(self):
-        self.__serial_config = {
+        return {
             'port': self.__config.get('port', DEFAULT_PORT),
             'baudrate': self.__config.get('baudrate', DEFAULT_BAUDRATE),
             'bytesize': self.__config.get('bytesize', DEFAULT_BYTESIZE),
@@ -223,13 +199,13 @@ class HdcAcConnector(Thread, Connector):
         }
     
     def __init_converters(self):
-        self.__uplink_converter = HdcAcUplinkConverter(self.__config, self._log)
-        self.__downlink_converter = HdcAcDownlinkConverter(self.__config, self._log)
+        self.__uplink_converter = self._create_uplink_converter(self.__config, self._log)
+        self.__downlink_converter = self._create_downlink_converter(self.__config, self._log)
 
     def __connect(self):
         try:
             self._log.info(f"[{self.name}] Connecting to serial port {self.__serial_config['port']}")
-            self.__protocol = HdcAcProtocol(
+            self.__protocol = self._create_protocol(
                 config=self.__devices[0],
                 device_addr=self.__serial_config['deviceAddress'],
                 port=self.__serial_config['port'],
@@ -245,7 +221,6 @@ class HdcAcConnector(Thread, Connector):
             self._log.error(f"[{self.name}] Error connecting to serial port: {str(e)}")
             self.__connected = False
 
-
     def __run(self):
         while True:
             try:
@@ -257,8 +232,8 @@ class HdcAcConnector(Thread, Connector):
 
                 time.sleep(self.__config.get('pollInterval', DEFAULT_POLL_INTERVAL))
             except Exception as e:
-                self._log.exception(f"Error in HdcAc connector: {e}")
-                time.sleep(RECONNECT_DELAY)  
+                self._log.exception(f"Error in connector: {e}")
+                time.sleep(self._get_reconnect_delay())  
 
     def __poll_devices(self):
         for device in self.__config['devices']:
@@ -281,9 +256,8 @@ class HdcAcConnector(Thread, Connector):
             telemetry_data = self.__read_device_data(telemetry_config)
             if telemetry_data:
                 device_data['telemetry'].update(telemetry_data)
-                #self.__device_params_manager.update_params(device_name, self.__get_model_name(telemetry_config), telemetry_data)
 
-        self._collect_statistic_and_send(self.get_name(), self.get_id(), device_data)
+        self._collect_statistic_and_send(device_data)
 
     def __disconnect(self):
         if self.__protocol:
@@ -299,22 +273,16 @@ class HdcAcConnector(Thread, Connector):
         else:
             return {} 
     
-    def _collect_statistic_and_send(self, connector_name, connector_id, data):
+    def _collect_statistic_and_send(self, data):
         self.statistics["MessagesReceived"] = self.statistics["MessagesReceived"] + 1
+        self._log.trace(f"[{self.get_name()}] Received data from device: {data}")
         
-        # 调试日志:打印接收到的原始数据
-        # self._log.debug(f"[{connector_name}] Received data from device: {data}")
+        data = self.__uplink_converter.convert(data)
+        self._log.trace(f"[{self.get_name()}] Converted data: {data}")
         
-        data=self.__uplink_converter.convert(config = self.__config, data = data)
-        
-        # 调试日志:打印转换后的数据
-        # self._log.debug(f"[{connector_name}] Converted data: {data}")
-        
-        self.__gateway.send_to_storage(connector_name, connector_id, data)
+        self.__gateway.send_to_storage(self.get_name(), self.get_id(), data)
         self.statistics["MessagesSent"] = self.statistics["MessagesSent"] + 1
-        
-        # 调试日志:确认数据已发送
-        self._log.debug(f"[{connector_name}] Data sent to Thingsboard")
+        self._log.debug(f"[{self.get_name()}] Data sent to Thingsboard")
     
     def __update_device_attribute(self, attribute_updates_config, attribute_data):
         command_key = attribute_updates_config['key']
@@ -345,66 +313,4 @@ class HdcAcConnector(Thread, Connector):
         try:
             response = self.__protocol.send_command(command_key, rpc_data)
             self._log.debug(f"RPC {command_key} executed with data {rpc_data}, response: {response}")  
-            if response :
-                response_dict = response.to_dict()
-            else:
-                response_dict = {}
-            self._log.debug(f"Converted response to dict: {response_dict}")
-            return response_dict
-        except Exception as e:
-            self._log.exception(f"Error executing RPC {command_key}: {e}")
-            return {"success": False, "error": str(e)}
-    
-    def __get_model_name(self, command_config):
-        if command_config.get('key').startswith('get'):
-            return command_config.get('response') 
-        else:
-            return command_config.get('request')
-
-
-class DeviceParamsManager:
-    def __init__(self, log):
-        self._device_params: Dict[str, Dict[str, Dict[str, Any]]] = {}
-        self._log = log
-        
-    def update_params(self, device_name: str, model_name: str, params: Dict[str, Any]):
-        #self._log.debug(f"Updating parameters for device {device_name}, model {model_name} with {params}")
-        if params is None:
-            return
-        if device_name not in self._device_params:
-            #self._log.debug(f"Creating new parameter dictionary for device {device_name}")
-            self._device_params[device_name] = {}
-        if model_name not in self._device_params[device_name]:
-            #self._log.debug(f"Creating new parameter dictionary for model {model_name}")
-            self._device_params[device_name][model_name] = {}
-        self._device_params[device_name][model_name].update(params)
-        self._log.debug(f"Updated parameters for device {device_name}, model {model_name}")
-
-    def merge_params(self, device_name: str, model_name: str, params: Dict[str, Any]):
-        self._log.debug(f"Merging parameters for device {device_name}, model {model_name} with {params}")
-        if params is None:
-            return
-        if device_name not in self._device_params:
-            self._log.debug(f"Creating new parameter dictionary for device {device_name}")
-            self._device_params[device_name] = {}
-        if model_name not in self._device_params[device_name]:
-            self._log.debug(f"Creating new parameter dictionary for model {model_name}")
-            self._device_params[device_name][model_name] = {}
-        for key, value in params.items():
-            self._device_params[device_name][model_name][key] = value
-        self._log.debug(f"Merged parameters for device {device_name}, model {model_name}")
-
-    def get_params(self, device_name: str, model_name: str) -> Dict[str, Any]:
-        self._log.debug(f"Getting parameters for device {device_name}, model {model_name}")
-        if device_name in self._device_params and model_name in self._device_params[device_name]:
-            params = self._device_params[device_name][model_name]
-            self._log.debug(f"Found parameters for device {device_name}, model {model_name}: {params}")
-            return params
-        else:
-            self._log.warning(f"Attempt to get parameters for nonexistent device {device_name} or model {model_name}")
-            return {}
-
-    def has_model(self, device_name: str, model_name: str) -> bool:
-        has_model = device_name in self._device_params and model_name in self._device_params[device_name]
-        self._log.debug(f"Checking if model {model_name} exists for device {device_name}: {has_model}")
-        return has_model
+            if

@@ -40,6 +40,23 @@ class SensorStatus(Enum):
     ALARM = 0xF0  # 故障
     INVALID = 0x20  # 无效值
 
+class ConfigParamType(Enum):
+    """配置参数类型枚举类"""
+    AC_START_TEMP = 0x80       # 空调开启温度
+    AC_TEMP_HYSTERESIS = 0x81  # 空调停止回差  
+    HEAT_START_TEMP = 0x82     # 加热开启温度
+    HEAT_HYSTERESIS = 0x83     # 加热停止回差
+    HIGH_TEMP_ALARM = 0x84     # 高温告警点    
+    LOW_TEMP_ALARM = 0x85      # 低温告警点
+
+class RemoteCommand(Enum):
+    """遥控命令枚举类"""
+    ON = 0x10         # 开机 
+    OFF = 0x1F        # 关机
+    COOLING_ON = 0x20  # 制冷开  
+    COOLING_OFF = 0x2F # 制冷关
+    HEATING_ON = 0x30  # 制热开
+    HEATING_OFF = 0x3F # 制热关
 
 @dataclass
 class AcAnalogData:
@@ -177,15 +194,6 @@ class AcConfigParams:
            "low_temp_alarm": self.low_temp_alarm
        }
 
-class RemoteCommand(Enum):
-    """遥控命令枚举类"""
-    ON = 0x10         # 开机 
-    OFF = 0x1F        # 关机
-    COOLING_ON = 0x20  # 制冷开  
-    COOLING_OFF = 0x2F # 制冷关
-    HEATING_ON = 0x30  # 制热开
-    HEATING_OFF = 0x3F # 制热关
-
 @dataclass
 class RemoteControl:
    """遥控控制类"""
@@ -235,15 +243,6 @@ class DateTime:
             "minute": self.minute,
             "second": self.second
         }
-
-class ConfigParamType(Enum):
-    """配置参数类型枚举类"""
-    AC_START_TEMP = 0x80       # 空调开启温度
-    AC_TEMP_HYSTERESIS = 0x81  # 空调停止回差  
-    HEAT_START_TEMP = 0x82     # 加热开启温度
-    HEAT_HYSTERESIS = 0x83     # 加热停止回差
-    HIGH_TEMP_ALARM = 0x84     # 高温告警点    
-    LOW_TEMP_ALARM = 0x85      # 低温告警点
 
 @dataclass
 class ConfigParam:

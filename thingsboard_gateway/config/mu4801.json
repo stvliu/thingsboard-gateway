@@ -35,6 +35,40 @@
                     "key": "getDeviceAddress",
                     "name": "获取本机地址",
                     "response": "DeviceAddress"
+                },
+                {
+                    "cid1": "0x40",
+                    "cid2": "0x46",
+                    "key": "getAcConfigParams",
+                    "name": "获取交流配电参数",
+                    "response": "AcConfigParams"
+                },
+                {
+                    "cid1": "0x40",
+                    "cid2": "0x4D",
+                    "key": "getDateTime",
+                    "name": "获取当前时间",
+                    "response": "DateTime"
+                },
+                {
+                    "cid1": "0x42",
+                    "cid2": "0x46",
+                    "key": "getDcConfigParams",
+                    "name": "获取直流配电参数",
+                    "response": "DcConfigParams"
+                },
+                {
+                    "cid1": "0x42",
+                    "cid2": "0x81",
+                    "key": "getSystemControlState",
+                    "name": "读取系统控制状态",
+                    "response": "SystemControlState"
+                },                {
+                    "cid1": "0x42",
+                    "cid2": "0x90",
+                    "key": "getEnergyParams",
+                    "name": "读取节能参数",
+                    "response": "EnergyParams"
                 }
             ],
             "timeseries": [

@@ -21,7 +21,3 @@ class HdcAcProtocol(Ydt1363Protocol):
 
     def _get_models_package(self):
         return 'thingsboard_gateway.connectors.hdcac.hdcac_models'
-
-    
-
-        
