@@ -25,7 +25,7 @@ class Mu4801DownlinkConverter(Converter):
     @StatisticsService.CollectStatistics(start_stat_type='allReceivedBytesFromTB',
                                          end_stat_type='allBytesSentToDevices')
     def convert(self, config, data):
-        if self.model_mapping.has_key(config['key']):
+        if config['key'] in self.model_mapping:
             model_class = self.model_mapping.get(config['key'])
             if model_class is None:
                 return None
