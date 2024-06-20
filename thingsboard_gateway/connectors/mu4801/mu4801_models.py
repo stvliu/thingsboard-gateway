@@ -125,6 +125,16 @@ class DateTime:
             "minute": self.minute,
             "second": self.second
         }
+    @classmethod
+    def from_dict(cls, data):
+        return cls(
+            year=data['year'],
+            month=data['month'],
+            day=data['day'],
+            hour=data['hour'],
+            minute=data['minute'],
+            second=data['second']
+        )
 
 @dataclass
 class ProtocolVersion:
@@ -143,6 +153,10 @@ class ProtocolVersion:
     def to_dict(self):
         return {"protocol_version": self.version} 
 
+    @classmethod
+    def from_dict(cls, data):
+        return cls(version=data['protocol_version'])
+
 @dataclass    
 class DeviceAddress:
     """设备地址类"""
@@ -160,6 +174,9 @@ class DeviceAddress:
     def to_dict(self):
         return {"address": self.address}
 
+    @classmethod
+    def from_dict(cls, data):
+        return cls(address=data['address'])
 @dataclass
 class SoftwareVersion():
     """软件版本类"""
@@ -177,7 +194,11 @@ class SoftwareVersion():
 
     def to_dict(self):
         return {"major": self.major, "minor": self.minor}
-    
+
+    @classmethod
+    def from_dict(cls, data):
+        return cls(major=data['major'], minor=data['minor'])
+        
     def __str__(self):
         return f"{self.major}.{self.minor}"
     
@@ -210,6 +231,13 @@ class ManufacturerInfo:
             "manufacturer": self.manufacturer
         }
 
+    @classmethod
+    def from_dict(cls, data):
+        return cls(
+            collector_name=data['collector_name'],
+            software_version=SoftwareVersion.from_dict(data['software_version']),
+            manufacturer=data['manufacturer']
+        )
 @dataclass
 class AcAnalogData:
     """交流模拟量数据类"""
@@ -253,6 +281,17 @@ class AcAnalogData:
             "user_defined_params_count": self.user_defined_params_count
         }
 
+    @classmethod
+    def from_dict(cls, data):
+        return cls(
+            data_flag=DataFlag.NORMAL,
+            number_of_inputs=data['number_of_inputs'],
+            voltage_a=data['voltage_a'],
+            voltage_b=data['voltage_b'],
+            voltage_c=data['voltage_c'],
+            frequency=data['frequency'],
+            user_defined_params_count=data['user_defined_params_count']
+        )
 @dataclass  
 class AcAlarmStatus:
     """交流告警状态类"""
@@ -313,6 +352,23 @@ class AcAlarmStatus:
             "ac_power_status": self.ac_power_status.name
         }
 
+    @classmethod
+    def from_dict(cls, data):
+        return cls(
+            data_flag=DataFlag.NORMAL,
+            number_of_inputs=data['number_of_inputs'],
+            voltage_a_status=VoltageStatus[data['voltage_a_status']],
+            voltage_b_status=VoltageStatus[data['voltage_b_status']],
+            voltage_c_status=VoltageStatus[data['voltage_c_status']],
+            frequency_status=FrequencyStatus[data['frequency_status']],
+            fuse_count=data['fuse_count'],
+            user_defined_params_count=data['user_defined_params_count'],
+            ac_arrester_status=AlarmStatus[data['ac_arrester_status']],
+            ac_comm_failure_status=AlarmStatus[data['ac_comm_failure_status']],
+            ac_input_switch_status=AlarmStatus[data['ac_input_switch_status']],
+            ac_output_switch_status=AlarmStatus[data['ac_output_switch_status']],
+            ac_power_status=AlarmStatus[data['ac_power_status']]
+        )
 @dataclass
 class AcConfigParams:
     """交流配置参数类"""  
@@ -333,7 +389,13 @@ class AcConfigParams:
             "ac_over_voltage": self.ac_over_voltage,
             "ac_under_voltage": self.ac_under_voltage  
         }
-    
+
+    @classmethod
+    def from_dict(cls, data):
+        return cls(
+            ac_over_voltage=data['ac_over_voltage'],
+            ac_under_voltage=data['ac_under_voltage']
+        )    
 @dataclass  
 class RectAnalogData:
     """整流模块模拟量数据类"""
@@ -398,6 +460,19 @@ class RectAnalogData:
             "module_input_voltage_ab": self.module_input_voltage_ab
         }
 
+    @classmethod
+    def from_dict(cls, data):
+        return cls(
+            data_flag=DataFlag.NORMAL,
+            output_voltage=data['output_voltage'],
+            module_count=data['module_count'],
+            module_currents=data['module_currents'],
+            user_defined_params_count=data['user_defined_params_count'],
+            module_current_limit=data['module_current_limit'],
+            module_voltage=data['module_voltage'],
+            module_temperature=data['module_temperature'],
+            module_input_voltage_ab=data['module_input_voltage_ab']
+        )
 @dataclass
 class RectSwitchStatus:  
     """整流模块开关量状态类"""
@@ -446,6 +521,16 @@ class RectSwitchStatus:
             "user_defined_params_count": self.user_defined_params_count
         }
 
+    @classmethod
+    def from_dict(cls, data):
+        return cls(
+            data_flag=DataFlag.NORMAL,
+            module_count=data['module_count'],
+            module_run_status=[SwitchStatus[status] for status in data['module_run_status']],
+            module_limit_status=[SwitchStatus[status] for status in data['module_limit_status']],
+            module_charge_status=[ChargeStatus[status] for status in data['module_charge_status']],
+            user_defined_params_count=data['user_defined_params_count']
+        )
 @dataclass
 class RectAlarmStatus:
     """整流模块告警状态类"""  
@@ -502,6 +587,17 @@ class RectAlarmStatus:
             "module_fan_status": [status.name for status in self.module_fan_status]
         }
 
+    @classmethod
+    def from_dict(cls, data):
+        return cls(
+            data_flag=DataFlag.NORMAL,
+            module_count=data['module_count'],
+            module_failure_status=[AlarmStatus[status] for status in data['module_failure_status']],
+            user_defined_params_count=data['user_defined_params_count'],
+            module_comm_failure_status=[AlarmStatus[status] for status in data['module_comm_failure_status']],
+            module_protection_status=[AlarmStatus[status] for status in data['module_protection_status']],
+            module_fan_status=[AlarmStatus[status] for status in data['module_fan_status']]
+        )
 @dataclass
 class ControlRectModule:
     """遥控整流模块类"""
@@ -525,6 +621,13 @@ class ControlRectModule:
             "control_value": self.control_value
         }
 
+    @classmethod
+    def from_dict(cls, data):
+        return cls(
+            module_id=data['module_id'],
+            control_type=RectModuleControlType[data['control_type']],
+            control_value=data['control_value']
+        )
 @dataclass  
 class DcAnalogData:
     """直流模拟量数据类"""
@@ -659,7 +762,44 @@ class DcAnalogData:
             "load_energy_3": self.load_energy_3,  
             "load_energy_4": self.load_energy_4
         }
-        
+
+    @classmethod
+    def from_dict(cls, data):
+        return cls(
+            data_flag=DataFlag.NORMAL,
+            dc_voltage=data['dc_voltage'],
+            total_load_current=data['total_load_current'],
+            battery_group_count=data['battery_group_count'],
+            battery_group_1_number=data['battery_group_1_number'],
+            battery_group_1_current=data['battery_group_1_current'],
+            load_branch_count=data['load_branch_count'],
+            load_branch_1_current=data['load_branch_1_current'],
+            load_branch_2_current=data['load_branch_2_current'],
+            load_branch_3_current=data['load_branch_3_current'],
+            load_branch_4_current=data['load_branch_4_current'],
+            user_defined_params_count=data['user_defined_params_count'],
+            battery_total_current=data['battery_total_current'],
+            battery_group_1_capacity=data['battery_group_1_capacity'],
+            battery_group_1_voltage=data['battery_group_1_voltage'],
+            battery_group_1_mid_voltage=data['battery_group_1_mid_voltage'],
+            battery_group_2_mid_voltage=data['battery_group_2_mid_voltage'],
+            battery_group_3_mid_voltage=data['battery_group_3_mid_voltage'],
+            battery_group_4_mid_voltage=data['battery_group_4_mid_voltage'],
+            battery_group_1_temperature=data['battery_group_1_temperature'],
+            env_temp_1=data['env_temp_1'],
+            env_temp_2=data['env_temp_2'],
+            env_humidity_1=data['env_humidity_1'],
+            total_load_power=data['total_load_power'],
+            load_power_1=data['load_power_1'],
+            load_power_2=data['load_power_2'],
+            load_power_3=data['load_power_3'],
+            load_power_4=data['load_power_4'],
+            total_load_energy=data['total_load_energy'],
+            load_energy_1=data['load_energy_1'],
+            load_energy_2=data['load_energy_2'],
+            load_energy_3=data['load_energy_3'],
+            load_energy_4=data['load_energy_4']
+        )        
 @dataclass    
 class DcAlarmStatus:
     """直流告警状态类"""
@@ -787,6 +927,41 @@ class DcAlarmStatus:
             "digital_input_status_6": self.digital_input_status_6.name
         }
 
+    @classmethod
+    def from_dict(cls, data):
+        return cls(
+            data_flag=DataFlag.NORMAL,
+            dc_voltage_status=VoltageStatus[data['dc_voltage_status']],
+            battery_fuse_count=data['battery_fuse_count'],
+            user_defined_params_count=data['user_defined_params_count'],
+            dc_arrester_status=AlarmStatus[data['dc_arrester_status']],
+            load_fuse_status=AlarmStatus[data['load_fuse_status']],
+            battery_group_1_fuse_status=AlarmStatus[data['battery_group_1_fuse_status']],
+            battery_group_2_fuse_status=AlarmStatus[data['battery_group_2_fuse_status']],
+            battery_group_3_fuse_status=AlarmStatus[data['battery_group_3_fuse_status']],
+            battery_group_4_fuse_status=AlarmStatus[data['battery_group_4_fuse_status']],
+            blvd_status=LVDStatus[data['blvd_status']],
+            llvd1_status=LVDStatus[data['llvd1_status']],
+            llvd2_status=LVDStatus[data['llvd2_status']],
+            llvd3_status=LVDStatus[data['llvd3_status']],
+            llvd4_status=LVDStatus[data['llvd4_status']],
+            battery_temp_status=TempStatus[data['battery_temp_status']],
+            battery_temp_sensor_1_status=SensorStatus[data['battery_temp_sensor_1_status']],
+            env_temp_status=TempStatus[data['env_temp_status']],
+            env_temp_sensor_1_status=SensorStatus[data['env_temp_sensor_1_status']],
+            env_temp_sensor_2_status=SensorStatus[data['env_temp_sensor_2_status']],
+            env_humidity_status=AlarmStatus[data['env_humidity_status']],
+            env_humidity_sensor_1_status=SensorStatus[data['env_humidity_sensor_1_status']],
+            door_status=AlarmStatus[data['door_status']],
+            water_status=AlarmStatus[data['water_status']],
+            smoke_status=AlarmStatus[data['smoke_status']],
+            digital_input_status_1=AlarmStatus[data['digital_input_status_1']],
+            digital_input_status_2=AlarmStatus[data['digital_input_status_2']],
+            digital_input_status_3=AlarmStatus[data['digital_input_status_3']],
+            digital_input_status_4=AlarmStatus[data['digital_input_status_4']],
+            digital_input_status_5=AlarmStatus[data['digital_input_status_5']],
+            digital_input_status_6=AlarmStatus[data['digital_input_status_6']]
+        )
 @dataclass
 class DcConfigParams:
     """直流配置参数类"""  
@@ -910,90 +1085,150 @@ class DcConfigParams:
             "load_off_mode": self.load_off_mode.name
         }
 
+    @classmethod
+    def from_dict(cls, data):
+        return cls(
+            dc_over_voltage=data['dc_over_voltage'],
+            dc_under_voltage=data['dc_under_voltage'],
+            time_equalize_charge_enable=EnableStatus[data['time_equalize_charge_enable']],
+            time_equalize_duration=data['time_equalize_duration'],
+            time_equalize_interval=data['time_equalize_interval'],
+            battery_group_number=data['battery_group_number'],
+            battery_over_temp=data['battery_over_temp'],
+            battery_under_temp=data['battery_under_temp'],
+            env_over_temp=data['env_over_temp'],
+            env_under_temp=data['env_under_temp'],
+            env_over_humidity=data['env_over_humidity'],
+            battery_charge_current_limit=data['battery_charge_current_limit'],
+            float_voltage=data['float_voltage'],
+            equalize_voltage=data['equalize_voltage'],
+            battery_off_voltage=data['battery_off_voltage'],
+            battery_on_voltage=data['battery_on_voltage'],
+            llvd1_off_voltage=data['llvd1_off_voltage'],
+            llvd1_on_voltage=data['llvd1_on_voltage'],
+            llvd2_off_voltage=data['llvd2_off_voltage'],
+            llvd2_on_voltage=data['llvd2_on_voltage'],
+            llvd3_off_voltage=data['llvd3_off_voltage'],
+            llvd3_on_voltage=data['llvd3_on_voltage'],
+            llvd4_off_voltage=data['llvd4_off_voltage'],
+            llvd4_on_voltage=data['llvd4_on_voltage'],
+            battery_capacity=data['battery_capacity'],
+            battery_test_stop_voltage=data['battery_test_stop_voltage'],
+            battery_temp_coeff=data['battery_temp_coeff'],
+            battery_temp_center=data['battery_temp_center'],
+            float_to_equalize_coeff=data['float_to_equalize_coeff'],
+            equalize_to_float_coeff=data['equalize_to_float_coeff'],
+            llvd1_off_time=data['llvd1_off_time'],
+            llvd2_off_time=data['llvd2_off_time'],
+            llvd3_off_time=data['llvd3_off_time'],
+            llvd4_off_time=data['llvd4_off_time'],
+            load_off_mode=LoadOffMode[data['load_off_mode']]
+        )
+    
 @dataclass
 class SystemControlState:
-   """系统控制状态类"""
-   def __init__(self, state: SystemControlStateModel):  
-       self.state = state   # 系统控制状态,1字节
-   
-   def to_bytes(self):
-       return struct.pack('<B', self.state.value)
-       
-   @classmethod
-   def from_bytes(cls, data):
-       state, = struct.unpack('<B', data)  
-       return cls(SystemControlStateModel(state))
+    """系统控制状态类"""
+    def __init__(self, state: SystemControlStateModel):  
+        self.state = state   # 系统控制状态,1字节
+    
+    def to_bytes(self):
+        return struct.pack('<B', self.state.value)
+        
+    @classmethod
+    def from_bytes(cls, data):
+        state, = struct.unpack('<B', data)  
+        return cls(SystemControlStateModel(state))
 
-   def to_dict(self):
-       return {
-           "system_control_state": self.state.name
-       }
+    def to_dict(self):
+        return {
+            "system_control_state": self.state.name
+        }
+
+    @classmethod
+    def from_dict(cls, data):
+        return cls(state=SystemControlStateModel[data['system_control_state']])
 
 @dataclass
 class AlarmSoundEnable:
-   """告警音使能控制类"""
-   def __init__(self, enable: EnableStatus):
-       self.enable = enable   # 告警音使能,1字节  
-   
-   def to_bytes(self):
-       return struct.pack('<B', self.enable.value)
-       
-   @classmethod  
-   def from_bytes(cls, data):
-       enable, = struct.unpack('<B', data)
-       return cls(EnableStatus(enable))
+    """告警音使能控制类"""
+    def __init__(self, enable: EnableStatus):
+        self.enable = enable   # 告警音使能,1字节  
+    
+    def to_bytes(self):
+        return struct.pack('<B', self.enable.value)
+        
+    @classmethod  
+    def from_bytes(cls, data):
+        enable, = struct.unpack('<B', data)
+        return cls(EnableStatus(enable))
 
-   def to_dict(self):
-       return {
-           "enable": self.enable.name
-       }
+    def to_dict(self):
+        return {
+            "enable": self.enable.name
+        }
 
+    @classmethod
+    def from_dict(cls, data):
+        return cls(enable=EnableStatus[data['enable']])
 @dataclass
 class EnergyParams:
-   """节能参数类"""
-   def __init__(self, energy_saving: EnableStatus, min_working_modules: int, module_switch_cycle: int,
-                module_best_efficiency_point: int, module_redundancy_point: int):
-       self.energy_saving = energy_saving   # 节能允许,1字节,0:使能,1:禁止  
-       self.min_working_modules = min_working_modules   # 最小工作模块数,1字节
-       self.module_switch_cycle = module_switch_cycle   # 模块循环开关周期,2字节
-       self.module_best_efficiency_point = module_best_efficiency_point   # 模块最佳效率点,1字节
-       self.module_redundancy_point = module_redundancy_point   # 模块冗余点,1字节
-   
-   def to_bytes(self):
-       return struct.pack('<BBHBB', self.energy_saving.value, self.min_working_modules, self.module_switch_cycle,
-                          self.module_best_efficiency_point, self.module_redundancy_point)
-       
-   @classmethod
-   def from_bytes(cls, data):
-       (energy_saving, min_working_modules, module_switch_cycle,   
-        module_best_efficiency_point, module_redundancy_point) = struct.unpack('<BBHBB', data)
-       return cls(EnableStatus(energy_saving), min_working_modules, module_switch_cycle,
-                  module_best_efficiency_point, module_redundancy_point)
+    """节能参数类"""
+    def __init__(self, energy_saving: EnableStatus, min_working_modules: int, module_switch_cycle: int,
+                    module_best_efficiency_point: int, module_redundancy_point: int):
+        self.energy_saving = energy_saving   # 节能允许,1字节,0:使能,1:禁止  
+        self.min_working_modules = min_working_modules   # 最小工作模块数,1字节
+        self.module_switch_cycle = module_switch_cycle   # 模块循环开关周期,2字节
+        self.module_best_efficiency_point = module_best_efficiency_point   # 模块最佳效率点,1字节
+        self.module_redundancy_point = module_redundancy_point   # 模块冗余点,1字节
+    
+    def to_bytes(self):
+        return struct.pack('<BBHBB', self.energy_saving.value, self.min_working_modules, self.module_switch_cycle,
+                            self.module_best_efficiency_point, self.module_redundancy_point)
+        
+    @classmethod
+    def from_bytes(cls, data):
+        (energy_saving, min_working_modules, module_switch_cycle,   
+            module_best_efficiency_point, module_redundancy_point) = struct.unpack('<BBHBB', data)
+        return cls(EnableStatus(energy_saving), min_working_modules, module_switch_cycle,
+                    module_best_efficiency_point, module_redundancy_point)
 
-   def to_dict(self):
-       return {
-           "energy_saving": self.energy_saving.name,
-           "min_working_modules": self.min_working_modules,
-           "module_switch_cycle": self.module_switch_cycle,
-           "module_best_efficiency_point": self.module_best_efficiency_point,
-           "module_redundancy_point": self.module_redundancy_point
-       }
-   
+    def to_dict(self):
+        return {
+            "energy_saving": self.energy_saving.name,
+            "min_working_modules": self.min_working_modules,
+            "module_switch_cycle": self.module_switch_cycle,
+            "module_best_efficiency_point": self.module_best_efficiency_point,
+            "module_redundancy_point": self.module_redundancy_point
+        }
+
+    @classmethod
+    def from_dict(cls, data):
+        return cls(
+            energy_saving=EnableStatus[data['energy_saving']],
+            min_working_modules=data['min_working_modules'],
+            module_switch_cycle=data['module_switch_cycle'],
+            module_best_efficiency_point=data['module_best_efficiency_point'],
+            module_redundancy_point=data['module_redundancy_point']
+        )   
 @dataclass
 class SystemControl:
-   """系统控制类"""
-   def __init__(self, control_type: SystemControlType):
-       self.control_type = control_type   # 控制类型,1字节
-   
-   def to_bytes(self):
-       return struct.pack('<B', self.control_type.value)
-       
-   @classmethod
-   def from_bytes(cls, data):
-       control_type, = struct.unpack('<B', data)
-       return cls(SystemControlType(control_type))
+    """系统控制类"""
+    def __init__(self, control_type: SystemControlType):
+        self.control_type = control_type   # 控制类型,1字节
+    
+    def to_bytes(self):
+        return struct.pack('<B', self.control_type.value)
+        
+    @classmethod
+    def from_bytes(cls, data):
+        control_type, = struct.unpack('<B', data)
+        return cls(SystemControlType(control_type))
 
-   def to_dict(self):
-       return {
-           "control_type": self.control_type.name  
-       }
+    def to_dict(self):
+        return {
+            "control_type": self.control_type.name  
+        }
+
+    @classmethod
+    def from_dict(cls, data):
+        return cls(control_type=SystemControlType[data['control_type']])

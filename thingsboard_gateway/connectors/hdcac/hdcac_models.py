@@ -1,8 +1,9 @@
 from enum import Enum
-import struct  
+import struct
 from dataclasses import dataclass
 import datetime
 import logging
+from typing import Dict
 
 # 日志配置
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(name)s %(levelname)s %(message)s')
@@ -87,6 +88,16 @@ class AcAnalogData:
             "current": self.current
         }
         
+    @classmethod
+    def from_dict(cls, data: Dict):
+        return cls(
+            data_flag=DataFlag.NORMAL,
+            cabinet_temp=data["cabinet_temp"],
+            supply_temp=data["supply_temp"],
+            voltage=data["voltage"],
+            current=data["current"]
+        )
+
 @dataclass    
 class AcAlarmStatus:
     """空调告警状态类"""
@@ -132,6 +143,20 @@ class AcAlarmStatus:
             "under_voltage": self.under_voltage.name,
             "reserved": self.reserved.name  
         }
+        
+    @classmethod
+    def from_dict(cls, data: Dict):
+        return cls(
+            data_flag=DataFlag.NORMAL,
+            compressor_alarm=AlarmStatus[data["compressor_alarm"]],
+            high_temp=AlarmStatus[data["high_temp"]],
+            low_temp=AlarmStatus[data["low_temp"]],
+            heater_alarm=AlarmStatus[data["heater_alarm"]],
+            sensor_fault=AlarmStatus[data["sensor_fault"]],
+            over_voltage=AlarmStatus[data["over_voltage"]],
+            under_voltage=AlarmStatus[data["under_voltage"]],
+            reserved=AlarmStatus[data["reserved"]]
+        )
 
 @dataclass
 class AcRunStatus:
@@ -160,6 +185,15 @@ class AcRunStatus:
             "outdoor_fan": self.outdoor_fan.name,
             "heater": self.heater.name
         }
+        
+    @classmethod
+    def from_dict(cls, data: Dict):
+        return cls(
+            air_conditioner=SwitchStatus[data["air_conditioner"]],
+            indoor_fan=SwitchStatus[data["indoor_fan"]],
+            outdoor_fan=SwitchStatus[data["outdoor_fan"]],
+            heater=SwitchStatus[data["heater"]]
+        )
         
 @dataclass
 class AcConfigParams:
@@ -193,6 +227,17 @@ class AcConfigParams:
            "high_temp_alarm": self.high_temp_alarm,
            "low_temp_alarm": self.low_temp_alarm
        }
+       
+   @classmethod
+   def from_dict(cls, data: Dict):
+       return cls(
+           start_temp=data["start_temp"],
+           temp_hysteresis=data["temp_hysteresis"],
+           heater_start_temp=data["heater_start_temp"],
+           heater_hysteresis=data["heater_hysteresis"],
+           high_temp_alarm=data["high_temp_alarm"],
+           low_temp_alarm=data["low_temp_alarm"]
+       )
 
 @dataclass
 class RemoteControl:
@@ -210,6 +255,10 @@ class RemoteControl:
 
    def to_dict(self):
        return {"command": self.command.name}
+       
+   @classmethod
+   def from_dict(cls, data: Dict):
+       return cls(RemoteCommand[data["command"]])
 
 @dataclass  
 class DateTime:
@@ -243,6 +292,17 @@ class DateTime:
             "minute": self.minute,
             "second": self.second
         }
+        
+    @classmethod
+    def from_dict(cls, data: Dict):
+        return cls(
+            year=data["year"],
+            month=data["month"],
+            day=data["day"],
+            hour=data["hour"],
+            minute=data["minute"],
+            second=data["second"]
+        )
 
 @dataclass
 class ConfigParam:
@@ -255,9 +315,9 @@ class ConfigParam:
         return struct.pack('<Bh', self.param_type.value, self.param_value)
 
     @classmethod    
-    def from_bytes(cls, data):
-        param_type, param_value = struct.unpack('<Bh', data)
-        return cls(ConfigParamType(param_type), param_value)
+    def from_bytes(cls,data):
+       param_type, param_value = struct.unpack('<Bh', data)
+       return cls(ConfigParamType(param_type), param_value)
 
     def to_dict(self):
         return {
@@ -265,86 +325,116 @@ class ConfigParam:
             "param_value": self.param_value
         }
         
+    @classmethod
+    def from_dict(cls, data: Dict):
+        return cls(
+            param_type=ConfigParamType[data["param_type"]],
+            param_value=data["param_value"]
+        )
+       
 @dataclass
 class DeviceAddress:
-    """设备地址类"""
-    def __init__(self, address: int):
-        self.address = address  # 新设备地址,1字节
+   """设备地址类"""
+   def __init__(self, address: int):
+       self.address = address  # 新设备地址,1字节
 
-    def to_bytes(self):
-        return struct.pack('<B', self.address)
+   def to_bytes(self):
+       return struct.pack('<B', self.address)
 
-    @classmethod
-    def from_bytes(cls, data):
-        address, = struct.unpack('<B', data) 
-        return cls(address)
+   @classmethod
+   def from_bytes(cls, data):
+       address, = struct.unpack('<B', data) 
+       return cls(address)
 
-    def to_dict(self):
-        return {"address": self.address}
+   def to_dict(self):
+       return {"address": self.address}
+       
+   @classmethod
+   def from_dict(cls, data: Dict):
+       return cls(address=data["address"])
 
 @dataclass
 class ProtocolVersion:
-    """通信协议版本号类"""
-    def __init__(self, version: str):
-        self.version = version
+   """通信协议版本号类"""
+   def __init__(self, version: str):
+       self.version = version
 
-    def to_bytes(self):
-        return self.version.encode('ascii')
+   def to_bytes(self):
+       return self.version.encode('ascii')
 
-    @classmethod
-    def from_bytes(cls, data):
-        version = data.decode('ascii')
-        return cls(version)
+   @classmethod
+   def from_bytes(cls, data):
+       version = data.decode('ascii')
+       return cls(version)
 
-    def to_dict(self):
-        return {"protocol_version": self.version} 
+   def to_dict(self):
+       return {"protocol_version": self.version} 
+       
+   @classmethod
+   def from_dict(cls, data: Dict):
+       return cls(version=data["protocol_version"])
 
 @dataclass
 class SoftwareVersion():
-    """软件版本信息类"""
-    def __init__(self, major: int, minor: int):
-        self.major = major  # 主版本号,1字节
-        self.minor = minor  # 次版本号,1字节
+   """软件版本信息类"""
+   def __init__(self, major: int, minor: int):
+       self.major = major  # 主版本号,1字节
+       self.minor = minor  # 次版本号,1字节
 
-    def to_bytes(self):
-        return struct.pack('BB', self.major, self.minor)
+   def to_bytes(self):
+       return struct.pack('BB', self.major, self.minor)
 
-    @classmethod
-    def from_bytes(cls, data):
-        major, minor = struct.unpack('BB', data)
-        return cls(major, minor)
+   @classmethod
+   def from_bytes(cls, data):
+       major, minor = struct.unpack('BB', data)
+       return cls(major, minor)
 
-    def to_dict(self):
-        return {"major": self.major, "minor": self.minor}
-    
-    def __str__(self):
-        return f"{self.major}.{self.minor}"
-    
+   def to_dict(self):
+       return {"major": self.major, "minor": self.minor}
+   
+   def __str__(self):
+       return f"{self.major}.{self.minor}"
+   
+   @classmethod
+   def from_dict(cls, data: Dict):
+       return cls(
+           major=data["major"],
+           minor=data["minor"]
+       )
+       
 @dataclass
 class ManufacturerInfo:
-    """设备厂商信息类"""
-    def __init__(self, device_name: str, software_version: SoftwareVersion, manufacturer: str):
-        self.device_name = device_name    # 设备名称,10字节
-        self.software_version = software_version  # 厂商软件版本,2字节
-        self.manufacturer = manufacturer    # 厂商名称,20字节
+   """设备厂商信息类"""
+   def __init__(self, device_name: str, software_version: SoftwareVersion, manufacturer: str):
+       self.device_name = device_name    # 设备名称,10字节
+       self.software_version = software_version  # 厂商软件版本,2字节
+       self.manufacturer = manufacturer    # 厂商名称,20字节
 
-    def to_bytes(self):
-        data = bytearray()
-        data.extend((self.device_name.encode('ascii')[:10]).ljust(10, b'\x00'))
-        data.extend(self.software_version.to_bytes())
-        data.extend((self.manufacturer.encode('ascii')[:20]).ljust(20, b'\x00'))
-        return bytes(data)
+   def to_bytes(self):
+       data = bytearray()
+       data.extend((self.device_name.encode('ascii')[:10]).ljust(10, b'\x00'))
+       data.extend(self.software_version.to_bytes())
+       data.extend((self.manufacturer.encode('ascii')[:20]).ljust(20, b'\x00'))
+       return bytes(data)
 
-    @classmethod
-    def from_bytes(cls, data):
-        collector_name = data[:10].decode('ascii').rstrip('\x00') 
-        software_version =SoftwareVersion.from_bytes(data[10:12])
-        manufacturer = data[12:32].decode('ascii').rstrip('\x00')
-        return cls(collector_name, software_version, manufacturer)
+   @classmethod
+   def from_bytes(cls, data):
+       collector_name = data[:10].decode('ascii').rstrip('\x00') 
+       software_version =SoftwareVersion.from_bytes(data[10:12])
+       manufacturer = data[12:32].decode('ascii').rstrip('\x00')
+       return cls(collector_name, software_version, manufacturer)
 
-    def to_dict(self):
-        return {
-            "collector_name": self.device_name,
-            "software_version": self.software_version.to_dict(),
-            "manufacturer": self.manufacturer
-        }
+   def to_dict(self):
+       return {
+           "collector_name": self.device_name,
+           "software_version": self.software_version.to_dict(),
+           "manufacturer": self.manufacturer
+       }
+       
+   @classmethod
+   def from_dict(cls, data: Dict):
+       return cls(
+           device_name=data["collector_name"],
+           software_version=SoftwareVersion.from_dict(data["software_version"]),
+           manufacturer=data["manufacturer"]
+       )

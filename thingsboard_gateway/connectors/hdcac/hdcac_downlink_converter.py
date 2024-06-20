@@ -8,7 +8,30 @@ class HdcAcDownlinkConverter(Converter):
         self._config = config
         self._log = log
 
+    @property
+    def model_mapping(self):
+        return {
+            'remoteControl': RemoteControl,
+            'setDateTime': DateTime,
+            'setAcConfigParams': ConfigParam,
+            'setDeviceAddress': DeviceAddress
+        }
+
     @StatisticsService.CollectStatistics(start_stat_type='allReceivedBytesFromTB',
                                          end_stat_type='allBytesSentToDevices')
     def convert(self, config, data):
-        pass
+        if self.model_mapping.has_key(config['key']):
+            model_class = self.model_mapping.get(config['key'])
+            if model_class is None:
+                return None
+            if model_class:
+                if data is None:
+                    if config['key'].startswith('get'):
+                        return None
+                    else:
+                        raise ValueError(f"Command {config['key']} requires parameters but got None")
+                else:
+                    return model_class.from_dict(data)
+        else:
+            self._log.error(f"Unknown command key: {config['key']}")
+            raise Exception(f"Unknown command key: {config['key']}")
