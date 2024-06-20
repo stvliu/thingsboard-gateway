@@ -1,6 +1,8 @@
 import serial
 import time
 import logging
+import threading
+
 from thingsboard_gateway.connectors.ydt1363.exceptions import *
 from thingsboard_gateway.connectors.ydt1363.constants import *
 from thingsboard_gateway.connectors.ydt1363.frame_codec import *
@@ -18,6 +20,7 @@ class SerialLink:
         self.timeout = timeout
         self.reconnect_interval = reconnect_interval
         self._serial = None
+        self._lock = threading.Lock()  # 初始化锁
 
     def connect(self):
         try:
@@ -50,69 +53,79 @@ class SerialLink:
         self._serial.write(frame)
 
     def receive_frame(self, timeout:float =1):
-        logger.debug(f"Receiving frame")
-        
-        # 设置串口读取超时时间
-        self._serial.timeout = timeout
-        
-        while True:
-            try:
-                # Read SOI
-                soi = self._read_bytes(START_FLAG_LENGTH)
-                if len(soi) == 0:  # 超时,没有读取到数据
-                    continue
-                if soi[0] != SOI:
-                    logger.warning(f"Invalid SOI: {soi.hex()}, discarding frame")
-                    continue
+        with self._lock:
+            logger.debug(f"Receiving frame")
+            self._serial.timeout = timeout
+            retries = 0
+            max_retries = 3
+            while True:
+                try:
+                    soi = self._read_bytes(START_FLAG_LENGTH)
+                    if len(soi) == 0:  # 超时,没有读取到数据
+                        retries += 1
+                        if retries >= max_retries:
+                            raise ConnectionError("No data received from device")
+                        else:
+                            time.sleep(0.1)  # 等待一段时间再重试
+                            continue
+                    
+                    if soi[0] != SOI:
+                        logger.warning(f"Invalid SOI: {soi.hex()}, discarding frame")
+                        continue
+                    
+                    header = self._read_bytes(ADDRESS_LENGTH + CONTROL_CODE_LENGTH)
+                    if len(header) < ADDRESS_LENGTH + CONTROL_CODE_LENGTH:
+                        logger.warning(f"Incomplete header: {header.hex()}, discarding frame")
+                        continue
+                    
+                    length = self._read_bytes(DATA_LENGTH_LENGTH)
+                    if len(length) < DATA_LENGTH_LENGTH:
+                        logger.warning(f"Incomplete LENGTH: {length.hex()}, discarding frame")
+                        continue
+                    try:
+                        info_length = FrameCodec._decode_length(length)
+                    except ProtocolError as e:
+                        logger.warning(f"Error decoding frame length: {e}, discarding frame")
+                        continue
+                    
+                    info = self._read_bytes(info_length)
+                    if len(info) < info_length:
+                        logger.warning(f"Incomplete INFO: {info.hex()}, discarding frame")
+                        continue
+                    
+                    chksum = self._read_bytes(CHECKSUM_LENGTH)
+                    if len(chksum) < CHECKSUM_LENGTH:
+                        logger.warning(f"Incomplete CHKSUM: {chksum.hex()}, discarding frame")
+                        continue
+                    
+                    eoi = self._read_bytes(END_FLAG_LENGTH)
+                    if len(eoi) == 0:
+                        logger.warning("No EOI, discarding frame")
+                        continue
+                    if eoi[0] != EOI:
+                        logger.warning(f"Invalid EOI: {eoi.hex()}, discarding frame")
+                        continue
+                    
+                    frame = soi + header + length + info + chksum + eoi
+                    
+                    try:
+                        FrameCodec.validate_frame(frame)
+                    except ProtocolError as e:
+                        logger.warning(f"Invalid frame: {e}, discarding frame")
+                        continue
+                    
+                    logger.debug(f"Received frame: {frame.hex()}")
+                    return frame
                 
-                # Read VER, ADR, CID1, CID2
-                header = self._read_bytes(ADDRESS_LENGTH + CONTROL_CODE_LENGTH)
-                if len(header) < ADDRESS_LENGTH + CONTROL_CODE_LENGTH:
-                    logger.warning(f"Incomplete header: {header.hex()}, discarding frame")
-                    continue
-                
-                # Read LENGTH
-                length = self._read_bytes(DATA_LENGTH_LENGTH)
-                if len(length) < DATA_LENGTH_LENGTH:
-                    logger.warning(f"Incomplete LENGTH: {length.hex()}, discarding frame")
-                    continue
-                info_length = FrameCodec._decode_length(length)
-                
-                # Read INFO
-                info = self._read_bytes(info_length)
-                if len(info) < info_length:
-                    logger.warning(f"Incomplete INFO: {info.hex()}, discarding frame")
-                    continue
-                
-                # Read CHKSUM
-                chksum = self._read_bytes(CHECKSUM_LENGTH)
-                if len(chksum) < CHECKSUM_LENGTH:
-                    logger.warning(f"Incomplete CHKSUM: {chksum.hex()}, discarding frame")
-                    continue
-                
-                # Read EOI
-                eoi = self._read_bytes(END_FLAG_LENGTH)
-                if len(eoi) == 0:
-                    logger.warning("No EOI, discarding frame")
-                    continue
-                if eoi[0] != EOI:
-                    logger.warning(f"Invalid EOI: {eoi.hex()}, discarding frame")
-                    continue
-                
-                # Assemble the frame
-                frame = soi + header + length + info + chksum + eoi
-                
-                logger.debug(f"Received frame: {frame.hex()}")
-                return frame
-            
-            except serial.SerialException as e:
-                logger.error(f"Serial communication error: {e}")
-                time.sleep(self.reconnect_interval)
-                self._reconnect();
-                continue
-            except Exception as e:
-                logger.error(f"Unexpected error while receiving frame: {e}", exc_info=True)
-            time.sleep(0.1)
+                except serial.SerialException as e:
+                    logger.error(f"Serial communication error: {e}")
+                    self._reconnect()
+                except (ProtocolError, ConnectionError) as e:
+                    logger.error(f"Protocol or connection error: {e}")
+                    self._reconnect()
+                except Exception as e:
+                    logger.error(f"Unexpected error while receiving frame: {e}", exc_info=True)
+                time.sleep(0.1)
     
     def _write_bytes(self, bytes):
         self._serial.write(bytes)
