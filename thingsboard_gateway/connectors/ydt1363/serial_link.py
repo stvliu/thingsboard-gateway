@@ -120,9 +120,11 @@ class SerialLink:
                 except serial.SerialException as e:
                     logger.error(f"Serial communication error: {e}")
                     self._reconnect()
-                except (ProtocolError, ConnectionError) as e:
-                    logger.error(f"Protocol or connection error: {e}")
+                except ConnectionError as e:
+                    logger.error(f"Connection error: {e}")
                     self._reconnect()
+                except ProtocolError as e:
+                    logger.error(f"Protocol error: {e}")
                 except Exception as e:
                     logger.error(f"Unexpected error while receiving frame: {e}", exc_info=True)
                 time.sleep(0.1)

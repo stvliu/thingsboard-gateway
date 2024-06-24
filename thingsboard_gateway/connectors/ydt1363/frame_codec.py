@@ -28,7 +28,6 @@ class FrameCodec:
     @staticmethod
     def decode_frame(frame):
         logger.debug(f"Parsing frame: {frame.hex()}")
-        FrameCodec.validate_frame(frame)
         cid1 = f'0x{frame[CID1_INDEX]:02X}'
         logger.debug(f"cid1: {cid1}")
         cid2 = f'0x{frame[CID2_INDEX]:02X}'
