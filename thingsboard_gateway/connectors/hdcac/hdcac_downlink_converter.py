@@ -12,8 +12,11 @@ class HdcAcDownlinkConverter(Converter):
     def model_mapping(self):
         return {
             'remoteControl': RemoteControl,
-            'setDateTime': DateTime,
+            'getAcRunStatus': None,
+            'getAcConfigParams': None,
             'setAcConfigParams': ConfigParam,
+            'getDateTime': None,
+            'setDateTime': DateTime,
             'setDeviceAddress': DeviceAddress
         }
 

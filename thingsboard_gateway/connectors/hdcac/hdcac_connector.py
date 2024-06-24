@@ -38,6 +38,8 @@ class HdcAcConnector(Thread, Connector):
         self.__init_converters()
         self.__device_params_manager= DeviceParamsManager(log = self._log)
 
+        # self.__loop = asyncio.new_event_loop()
+
         self._log.info("[%s] HdcAc connector initialized.", self.get_name())
 
     def open(self):
@@ -127,17 +129,17 @@ class HdcAcConnector(Thread, Connector):
                 self._handle_unknown_rpc_method(device_name, rpc_method, rpc_id)
                 return
             
-            params = rpc_params
+            data = None
             # 补齐参数
-            if params:
+            if rpc_params:
                  # 更新参数
                 self.__device_params_manager.merge_params(device_name, self.__get_model_name(server_side_rpc_config), rpc_params)
                 # 获取已补齐参数
-                params = self.__device_params_manager.get_params(device_name,self.__get_model_name(server_side_rpc_config))
-            # 转换RPC数据
-            converted_data = self.__downlink_converter.convert(server_side_rpc_config, params)
+                merged_params = self.__device_params_manager.get_params(device_name,self.__get_model_name(server_side_rpc_config))
+                # 转换RPC数据
+                data = self.__downlink_converter.convert(server_side_rpc_config, merged_params)
             # 发送RPC命令
-            self._send_rpc_command(server_side_rpc_config, converted_data, device_name, rpc_method, rpc_data, rpc_id)
+            self._send_rpc_command(server_side_rpc_config, data, device_name, rpc_method, rpc_data, rpc_id)
         else:
             self._handle_invalid_rpc_request(server_rpc_request)
             return
