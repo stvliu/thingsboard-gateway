@@ -10,7 +10,7 @@ from serial_link import SerialLink
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(name)s %(levelname)s %(message)s')
 logger = logging.getLogger(__name__)
 
-DEFAULT_MODEL_PACKAGE = "hdcac_models"
+DEFAULT_MODEL_PACKAGE = "models"
 
 # 协议类
 class Ydt1363Protocol:
@@ -34,16 +34,16 @@ class Ydt1363Protocol:
     @property
     def device_addr(self):
         return self._device_addr
-    
+
     def connect(self):
         self._serial_link.connect()
-    
+
     def disconnect(self):
         self._serial_link.disconnect()
 
     def is_connected(self):
         return self._serial_link.is_connected()
-    
+
     def send_command(self, command_key, data=None):
         logger.debug(f"Sending command: {command_key}, data: {data}")
         command = self._commands.get_command_by_key(command_key)
@@ -53,15 +53,15 @@ class Ydt1363Protocol:
         request_frame = self._build_command_frame(command, data)
         # 发送请求帧
         self._send_frame(request_frame)
-        
+
         # 接收响应帧
         response_frame = self._receive_frame()
         if response_frame is None:
             raise ProtocolError(f"No response received for command: {command}")
-        
+
         # 解析响应数据
         response_data = self._decode_response_data(command, response_frame)
-        
+
         # 检查返回码
         rtn_code = response_frame[CID2_INDEX]
         if rtn_code == RTN_OK:
@@ -117,10 +117,10 @@ class Ydt1363Protocol:
         except ProtocolError as e:
             logger.error(f"Failed to send response: {e}", exc_info=True)
             raise RTNFormatError() from e
-    
+
     def _send_frame(self, frame):
         self._serial_link.send_frame(frame)
-    
+
     def _receive_frame(self):
         try:
             return self._serial_link.receive_frame()
@@ -169,11 +169,11 @@ class Ydt1363Protocol:
 
         # 返回构建好的命令帧
         return command_frame
-    
+
     def _encode_response_data(self, command, data):
         logger.debug(f"Encoding response data for {command}: {data}")
         logger.debug(f"Checking if command {command} has response_class")
-        if command.response_class:
+        if command.response_class and data:
             logger.debug(f"Command {command} has response_class: {command.response_class}")
             try:
                 logger.debug(f"Checking if data {data} is instance of {command.response_class}")
@@ -182,20 +182,20 @@ class Ydt1363Protocol:
                     response_data = data.to_bytes()
                 else:
                     logger.debug(f"Data {data} is not instance of {command.response_class}, encoding with data codec")
-                    response_data = self._data_codec.to_bytes(data)
-                
+                    response_data = self._data_codec.encode(data)
+
                 logger.debug(f"Checking if encoded response data is None")
                 if response_data is None:  # 添加检查
                     logger.error(f"Failed to encode response data: {data}", exc_info=True)
                     raise ProtocolError(f"Failed to encode response data: {data}")
-                
+
             except Exception as e:
                 logger.error(f"Error encoding response data: {e}", exc_info=True)
                 raise ProtocolError(f"Error encoding response data: {e}")
         else:
-            logger.debug(f"Command {command} does not have response_class, setting response_data to empty bytes")
+            logger.debug(f"Command {command} does not have response_class or data is None, setting response_data to empty bytes")
             response_data = b''
-            
+
         logger.debug(f"Encoded response data: {response_data.hex()}")
         return response_data
 
@@ -213,7 +213,7 @@ class Ydt1363Protocol:
             request_data = {}
         logger.debug(f"Decoded command data: {request_data}")
         return request_data
-    
+
     def _decode_response_data(self, command, response_frame):
         logger.debug(f"Decoding response data for {command}: {response_frame.hex()}")
         if command.response_class:
@@ -227,7 +227,7 @@ class Ydt1363Protocol:
             response_data = {}
         logger.debug(f"Decoded response data: {response_data}")
         return response_data
-    
+
     def _send_error_response(self, rtn_code):
         """
         发送错误响应。
@@ -269,7 +269,7 @@ class Ydt1363Protocol:
 
     def _is_unidirectional_command(self, command):
         return command.response_type is None
-    
+
 # 命令类        
 class Command:
     def __init__(self, cid1, cid2, key, name, request_class, response_class):
