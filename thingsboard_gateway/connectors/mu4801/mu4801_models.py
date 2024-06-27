@@ -1,3 +1,13 @@
+"""
+mu4801_models.py
+
+此模块包含 MU4801 协议的数据模型。它定义了各种类，这些类代表协议中使用的不同类型的数据结构，包括
+配置参数、模拟数据、警报状态和控制命令。
+
+每个类都提供序列化（to_bytes）和反序列化（from_bytes）的方法以及与字典格式（to_dict 和 from_dict）之间的转换。
+
+这些模型用于在与 MU4801 设备通信时对数据进行编码和解码。
+"""
 import struct
 from enum import Enum
 from typing import List, Dict, Any, Set
@@ -6,116 +16,139 @@ import logging
 logging.basicConfig(level=logging.DEBUG)
 
 # 常量定义
-COLLECTOR_NAME_LENGTH = 10
-MANUFACTURER_NAME_LENGTH = 20
-AC_RESERVED_PARAMS_COUNT = 30
-RECT_MODULE_RESERVED_PARAMS_COUNT = 7
-DC_USER_DEFINED_PARAMS_COUNT = 55
-BATTERY_GROUP_COUNT = 6
-LOAD_BRANCH_COUNT = 4
-ENV_TEMP_COUNT = 3
-ENV_HUMIDITY_COUNT = 3
+COLLECTOR_NAME_LENGTH = 10  # 采集器名称长度
+MANUFACTURER_NAME_LENGTH = 20  # 制造商名称长度
+AC_RESERVED_PARAMS_COUNT = 30  # 交流预留参数数量
+RECT_MODULE_RESERVED_PARAMS_COUNT = 7  # 整流模块预留参数数量
+DC_USER_DEFINED_PARAMS_COUNT = 55  # 直流用户自定义参数数量
+BATTERY_GROUP_COUNT = 6  # 电池组数量
+LOAD_BRANCH_COUNT = 4  # 负载分支数量
+ENV_TEMP_COUNT = 3  # 环境温度传感器数量
+ENV_HUMIDITY_COUNT = 3  # 环境湿度传感器数量
 
 # 固定值常量
-DEFAULT_FLOAT_VALUE = 0.0
-DEFAULT_INT_VALUE = 0
-DEFAULT_BATTERY_GROUP_COUNT = 1
-DEFAULT_LOAD_BRANCH_COUNT = 4
+DEFAULT_FLOAT_VALUE = 0.0  # 默认浮点值
+DEFAULT_INT_VALUE = 0  # 默认整数值
+DEFAULT_BATTERY_GROUP_COUNT = 1  # 默认电池组数量
+DEFAULT_LOAD_BRANCH_COUNT = 4  # 默认负载分支数量
 
 class DataFlag(Enum):
-    NORMAL = 0
+    """数据标志枚举"""
+    NORMAL = 0  # 正常
 
 class AlarmStatus(Enum):
-    NORMAL = 0
-    ALARM = 0x81
+    """告警状态枚举"""
+    NORMAL = 0  # 正常
+    ALARM = 0x81  # 告警
 
 class SwitchStatus(Enum):
-    ON = 0
-    OFF = 1
+    """开关状态枚举"""
+    ON = 0  # 开
+    OFF = 1  # 关
 
 class EnableStatus(Enum):
-    ENABLE = 0xE0
-    DISABLE = 0xE1
+    """使能状态枚举"""
+    ENABLE = 0xE0  # 使能
+    DISABLE = 0xE1  # 禁止
 
 class LoadOffMode(Enum):
-    VOLTAGE = 0
-    TIME = 1
+    """负载下电模式枚举"""
+    VOLTAGE = 0  # 电压模式
+    TIME = 1  # 时间模式
 
 class RectModuleControlType(Enum):
-    ON = 0x20
-    OFF = 0x2F
+    """整流模块控制类型枚举"""
+    ON = 0x20  # 开机
+    OFF = 0x2F  # 关机
 
 class SystemControlStateModel(Enum):
-    AUTO = 0xE0
-    MANUAL = 0xE1
+    """系统控制状态模型枚举"""
+    AUTO = 0xE0  # 自动控制状态
+    MANUAL = 0xE1  # 手动控制状态
 
 class SystemControlType(Enum):
-    RESET = 0xE1
-    LOAD1_OFF = 0xE5
-    LOAD1_ON = 0xE6
-    LOAD2_OFF = 0xE7
-    LOAD2_ON = 0xE8
-    LOAD3_OFF = 0xE9
-    LOAD3_ON = 0xEA
-    LOAD4_OFF = 0xEB
-    LOAD4_ON = 0xEC
-    BATTERY_OFF = 0xED
-    BATTERY_ON = 0xEE
+    """系统控制类型枚举"""
+    RESET = 0xE1  # 系统复位
+    LOAD1_OFF = 0xE5  # 负载1下电
+    LOAD1_ON = 0xE6  # 负载1上电
+    LOAD2_OFF = 0xE7  # 负载2下电
+    LOAD2_ON = 0xE8  # 负载2上电
+    LOAD3_OFF = 0xE9  # 负载3下电
+    LOAD3_ON = 0xEA  # 负载3上电
+    LOAD4_OFF = 0xEB  # 负载4下电
+    LOAD4_ON = 0xEC  # 负载4上电
+    BATTERY_OFF = 0xED  # 电池下电
+    BATTERY_ON = 0xEE  # 电池上电
 
 class VoltageStatus(Enum):
-    NORMAL = 0
-    UNDER = 1
-    OVER = 2
+    """电压状态枚举"""
+    NORMAL = 0  # 正常
+    UNDER = 1  # 欠压
+    OVER = 2  # 过压
 
 class FrequencyStatus(Enum):
-    NORMAL = 0
-    UNDER = 1
-    OVER = 2
+    """频率状态枚举"""
+    NORMAL = 0  # 正常
+    UNDER = 1  # 过低
+    OVER = 2  # 过高
 
 class TempStatus(Enum):
-    NORMAL = 0
-    OVER = 0xB0
-    UNDER = 0xB1
+    """温度状态枚举"""
+    NORMAL = 0  # 正常
+    OVER = 0xB0  # 过温
+    UNDER = 0xB1  # 欠温
 
 class SensorStatus(Enum):
-    NORMAL = 0
-    BREAK = 0xB2
-    FAULT = 0xB3
+    """传感器状态枚举"""
+    NORMAL = 0  # 正常
+    BREAK = 0xB2  # 未接
+    FAULT = 0xB3  # 故障
 
 class LVDStatus(Enum):
-    NORMAL = 0
-    IMPENDING = 1
-    OFF = 2
+    """LVD状态枚举"""
+    NORMAL = 0  # 正常
+    IMPENDING = 1  # 即将下电
+    OFF = 2  # 下电
 
 class ChargeStatus(Enum):
-    FLOAT = 0
-    EQUALIZE = 1
-    TEST = 2
+    """充电状态枚举"""
+    FLOAT = 0  # 浮充
+    EQUALIZE = 1  # 均充
+    TEST = 2  # 测试
 
 class BaseModel:
-    _supported_fields: Set[str] = set()
-    _unsupported_fields: Dict[str, Any] = {}
-    _fixed_fields: Dict[str, Any] = {}
+    """基础模型类"""
+    _supported_fields: Set[str] = set()  # 支持的字段集合
+    _unsupported_fields: Dict[str, Any] = {}  # 不支持的字段字典
+    _fixed_fields: Dict[str, Any] = {}  # 固定字段字典
+
+    def __init__(self):
+        self._init_unsupported_fields()
+        self._init_fixed_fields()
 
     def _init_unsupported_fields(self):
+        """初始化不支持的字段"""
         for field, default_value in self._unsupported_fields.items():
             setattr(self, field, default_value)
 
     def _init_fixed_fields(self):
+        """初始化固定字段"""
         for field, default_value in self._fixed_fields.items():
             setattr(self, field, default_value)
 
     def to_dict(self):
+        """将对象转换为字典"""
         return {
             k: v.name if isinstance(v, Enum) else
             [item.name for item in v] if isinstance(v, list) and v and isinstance(v[0], Enum) else
             v
             for k, v in self.__dict__.items()
-            if k in self._supported_fields and k not in self._fixed_fields
+            if k in self._supported_fields or k in self._fixed_fields
         }
 
     @classmethod
     def from_dict(cls, data):
+        """从字典创建对象"""
         instance = cls()
         for k, v in data.items():
             if k in cls._supported_fields and k not in cls._fixed_fields:
@@ -124,26 +157,30 @@ class BaseModel:
         instance._init_fixed_fields()
         return instance
 
-
     def to_bytes(self):
+        """将对象转换为字节串"""
         raise NotImplementedError("Subclasses must implement to_bytes method")
 
     @classmethod
     def from_bytes(cls, data):
+        """从字节串创建对象"""
         raise NotImplementedError("Subclasses must implement from_bytes method")
 
 @dataclass
 class DateTime(BaseModel):
+    """日期时间类"""
     _supported_fields = {'year', 'month', 'day', 'hour', 'minute', 'second'}
 
     def __init__(self, year: int = DEFAULT_INT_VALUE, month: int = 1, day: int = 1,
                  hour: int = DEFAULT_INT_VALUE, minute: int = DEFAULT_INT_VALUE, second: int = DEFAULT_INT_VALUE):
-        self.year = year
-        self.month = month
-        self.day = day
-        self.hour = hour
-        self.minute = minute
-        self.second = second
+        self.year = year  # 年
+        self.month = month  # 月
+        self.day = day  # 日
+        self.hour = hour  # 时
+        self.minute = minute  # 分
+        self.second = second  # 秒
+        super().__init__()  # 调用父类的__init__方法来初始化unsupported和fixed字段
+
 
     def to_bytes(self):
         return struct.pack('>HBBBBB', self.year, self.month, self.day, self.hour, self.minute, self.second)
@@ -157,10 +194,12 @@ class DateTime(BaseModel):
 
 @dataclass
 class ProtocolVersion(BaseModel):
+    """协议版本类"""
     _supported_fields = {'version'}
 
     def __init__(self, version: str = 'V2.1'):
-        self.version = version
+        self.version = version  # 协议版本
+        super().__init__()  # 调用父类的__init__方法来初始化unsupported和fixed字段
 
     def to_bytes(self):
         return self.version.encode('ascii')
@@ -171,10 +210,12 @@ class ProtocolVersion(BaseModel):
 
 @dataclass
 class DeviceAddress(BaseModel):
+    """设备地址类"""
     _supported_fields = {'address'}
 
     def __init__(self, address: int = DEFAULT_INT_VALUE):
-        self.address = address
+        self.address = address  # 设备地址
+        super().__init__()  # 调用父类的__init__方法来初始化unsupported和fixed字段
 
     def to_bytes(self):
         return struct.pack('B', self.address)
@@ -185,11 +226,13 @@ class DeviceAddress(BaseModel):
 
 @dataclass
 class SoftwareVersion(BaseModel):
+    """软件版本类"""
     _supported_fields = {'major', 'minor'}
 
     def __init__(self, major: int = 1, minor: int = DEFAULT_INT_VALUE):
-        self.major = major
-        self.minor = minor
+        self.major = major  # 主版本号
+        self.minor = minor  # 次版本号
+        super().__init__()  # 调用父类的__init__方法来初始化unsupported和fixed字段
 
     def to_bytes(self):
         return struct.pack('BB', self.major, self.minor)
@@ -203,12 +246,14 @@ class SoftwareVersion(BaseModel):
 
 @dataclass
 class ManufacturerInfo(BaseModel):
+    """制造商信息类"""
     _supported_fields = {'collector_name', 'software_version', 'manufacturer'}
 
     def __init__(self, collector_name: str = '', software_version: SoftwareVersion = None, manufacturer: str = ''):
-        self.collector_name = collector_name
-        self.software_version = software_version or SoftwareVersion()
-        self.manufacturer = manufacturer
+        self.collector_name = collector_name  # 采集器名称
+        self.software_version = software_version or SoftwareVersion()  # 软件版本
+        self.manufacturer = manufacturer  # 制造商
+        super().__init__()  # 调用父类的__init__方法来初始化unsupported和fixed字段
 
     def to_bytes(self):
         data = bytearray()
@@ -233,27 +278,32 @@ class ManufacturerInfo(BaseModel):
 
 @dataclass
 class AcAnalogData(BaseModel):
+    """交流模拟量数据类"""
     _supported_fields = {'input_voltage_ab_a', 'input_voltage_bc_b', 'input_voltage_ca_c', 'input_frequency'}
     _unsupported_fields = {
-        '_output_current_a': DEFAULT_FLOAT_VALUE,
-        '_output_current_b': DEFAULT_FLOAT_VALUE,
-        '_output_current_c': DEFAULT_FLOAT_VALUE,
-        '_reserved': [DEFAULT_FLOAT_VALUE] * AC_RESERVED_PARAMS_COUNT
+        '_output_current_a': DEFAULT_FLOAT_VALUE,  # 交流屏输出电流A (A)
+        '_output_current_b': DEFAULT_FLOAT_VALUE,  # 交流屏输出电流B (A)
+        '_output_current_c': DEFAULT_FLOAT_VALUE,  # 交流屏输出电流C (A)
+        '_reserved': [DEFAULT_FLOAT_VALUE] * AC_RESERVED_PARAMS_COUNT  # 预留参数
     }
-    _fixed_fields = {'data_flag': DataFlag.NORMAL, 'number_of_ac_inputs': 1, 'user_defined_params_count': AC_RESERVED_PARAMS_COUNT}
+    _fixed_fields = {
+        'data_flag': DataFlag.NORMAL,  # 数据标志，固定为正常
+        'number_of_ac_inputs': 1,  # 交流输入路数，固定为1
+        'user_defined_params_count': AC_RESERVED_PARAMS_COUNT  # 用户自定义参数数量，固定为AC_RESERVED_PARAMS_COUNT
+    }
 
     def __init__(self, input_voltage_ab_a: float = DEFAULT_FLOAT_VALUE,
                  input_voltage_bc_b: float = DEFAULT_FLOAT_VALUE,
                  input_voltage_ca_c: float = DEFAULT_FLOAT_VALUE,
                  input_frequency: float = DEFAULT_FLOAT_VALUE):
-        self.data_flag = DataFlag.NORMAL
-        self.number_of_ac_inputs = 1
-        self.input_voltage_ab_a = input_voltage_ab_a
-        self.input_voltage_bc_b = input_voltage_bc_b
-        self.input_voltage_ca_c = input_voltage_ca_c
-        self.input_frequency = input_frequency
-        self.user_defined_params_count = AC_RESERVED_PARAMS_COUNT
-        self._init_unsupported_fields()
+        self.data_flag = DataFlag.NORMAL  # 数据标志
+        self.number_of_ac_inputs = 1  # 交流输入路数
+        self.input_voltage_ab_a = input_voltage_ab_a  # 输入线/相电压 AB/A (V)
+        self.input_voltage_bc_b = input_voltage_bc_b  # 输入线/相电压 BC/B (V)
+        self.input_voltage_ca_c = input_voltage_ca_c  # 输入线/相电压 CA/C (V)
+        self.input_frequency = input_frequency  # 输入频率 (Hz)
+        self.user_defined_params_count = AC_RESERVED_PARAMS_COUNT  # 用户自定义数量P
+        super().__init__()  # 调用父类的__init__方法来初始化unsupported和fixed字段
 
     def to_bytes(self):
         return struct.pack('<BBffffB30ffff',
@@ -287,18 +337,24 @@ class AcAnalogData(BaseModel):
 
 @dataclass
 class AcAlarmStatus(BaseModel):
+    """交流告警状态类"""
     _supported_fields = {'input_voltage_ab_a_status', 'input_voltage_bc_b_status', 'input_voltage_ca_c_status',
                          'ac_arrester_status', 'ac_input_switch_status', 'ac_power_status'}
     _unsupported_fields = {
-        '_frequency_status': FrequencyStatus.NORMAL,
-        '_ac_comm_failure_status': AlarmStatus.NORMAL,
-        '_ac_output_switch_status': AlarmStatus.NORMAL,
-        '_reserved': [AlarmStatus.NORMAL] * 13,
-        '_input_current_a_status': AlarmStatus.NORMAL,
-        '_input_current_b_status': AlarmStatus.NORMAL,
-        '_input_current_c_status': AlarmStatus.NORMAL
+        '_frequency_status': FrequencyStatus.NORMAL,  # 频率状态
+        '_ac_comm_failure_status': AlarmStatus.NORMAL,  # 交流屏通讯中断状态
+        '_ac_output_switch_status': AlarmStatus.NORMAL,  # 交流输出空开跳状态
+        '_reserved': [AlarmStatus.NORMAL] * 13,  # 预留告警状态
+        '_input_current_a_status': AlarmStatus.NORMAL,  # A相输入电流状态
+        '_input_current_b_status': AlarmStatus.NORMAL,  # B相输入电流状态
+        '_input_current_c_status': AlarmStatus.NORMAL  # C相输入电流状态
     }
-    _fixed_fields = {'data_flag': DataFlag.NORMAL, 'number_of_inputs': 1, 'fuse_count': 0, 'user_defined_params_count': 18}
+    _fixed_fields = {
+        'data_flag': DataFlag.NORMAL,  # 数据标志，固定为正常
+        'number_of_inputs': 1,  # 交流输入路数，固定为1
+        'fuse_count': 0,  # 熔丝数量，固定为0
+        'user_defined_params_count': 18  # 用户自定义参数数量，固定为18
+    }
 
     def __init__(self, input_voltage_ab_a_status: VoltageStatus = VoltageStatus.NORMAL,
                  input_voltage_bc_b_status: VoltageStatus = VoltageStatus.NORMAL,
@@ -308,15 +364,15 @@ class AcAlarmStatus(BaseModel):
                  ac_power_status: AlarmStatus = AlarmStatus.NORMAL):
         self.data_flag = DataFlag.NORMAL
         self.number_of_inputs = 1
-        self.input_voltage_ab_a_status = input_voltage_ab_a_status
-        self.input_voltage_bc_b_status = input_voltage_bc_b_status
-        self.input_voltage_ca_c_status = input_voltage_ca_c_status
+        self.input_voltage_ab_a_status = input_voltage_ab_a_status  # 输入线/相电压AB/A状态
+        self.input_voltage_bc_b_status = input_voltage_bc_b_status  # 输入线/相电压BC/B状态
+        self.input_voltage_ca_c_status = input_voltage_ca_c_status  # 输入线/相电压CA/C状态
         self.fuse_count = 0
         self.user_defined_params_count = 18
-        self.ac_arrester_status = ac_arrester_status
-        self.ac_input_switch_status = ac_input_switch_status
-        self.ac_power_status = ac_power_status
-        self._init_unsupported_fields()
+        self.ac_arrester_status = ac_arrester_status  # 交流防雷器断状态
+        self.ac_input_switch_status = ac_input_switch_status  # 交流输入空开跳状态
+        self.ac_power_status = ac_power_status  # 交流第一路输入停电状态
+        super().__init__()  # 调用父类的__init__方法来初始化unsupported和fixed字段
 
     def to_bytes(self):
         return struct.pack('<BBBBBBBBBBBBBBBBBBBBBBBBBBBBB',
@@ -361,17 +417,18 @@ class AcAlarmStatus(BaseModel):
 
 @dataclass
 class AcConfigParams(BaseModel):
+    """交流配置参数类"""
     _supported_fields = {'ac_over_voltage', 'ac_under_voltage'}
     _unsupported_fields = {
-        '_ac_output_current_limit': DEFAULT_FLOAT_VALUE,
-        '_frequency_upper_limit': DEFAULT_FLOAT_VALUE,
-        '_frequency_lower_limit': DEFAULT_FLOAT_VALUE
+        '_ac_output_current_limit': DEFAULT_FLOAT_VALUE,  # 交流输出电流上限 (A)
+        '_frequency_upper_limit': DEFAULT_FLOAT_VALUE,  # 频率上限 (Hz)
+        '_frequency_lower_limit': DEFAULT_FLOAT_VALUE  # 频率下限 (Hz)
     }
 
     def __init__(self, ac_over_voltage: float = DEFAULT_FLOAT_VALUE, ac_under_voltage: float = DEFAULT_FLOAT_VALUE):
-        self.ac_over_voltage = ac_over_voltage
-        self.ac_under_voltage = ac_under_voltage
-        self._init_unsupported_fields()
+        self.ac_over_voltage = ac_over_voltage  # 交流输入线/相电压上限 (V)
+        self.ac_under_voltage = ac_under_voltage  # 交流输入线/相电压下限 (V)
+        super().__init__()  # 调用父类的__init__方法来初始化unsupported和fixed字段
 
     def to_bytes(self):
         return struct.pack('<fffff',
@@ -396,29 +453,30 @@ class AcConfigParams(BaseModel):
 
 @dataclass
 class RectAnalogData(BaseModel):
+    """整流模块模拟量数据类"""
     _supported_fields = {'output_voltage', 'module_count', 'module_currents', 'module_current_limit',
                          'module_voltage', 'module_temperature', 'module_input_voltage_ab'}
     _unsupported_fields = {
-        '_module_input_voltage_bc': [DEFAULT_FLOAT_VALUE] * BATTERY_GROUP_COUNT,
-        '_module_input_voltage_ca': [DEFAULT_FLOAT_VALUE] * BATTERY_GROUP_COUNT,
-        '_reserved': [DEFAULT_FLOAT_VALUE] * 7
+        '_module_input_voltage_bc': [DEFAULT_FLOAT_VALUE] * BATTERY_GROUP_COUNT,  # 交流输入三相电压BC (V)
+        '_module_input_voltage_ca': [DEFAULT_FLOAT_VALUE] * BATTERY_GROUP_COUNT,  # 交流输入三相电压CA (V)
+        '_reserved': [DEFAULT_FLOAT_VALUE] * 7  # 预留参数
     }
-    _fixed_fields = {'data_flag': DataFlag.NORMAL, 'user_defined_params_count': 13}
+    _fixed_fields = {'data_flag': DataFlag.NORMAL, 'user_defined_params_count': 13}  # 用户自定义参数数量，固定为13
 
     def __init__(self, output_voltage: float = DEFAULT_FLOAT_VALUE, module_count: int = DEFAULT_INT_VALUE,
                  module_currents: List[float] = None, module_current_limit: List[float] = None,
                  module_voltage: List[float] = None, module_temperature: List[float] = None,
                  module_input_voltage_ab: List[float] = None):
-        self.data_flag = DataFlag.NORMAL
-        self.output_voltage = output_voltage
-        self.module_count = module_count
-        self.module_currents = module_currents or []
-        self.module_current_limit = module_current_limit or []
-        self.module_voltage = module_voltage or []
-        self.module_temperature = module_temperature or []
-        self.module_input_voltage_ab = module_input_voltage_ab or []
+        self.data_flag = DataFlag.NORMAL  # 数据标志
+        self.output_voltage = output_voltage  # 整流模块输出电压 (V)
+        self.module_count = module_count  # 监控模块数量
+        self.module_currents = module_currents or []  # 整流模块输出电流 (A)
+        self.module_current_limit = module_current_limit or []  # 模块限流点 (%)
+        self.module_voltage = module_voltage or []  # 模块输出电压 (V)
+        self.module_temperature = module_temperature or []  # 模块温度 (℃)
+        self.module_input_voltage_ab = module_input_voltage_ab or []  # 交流输入三相电压AB (V)
         self.user_defined_params_count = 13  # 固定值
-        self._init_unsupported_fields()
+        super().__init__()  # 调用父类的__init__方法来初始化unsupported和fixed字段
 
     def to_bytes(self):
         data = struct.pack('<BBf', self.data_flag.value, self.module_count, self.output_voltage)
@@ -473,27 +531,26 @@ class RectAnalogData(BaseModel):
 
 @dataclass
 class RectSwitchStatus(BaseModel):
+    """整流模块开关输入状态类"""
     _supported_fields = {'module_count', 'module_run_status', 'module_limit_status'}
     _unsupported_fields = {
-        '_module_charge_status': [ChargeStatus.FLOAT] * BATTERY_GROUP_COUNT,
-        '_module_ac_limit_power': [AlarmStatus.NORMAL] * BATTERY_GROUP_COUNT,
-        '_module_temp_limit_power': [AlarmStatus.NORMAL] * BATTERY_GROUP_COUNT,
-        '_module_fan_full_speed': [AlarmStatus.NORMAL] * BATTERY_GROUP_COUNT,
-        '_module_walk_in_mode': [AlarmStatus.NORMAL] * BATTERY_GROUP_COUNT,
-        '_module_sequential_start': [AlarmStatus.NORMAL] * BATTERY_GROUP_COUNT,
-        '_reserved': [AlarmStatus.NORMAL] * 11
+        '_module_charge_status': [ChargeStatus.FLOAT] * BATTERY_GROUP_COUNT,  # 浮充/均充/测试状态
+        '_module_ac_limit_power': [AlarmStatus.NORMAL] * BATTERY_GROUP_COUNT,  # 模块交流限功率
+        '_module_temp_limit_power': [AlarmStatus.NORMAL] * BATTERY_GROUP_COUNT,  # 模块温度限功率
+        '_module_fan_full_speed': [AlarmStatus.NORMAL] * BATTERY_GROUP_COUNT,  # 风扇全速
+        '_module_walk_in_mode': [AlarmStatus.NORMAL] * BATTERY_GROUP_COUNT,  # WALK-IN模式
+        '_module_sequential_start': [AlarmStatus.NORMAL] * BATTERY_GROUP_COUNT,  # 顺序起机使能状态
+        '_reserved': [AlarmStatus.NORMAL] * 11  # 预留
     }
-    _fixed_fields = {'data_flag': DataFlag.NORMAL, 'user_defined_params_count': 16}
+    _fixed_fields = {'data_flag': DataFlag.NORMAL, 'user_defined_params_count': 16}  # 用户自定义参数数量，固定为16
 
     def __init__(self, module_count: int = DEFAULT_INT_VALUE,
                  module_run_status: List[SwitchStatus] = None,
                  module_limit_status: List[SwitchStatus] = None):
-        self.data_flag = DataFlag.NORMAL
-        self.module_count = module_count
-        self.module_run_status = module_run_status or []
-        self.module_limit_status = module_limit_status or []
-        self.user_defined_params_count = 16  # 固定为16
-        self._init_unsupported_fields()
+        self.module_count = module_count  # 整流模块数量
+        self.module_run_status = module_run_status or []  # 开机/关机状态
+        self.module_limit_status = module_limit_status or []  # 限流/不限流状态
+        super().__init__()  # 调用父类的__init__方法来初始化unsupported和fixed字段
 
     def to_bytes(self):
         data = struct.pack('<BB', self.data_flag.value, self.module_count)
@@ -536,30 +593,29 @@ class RectSwitchStatus(BaseModel):
 
 @dataclass
 class RectAlarmStatus(BaseModel):
+    """整流模块告警状态类"""
     _supported_fields = {'module_count', 'module_failure_status', 'module_comm_failure_status',
                          'module_protection_status', 'module_fan_status'}
     _unsupported_fields = {
-        '_module_unbalanced_current': [AlarmStatus.NORMAL] * BATTERY_GROUP_COUNT,
-        '_module_ac_overvoltage': [AlarmStatus.NORMAL] * BATTERY_GROUP_COUNT,
-        '_module_ac_undervoltage': [AlarmStatus.NORMAL] * BATTERY_GROUP_COUNT,
-        '_module_ac_unbalanced': [AlarmStatus.NORMAL] * BATTERY_GROUP_COUNT,
-        '_module_ac_phase_loss': [AlarmStatus.NORMAL] * BATTERY_GROUP_COUNT,
-        '_module_env_temp_abnormal': [AlarmStatus.NORMAL] * BATTERY_GROUP_COUNT,
-        '_reserved': [AlarmStatus.NORMAL] * 9
+        '_module_unbalanced_current': [AlarmStatus.NORMAL] * BATTERY_GROUP_COUNT,  # 模块不均流状态
+        '_module_ac_overvoltage': [AlarmStatus.NORMAL] * BATTERY_GROUP_COUNT,  # 模块交流过压状态
+        '_module_ac_undervoltage': [AlarmStatus.NORMAL] * BATTERY_GROUP_COUNT,  # 模块交流欠压状态
+        '_module_ac_unbalanced': [AlarmStatus.NORMAL] * BATTERY_GROUP_COUNT,  # 模块交流不平衡状态
+        '_module_ac_phase_loss': [AlarmStatus.NORMAL] * BATTERY_GROUP_COUNT,  # 模块交流缺相状态
+        '_module_env_temp_abnormal': [AlarmStatus.NORMAL] * BATTERY_GROUP_COUNT,  # 模块环境温度异常状态
+        '_reserved': [AlarmStatus.NORMAL] * 9  # 预留告警状态
     }
-    _fixed_fields = {'data_flag': DataFlag.NORMAL, 'user_defined_params_count': 18}
+    _fixed_fields = {'data_flag': DataFlag.NORMAL, 'user_defined_params_count': 18}  # 用户自定义参数数量，固定为18
 
     def __init__(self, module_count: int = DEFAULT_INT_VALUE, module_failure_status: List[AlarmStatus] = None,
                  module_comm_failure_status: List[AlarmStatus] = None,
                  module_protection_status: List[AlarmStatus] = None, module_fan_status: List[AlarmStatus] = None):
-        self.data_flag = DataFlag.NORMAL
-        self.module_count = module_count
-        self.module_failure_status = module_failure_status or []
-        self.module_comm_failure_status = module_comm_failure_status or []
-        self.module_protection_status = module_protection_status or []
-        self.module_fan_status = module_fan_status or []
-        self.user_defined_params_count = 18
-        self._init_unsupported_fields()
+        self.module_count = module_count  # 整流模块数量
+        self.module_failure_status = module_failure_status or []  # 整流模块故障状态
+        self.module_comm_failure_status = module_comm_failure_status or []  # 模块通讯中断状态
+        self.module_protection_status = module_protection_status or []  # 模块保护状态
+        self.module_fan_status = module_fan_status or []  # 模块风扇故障状态
+        super().__init__()  # 调用父类的__init__方法来初始化unsupported和fixed字段
 
     def to_bytes(self):
         data = struct.pack('<BB', self.data_flag.value, self.module_count)
@@ -603,6 +659,7 @@ class RectAlarmStatus(BaseModel):
 
 @dataclass
 class DcAnalogData(BaseModel):
+    """直流配电模拟量数据类"""
     _supported_fields = {'dc_voltage', 'total_load_current', 'battery_group_1_current',
                          'load_branch_1_current', 'load_branch_2_current', 'load_branch_3_current', 'load_branch_4_current',
                          'battery_total_current', 'battery_group_1_capacity', 'battery_group_1_voltage',
@@ -612,32 +669,32 @@ class DcAnalogData(BaseModel):
                          'load_power_4', 'total_load_energy', 'load_energy_1', 'load_energy_2', 'load_energy_3',
                          'load_energy_4'}
     _unsupported_fields = {
-        '_battery_group_2_current': DEFAULT_FLOAT_VALUE,
-        '_battery_group_3_current': DEFAULT_FLOAT_VALUE,
-        '_battery_group_4_current': DEFAULT_FLOAT_VALUE,
-        '_battery_group_5_current': DEFAULT_FLOAT_VALUE,
-        '_battery_group_6_current': DEFAULT_FLOAT_VALUE,
-        '_battery_group_2_voltage': DEFAULT_FLOAT_VALUE,
-        '_battery_group_3_voltage': DEFAULT_FLOAT_VALUE,
-        '_battery_group_4_voltage': DEFAULT_FLOAT_VALUE,
-        '_battery_group_5_voltage': DEFAULT_FLOAT_VALUE,
-        '_battery_group_6_voltage': DEFAULT_FLOAT_VALUE,
-        '_battery_group_5_mid_voltage': DEFAULT_FLOAT_VALUE,
-        '_battery_group_6_mid_voltage': DEFAULT_FLOAT_VALUE,
-        '_battery_group_2_capacity': DEFAULT_FLOAT_VALUE,
-        '_battery_group_3_capacity': DEFAULT_FLOAT_VALUE,
-        '_battery_group_4_capacity': DEFAULT_FLOAT_VALUE,
-        '_battery_group_5_capacity': DEFAULT_FLOAT_VALUE,
-        '_battery_group_6_capacity': DEFAULT_FLOAT_VALUE,
-        '_battery_group_2_temperature': DEFAULT_FLOAT_VALUE,
-        '_battery_group_3_temperature': DEFAULT_FLOAT_VALUE,
-        '_battery_group_4_temperature': DEFAULT_FLOAT_VALUE,
-        '_battery_group_5_temperature': DEFAULT_FLOAT_VALUE,
-        '_battery_group_6_temperature': DEFAULT_FLOAT_VALUE,
-        '_env_temp_3': DEFAULT_FLOAT_VALUE,
-        '_env_humidity_2': DEFAULT_FLOAT_VALUE,
-        '_env_humidity_3': DEFAULT_FLOAT_VALUE,
-        '_reserved': [DEFAULT_FLOAT_VALUE] * 2
+        '_battery_group_2_current': DEFAULT_FLOAT_VALUE,  # 电池组2电流
+        '_battery_group_3_current': DEFAULT_FLOAT_VALUE,  # 电池组3电流
+        '_battery_group_4_current': DEFAULT_FLOAT_VALUE,  # 电池组4电流
+        '_battery_group_5_current': DEFAULT_FLOAT_VALUE,  # 电池组5电流
+        '_battery_group_6_current': DEFAULT_FLOAT_VALUE,  # 电池组6电流
+        '_battery_group_2_voltage': DEFAULT_FLOAT_VALUE,  # 电池组2电压
+        '_battery_group_3_voltage': DEFAULT_FLOAT_VALUE,  # 电池组3电压
+        '_battery_group_4_voltage': DEFAULT_FLOAT_VALUE,  # 电池组4电压
+        '_battery_group_5_voltage': DEFAULT_FLOAT_VALUE,  # 电池组5电压
+        '_battery_group_6_voltage': DEFAULT_FLOAT_VALUE,  # 电池组6电压
+        '_battery_group_5_mid_voltage': DEFAULT_FLOAT_VALUE,  # 电池组5中点电压
+        '_battery_group_6_mid_voltage': DEFAULT_FLOAT_VALUE,  # 电池组6中点电压
+        '_battery_group_2_capacity': DEFAULT_FLOAT_VALUE,  # 电池组2容量
+        '_battery_group_3_capacity': DEFAULT_FLOAT_VALUE,  # 电池组3容量
+        '_battery_group_4_capacity': DEFAULT_FLOAT_VALUE,  # 电池组4容量
+        '_battery_group_5_capacity': DEFAULT_FLOAT_VALUE,  # 电池组5容量
+        '_battery_group_6_capacity': DEFAULT_FLOAT_VALUE,  # 电池组6容量
+        '_battery_group_2_temperature': DEFAULT_FLOAT_VALUE,  # 电池组2温度
+        '_battery_group_3_temperature': DEFAULT_FLOAT_VALUE,  # 电池组3温度
+        '_battery_group_4_temperature': DEFAULT_FLOAT_VALUE,  # 电池组4温度
+        '_battery_group_5_temperature': DEFAULT_FLOAT_VALUE,  # 电池组5温度
+        '_battery_group_6_temperature': DEFAULT_FLOAT_VALUE,  # 电池组6温度
+        '_env_temp_3': DEFAULT_FLOAT_VALUE,  # 环境温度3
+        '_env_humidity_2': DEFAULT_FLOAT_VALUE,  # 环境湿度2
+        '_env_humidity_3': DEFAULT_FLOAT_VALUE,  # 环境湿度3
+        '_reserved': [DEFAULT_FLOAT_VALUE] * 2  # 预留参数
     }
     _fixed_fields = {'data_flag': DataFlag.NORMAL, 'battery_group_count': DEFAULT_BATTERY_GROUP_COUNT,
                      'load_branch_count': DEFAULT_LOAD_BRANCH_COUNT, 'user_defined_params_count': DC_USER_DEFINED_PARAMS_COUNT}
@@ -657,36 +714,35 @@ class DcAnalogData(BaseModel):
                  total_load_energy: float = 0, load_energy_1: float = 0,
                  load_energy_2: float = 0, load_energy_3: float = 0,
                  load_energy_4: float = 0):
-        self.dc_voltage = dc_voltage
-        self.total_load_current = total_load_current
-        self.battery_group_1_current = battery_group_1_current
-        self.load_branch_1_current = load_branch_1_current
-        self.load_branch_2_current = load_branch_2_current
-        self.load_branch_3_current = load_branch_3_current
-        self.load_branch_4_current = load_branch_4_current
-        self.battery_total_current = battery_total_current
-        self.battery_group_1_capacity = battery_group_1_capacity
-        self.battery_group_1_voltage = battery_group_1_voltage
-        self.battery_group_1_mid_voltage = battery_group_1_mid_voltage
-        self.battery_group_2_mid_voltage = battery_group_2_mid_voltage
-        self.battery_group_3_mid_voltage = battery_group_3_mid_voltage
-        self.battery_group_4_mid_voltage = battery_group_4_mid_voltage
-        self.battery_group_1_temperature = battery_group_1_temperature
-        self.env_temp_1 = env_temp_1
-        self.env_temp_2 = env_temp_2
-        self.env_humidity_1 = env_humidity_1
-        self.total_load_power = total_load_power
-        self.load_power_1 = load_power_1
+        self.dc_voltage = dc_voltage  # 直流输出电压 (V)
+        self.total_load_current = total_load_current  # 总负载电流 (A)
+        self.battery_group_1_current = battery_group_1_current  # 电池组1电流 (A)
+        self.load_branch_1_current = load_branch_1_current  # 直流分路1电流 (A)
+        self.load_branch_2_current = load_branch_2_current  # 直流分路2电流 (A)
+        self.load_branch_3_current = load_branch_3_current  # 直流分路3电流 (A)
+        self.load_branch_4_current = load_branch_4_current  # 直流分路4电流 (A)
+        self.battery_total_current = battery_total_current  # 电池总电流 (A)
+        self.battery_group_1_capacity = battery_group_1_capacity  # 电池组1容量 (%)
+        self.battery_group_1_voltage = battery_group_1_voltage  # 电池组1电压 (V)
+        self.battery_group_1_mid_voltage = battery_group_1_mid_voltage  # 电池组1中点电压 (V)
+        self.battery_group_2_mid_voltage = battery_group_2_mid_voltage  # 电池组2中点电压 (V)
+        self.battery_group_3_mid_voltage = battery_group_3_mid_voltage  # 电池组3中点电压 (V)
+        self.battery_group_4_mid_voltage = battery_group_4_mid_voltage  # 电池组4中点电压 (V)
+        self.battery_group_1_temperature = battery_group_1_temperature  # 电池组1温度 (℃)
+        self.env_temp_1 = env_temp_1  # 环境温度1 (℃)
+        self.env_temp_2 = env_temp_2  # 环境温度2 (℃)
+        self.env_humidity_1 = env_humidity_1  # 环境湿度1 (%)
+        self.total_load_power = total_load_power  # 直流总负载功率 (W)
+        self.load_power_1 = load_power_1  # 直流负载1-4功率 (W)
         self.load_power_2 = load_power_2
         self.load_power_3 = load_power_3
         self.load_power_4 = load_power_4
-        self.total_load_energy = total_load_energy
-        self.load_energy_1 = load_energy_1
+        self.total_load_energy = total_load_energy  # 直流总负载电量 (kWh)
+        self.load_energy_1 = load_energy_1  # 直流负载1-4电量 (kWh)
         self.load_energy_2 = load_energy_2
         self.load_energy_3 = load_energy_3
         self.load_energy_4 = load_energy_4
-        self._init_unsupported_fields()
-        self._init_fixed_fields()
+        super().__init__()  # 调用父类的__init__方法来初始化unsupported和fixed字段
 
     def to_bytes(self):
         return struct.pack('<BBffBfBffffB31f2f',
@@ -788,6 +844,7 @@ class DcAnalogData(BaseModel):
 
 @dataclass
 class DcAlarmStatus(BaseModel):
+    """直流告警状态类"""
     _supported_fields = {
         'dc_voltage_status', 'dc_arrester_status', 'load_fuse_status',
         'battery_group_1_fuse_status', 'battery_group_2_fuse_status',
@@ -802,24 +859,24 @@ class DcAlarmStatus(BaseModel):
     }
 
     _unsupported_fields = {
-        '_dc_comm_failure_status': AlarmStatus.NORMAL,
-        '_battery_group_charge_overcurrent': [AlarmStatus.NORMAL] * BATTERY_GROUP_COUNT,
-        '_battery_group_unbalanced': [AlarmStatus.NORMAL] * BATTERY_GROUP_COUNT,
-        '_blvd_impending': AlarmStatus.NORMAL,
-        '_llvd1_impending': AlarmStatus.NORMAL,
-        '_llvd2_impending': AlarmStatus.NORMAL,
-        '_llvd3_impending': AlarmStatus.NORMAL,
-        '_llvd4_impending': AlarmStatus.NORMAL,
-        '_battery_temp_sensor_2_status': SensorStatus.NORMAL,
-        '_battery_temp_sensor_3_status': SensorStatus.NORMAL,
-        '_battery_temp_sensor_4_status': SensorStatus.NORMAL,
-        '_battery_temp_sensor_5_status': SensorStatus.NORMAL,
-        '_battery_temp_sensor_6_status': SensorStatus.NORMAL,
-        '_env_temp_sensor_3_status': SensorStatus.NORMAL,
-        '_env_humidity_sensor_2_status': SensorStatus.NORMAL,
-        '_env_humidity_sensor_3_status': SensorStatus.NORMAL,
-        '_infrared_status': AlarmStatus.NORMAL,
-        '_reserved': [AlarmStatus.NORMAL] * 72
+        '_dc_comm_failure_status': AlarmStatus.NORMAL,  # 直流屏通讯中断状态
+        '_battery_group_charge_overcurrent': [AlarmStatus.NORMAL] * BATTERY_GROUP_COUNT,  # 电池组充电过流状态
+        '_battery_group_unbalanced': [AlarmStatus.NORMAL] * BATTERY_GROUP_COUNT,  # 电池组不平衡状态
+        '_blvd_impending': AlarmStatus.NORMAL,  # BLVD即将下电状态
+        '_llvd1_impending': AlarmStatus.NORMAL,  # LLVD1即将下电状态
+        '_llvd2_impending': AlarmStatus.NORMAL,  # LLVD2即将下电状态
+        '_llvd3_impending': AlarmStatus.NORMAL,  # LLVD3即将下电状态
+        '_llvd4_impending': AlarmStatus.NORMAL,  # LLVD4即将下电状态
+        '_battery_temp_sensor_2_status': SensorStatus.NORMAL,  # 电池温度传感器2状态
+        '_battery_temp_sensor_3_status': SensorStatus.NORMAL,  # 电池温度传感器3状态
+        '_battery_temp_sensor_4_status': SensorStatus.NORMAL,  # 电池温度传感器4状态
+        '_battery_temp_sensor_5_status': SensorStatus.NORMAL,  # 电池温度传感器5状态
+        '_battery_temp_sensor_6_status': SensorStatus.NORMAL,  # 电池温度传感器6状态
+        '_env_temp_sensor_3_status': SensorStatus.NORMAL,  # 环境温度传感器3状态
+        '_env_humidity_sensor_2_status': SensorStatus.NORMAL,  # 环境湿度传感器2状态
+        '_env_humidity_sensor_3_status': SensorStatus.NORMAL,  # 环境湿度传感器3状态
+        '_infrared_status': AlarmStatus.NORMAL,  # 红外告警状态
+        '_reserved': [AlarmStatus.NORMAL] * 72  # 预留告警状态
     }
 
     _fixed_fields = {'data_flag': DataFlag.NORMAL, 'battery_fuse_count': 0, 'user_defined_params_count': 151}
@@ -852,11 +909,6 @@ class DcAlarmStatus(BaseModel):
                  digital_input_status_4: AlarmStatus = AlarmStatus.NORMAL,
                  digital_input_status_5: AlarmStatus = AlarmStatus.NORMAL,
                  digital_input_status_6: AlarmStatus = AlarmStatus.NORMAL):
-
-        # 初始化固定字段
-        for field, value in self._fixed_fields.items():
-            setattr(self, field, value)
-
         # 初始化支持的字段
         self.dc_voltage_status = dc_voltage_status
         self.dc_arrester_status = dc_arrester_status
@@ -887,9 +939,7 @@ class DcAlarmStatus(BaseModel):
         self.digital_input_status_5 = digital_input_status_5
         self.digital_input_status_6 = digital_input_status_6
 
-        # 初始化不支持的字段
-        for field, value in self._unsupported_fields.items():
-            setattr(self, field, value)
+        super().__init__()  # 调用父类的__init__方法来初始化unsupported和fixed字段
 
     def to_bytes(self):
         # 计算实际需要的格式化字符串
@@ -915,7 +965,7 @@ class DcAlarmStatus(BaseModel):
         format_string += 'B'  # env_humidity_status
         format_string += 'B' * ENV_HUMIDITY_COUNT  # env_humidity_sensor_status for each sensor
         format_string += 'BBB'  # door_status, water_status, smoke_status
-        format_string += 'B'  # _i
+        format_string += 'B'  # _infrared_status
         data = struct.pack(format_string,
                            self.data_flag.value,
                            self.dc_voltage_status.value,
@@ -1077,6 +1127,7 @@ class DcAlarmStatus(BaseModel):
 
 @dataclass
 class DcConfigParams(BaseModel):
+    """直流配置参数类"""
     _supported_fields = {
         'dc_over_voltage', 'dc_under_voltage', 'time_equalize_charge_enable',
         'time_equalize_duration', 'time_equalize_interval', 'battery_group_number',
@@ -1127,50 +1178,48 @@ class DcConfigParams(BaseModel):
                  equalize_to_float_coeff: float = DEFAULT_FLOAT_VALUE, llvd1_off_time: float = DEFAULT_FLOAT_VALUE,
                  llvd2_off_time: float = DEFAULT_FLOAT_VALUE, llvd3_off_time: float = DEFAULT_FLOAT_VALUE,
                  llvd4_off_time: float = DEFAULT_FLOAT_VALUE, load_off_mode: LoadOffMode = LoadOffMode.VOLTAGE):
-        self.dc_over_voltage = dc_over_voltage
-        self.dc_under_voltage = dc_under_voltage
-        self.time_equalize_charge_enable = time_equalize_charge_enable
-        self.time_equalize_duration = time_equalize_duration
-        self.time_equalize_interval = time_equalize_interval
-        self.battery_group_number = battery_group_number
-        self.battery_over_temp = battery_over_temp
-        self.battery_under_temp = battery_under_temp
-        self.env_over_temp = env_over_temp
-        self.env_under_temp = env_under_temp
-        self.env_over_humidity = env_over_humidity
-        self.env_under_humidity = env_under_humidity
-        self.battery_charge_current_limit = battery_charge_current_limit
-        self.float_voltage = float_voltage
-        self.equalize_voltage = equalize_voltage
-        self.battery_off_voltage = battery_off_voltage
-        self.battery_on_voltage = battery_on_voltage
-        self.llvd1_off_voltage = llvd1_off_voltage
-        self.llvd1_on_voltage = llvd1_on_voltage
-        self.llvd2_off_voltage = llvd2_off_voltage
-        self.llvd2_on_voltage = llvd2_on_voltage
-        self.llvd3_off_voltage = llvd3_off_voltage
-        self.llvd3_on_voltage = llvd3_on_voltage
-        self.llvd4_off_voltage = llvd4_off_voltage
-        self.llvd4_on_voltage = llvd4_on_voltage
-        self.battery_capacity = battery_capacity
-        self.battery_test_stop_voltage = battery_test_stop_voltage
-        self.battery_temp_coeff = battery_temp_coeff
-        self.battery_temp_center = battery_temp_center
-        self.float_to_equalize_coeff = float_to_equalize_coeff
-        self.equalize_to_float_coeff = equalize_to_float_coeff
-        self.llvd1_off_time = llvd1_off_time
-        self.llvd2_off_time = llvd2_off_time
-        self.llvd3_off_time = llvd3_off_time
-        self.llvd4_off_time = llvd4_off_time
-        self.load_off_mode = load_off_mode
+        self.dc_over_voltage = dc_over_voltage  # 直流过压值
+        self.dc_under_voltage = dc_under_voltage  # 直流欠压值
+        self.time_equalize_charge_enable = time_equalize_charge_enable  # 定时均充使能
+        self.time_equalize_duration = time_equalize_duration  # 定时均充时间
+        self.time_equalize_interval = time_equalize_interval  # 定时均充间隔
+        self.battery_group_number = battery_group_number  # 电池组数
+        self.battery_over_temp = battery_over_temp  # 电池过温告警点
+        self.battery_under_temp = battery_under_temp  # 电池欠温告警点
+        self.env_over_temp = env_over_temp  # 环境过温告警点
+        self.env_under_temp = env_under_temp  # 环境欠温告警点
+        self.env_over_humidity = env_over_humidity  # 环境过湿告警点
+        self.env_under_humidity = env_under_humidity  # 环境欠湿告警点
+        self.battery_charge_current_limit = battery_charge_current_limit  # 电池充电限流点
+        self.float_voltage = float_voltage  # 浮充电压
+        self.equalize_voltage = equalize_voltage  # 均充电压
+        self.battery_off_voltage = battery_off_voltage  # 电池下电电压
+        self.battery_on_voltage = battery_on_voltage  # 电池上电电压
+        self.llvd1_off_voltage = llvd1_off_voltage  # LLVD1下电电压
+        self.llvd1_on_voltage = llvd1_on_voltage  # LLVD1上电电压
+        self.llvd2_off_voltage = llvd2_off_voltage  # LLVD2下电电压
+        self.llvd2_on_voltage = llvd2_on_voltage  # LLVD2上电电压
+        self.llvd3_off_voltage = llvd3_off_voltage  # LLVD3下电电压
+        self.llvd3_on_voltage = llvd3_on_voltage  # LLVD3上电电压
+        self.llvd4_off_voltage = llvd4_off_voltage  # LLVD4下电电压
+        self.llvd4_on_voltage = llvd4_on_voltage  # LLVD4上电电压
+        self.battery_capacity = battery_capacity  # 每组电池额定容量
+        self.battery_test_stop_voltage = battery_test_stop_voltage  # 电池测试终止电压
+        self.battery_temp_coeff = battery_temp_coeff  # 电池组温补系数
+        self.battery_temp_center = battery_temp_center  # 电池温补中心点
+        self.float_to_equalize_coeff = float_to_equalize_coeff  # 浮充转均充系数
+        self.equalize_to_float_coeff = equalize_to_float_coeff  # 均充转浮充系数
+        self.llvd1_off_time = llvd1_off_time  # LLVD1下电时间
+        self.llvd2_off_time = llvd2_off_time  # LLVD2下电时间
+        self.llvd3_off_time = llvd3_off_time  # LLVD3下电时间
+        self.llvd4_off_time = llvd4_off_time  # LLVD4下电时间
+        self.load_off_mode = load_off_mode  # 负载下电模式
 
-        # 初始化"不支持"字段、"固定"字段为默认值
-        self._init_unsupported_fields()
-        self._init_fixed_fields()
+        super().__init__()  # 调用父类的__init__方法来初始化unsupported和fixed字段
 
     def to_bytes(self) -> bytes:
         return struct.pack(
-            '<ffBBBBBBBBBBB10BfffffffffffffffffffffffffffffffffB55B',
+            '<ffBBBBBBBBBB10BfffffffffffffffffffffffffffffffffB55B',
             self.dc_over_voltage,
             self.dc_under_voltage,
             self.user_defined_params_count,
@@ -1289,11 +1338,13 @@ class DcConfigParams(BaseModel):
 
 @dataclass
 class ControlRectModule(BaseModel):
+    """整流模块控制类"""
     _supported_fields = {'module_id', 'control_type'}
 
     def __init__(self, module_id: int = DEFAULT_INT_VALUE, control_type: RectModuleControlType = RectModuleControlType.ON):
-        self.module_id = module_id
-        self.control_type = control_type
+        self.module_id = module_id  # 模块ID
+        self.control_type = control_type  # 控制类型
+        super().__init__()  # 调用父类的__init__方法来初始化unsupported和fixed字段
 
     def to_bytes(self):
         return struct.pack('<BB', self.module_id, self.control_type.value)
@@ -1305,10 +1356,12 @@ class ControlRectModule(BaseModel):
 
 @dataclass
 class SystemControlState(BaseModel):
+    """系统控制状态类"""
     _supported_fields = {'state'}
 
     def __init__(self, state: SystemControlStateModel = SystemControlStateModel.AUTO):
-        self.state = state
+        self.state = state  # 系统控制状态
+        super().__init__()  # 调用父类的__init__方法来初始化unsupported和fixed字段
 
     def to_bytes(self):
         return struct.pack('<B', self.state.value)
@@ -1320,10 +1373,12 @@ class SystemControlState(BaseModel):
 
 @dataclass
 class AlarmSoundEnable(BaseModel):
+    """告警音使能控制类"""
     _supported_fields = {'enable'}
 
     def __init__(self, enable: EnableStatus = EnableStatus.ENABLE):
-        self.enable = enable
+        self.enable = enable  # 使能状态
+        super().__init__()  # 调用父类的__init__方法来初始化unsupported和fixed字段
 
     def to_bytes(self):
         return struct.pack('<B', self.enable.value)
@@ -1335,6 +1390,7 @@ class AlarmSoundEnable(BaseModel):
 
 @dataclass
 class EnergyParams(BaseModel):
+    """节能参数类"""
     _supported_fields = {'energy_saving', 'min_working_modules', 'module_switch_cycle',
                          'module_best_efficiency_point', 'module_redundancy_point'}
     _unsupported_fields = {'_reserved': [DEFAULT_INT_VALUE] * 18}
@@ -1344,12 +1400,12 @@ class EnergyParams(BaseModel):
                  module_switch_cycle: int = DEFAULT_INT_VALUE,
                  module_best_efficiency_point: int = DEFAULT_INT_VALUE,
                  module_redundancy_point: int = DEFAULT_INT_VALUE):
-        self.energy_saving = energy_saving
-        self.min_working_modules = min_working_modules
-        self.module_switch_cycle = module_switch_cycle
-        self.module_best_efficiency_point = module_best_efficiency_point
-        self.module_redundancy_point = module_redundancy_point
-        self._init_unsupported_fields()
+        self.energy_saving = energy_saving  # 节能允许
+        self.min_working_modules = min_working_modules  # 最小工作模块数
+        self.module_switch_cycle = module_switch_cycle  # 模块循环开关周期
+        self.module_best_efficiency_point = module_best_efficiency_point  # 模块最佳效率点
+        self.module_redundancy_point = module_redundancy_point  # 模块冗余点
+        super().__init__()  # 调用父类的__init__方法来初始化unsupported和fixed字段
 
     def to_bytes(self):
         return struct.pack('<BBHBB18B',
@@ -1376,10 +1432,12 @@ class EnergyParams(BaseModel):
 
 @dataclass
 class SystemControl(BaseModel):
+    """系统控制类"""
     _supported_fields = {'control_type'}
 
     def __init__(self, control_type: SystemControlType = SystemControlType.RESET):
-        self.control_type = control_type
+        self.control_type = control_type  # 控制类型
+        super.__init__()
 
     def to_bytes(self):
         return struct.pack('<B', self.control_type.value)
@@ -1389,4 +1447,4 @@ class SystemControl(BaseModel):
         control_type, = struct.unpack('<B', data)
         return cls(SystemControlType(control_type))
 
-# 这里是 mu4801_models.py 文件的结束
+# 文件结束
