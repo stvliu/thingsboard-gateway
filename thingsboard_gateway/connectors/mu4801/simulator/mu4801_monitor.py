@@ -100,7 +100,6 @@ class MU4801Monitor:
                 print(f"B相电压状态: {ac_alarm.input_voltage_bc_b_status.name}")
                 print(f"C相电压状态: {ac_alarm.input_voltage_ca_c_status.name}")
                 print(f"交流防雷器状态: {ac_alarm.ac_arrester_status.name}")
-                print(f"交流输入空开状态: {ac_alarm.ac_input_switch_status.name}")
                 print(f"交流第一路输入状态: {ac_alarm.ac_power_status.name}")
             elif choice == '8':  # 读取交流配置参数
                 print("读取交流配置参数:")

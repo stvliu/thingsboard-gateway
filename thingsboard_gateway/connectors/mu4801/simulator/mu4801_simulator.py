@@ -36,7 +36,6 @@ class MU4801Simulator:
             input_voltage_bc_b_status=VoltageStatus.NORMAL,
             input_voltage_ca_c_status=VoltageStatus.NORMAL,
             ac_arrester_status=AcArresterStatus.NORMAL,
-            ac_input_switch_status=AcSwitchStatus.NORMAL,
             ac_power_status=AcPowerStatus.NORMAL
         )
 
