@@ -119,7 +119,7 @@ class AcSwitchStatus(Enum):
     TRIPPED = 0x82  # 跳闸
 
 class AcPowerStatus(Enum):
-    """交流电源状态枚举"""
+    """交流电源状态/交流第一路输入停电枚举"""
     NORMAL = 0x00        # 正常
     POWER_FAILURE = 0x84  # 电源故障
 
