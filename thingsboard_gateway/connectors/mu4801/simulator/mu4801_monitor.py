@@ -365,11 +365,11 @@ class MU4801Monitor:
                 try:
                     enable = int(input("请选择告警音使能状态编号: "))
                     if enable == 1:
-                        self._protocol.send_command('systemControl', AlarmSoundEnable(
+                        self._protocol.send_command('setAlarmSoundEnable', AlarmSoundEnable(
                             enable=EnableStatus.DISABLE
                         ))
                     elif enable == 2:
-                        self._protocol.send_command('systemControl', AlarmSoundEnable(
+                        self._protocol.send_command('setAlarmSoundEnable', AlarmSoundEnable(
                             enable=EnableStatus.ENABLE
                         ))
                     else:
