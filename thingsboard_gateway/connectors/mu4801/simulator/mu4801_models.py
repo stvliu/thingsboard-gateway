@@ -38,7 +38,7 @@ class DataFlag(Enum):
 
 class AlarmStatus(Enum):
     """告警状态枚举"""
-    NORMAL = 0  # 正常
+    NORMAL = 0x00  # 正常
     ALARM = 0x81  # 告警
 
 class SwitchStatus(Enum):
@@ -48,8 +48,8 @@ class SwitchStatus(Enum):
 
 class EnableStatus(Enum):
     """使能状态枚举"""
-    ENABLE = 0xE0  # 使能
-    DISABLE = 0xE1  # 禁止
+    ENABLE = 0x00 # 使能
+    DISABLE = 0x01 # 禁止
 
 class LoadOffMode(Enum):
     """负载下电模式枚举"""
@@ -135,13 +135,13 @@ class AcCurrentStatus(Enum):
 
 class TempStatus(Enum):
     """温度状态枚举"""
-    NORMAL = 0  # 正常
+    NORMAL = 0x00  # 正常
     OVER = 0xB0  # 过温
     UNDER = 0xB1  # 欠温
 
 class SensorStatus(Enum):
     """传感器状态枚举"""
-    NORMAL = 0  # 正常
+    NORMAL = 0x00  # 正常
     BREAK = 0xB2  # 未接
     FAULT = 0xB3  # 故障
 
@@ -1256,7 +1256,7 @@ class DcConfigParams(BaseModel):
 
     def to_bytes(self) -> bytes:
         return struct.pack(
-            '<ffBBBBBBBBBB10BfffffffffffffffffffffffffffffffffB55B',
+            '<ffBBBBBBBBBBB10BfffffffffffffffffffffffffffffffffB55B',
             self.dc_over_voltage,
             self.dc_under_voltage,
             self.user_defined_params_count,

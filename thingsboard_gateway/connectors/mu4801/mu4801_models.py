@@ -38,7 +38,7 @@ class DataFlag(Enum):
 
 class AlarmStatus(Enum):
     """告警状态枚举"""
-    NORMAL = 0  # 正常
+    NORMAL = 0x00  # 正常
     ALARM = 0x81  # 告警
 
 class SwitchStatus(Enum):
@@ -48,8 +48,8 @@ class SwitchStatus(Enum):
 
 class EnableStatus(Enum):
     """使能状态枚举"""
-    ENABLE = 0xE0  # 使能
-    DISABLE = 0xE1  # 禁止
+    ENABLE = 0x00 # 使能
+    DISABLE = 0x01 # 禁止
 
 class LoadOffMode(Enum):
     """负载下电模式枚举"""
@@ -82,25 +82,66 @@ class SystemControlType(Enum):
 
 class VoltageStatus(Enum):
     """电压状态枚举"""
-    NORMAL = 0  # 正常
-    UNDER = 1  # 欠压
-    OVER = 2  # 过压
+    NORMAL = 0x00  # 正常
+    UNDER = 0x01   # 欠压
+    OVER = 0x02    # 过压
 
 class FrequencyStatus(Enum):
     """频率状态枚举"""
-    NORMAL = 0  # 正常
-    UNDER = 1  # 过低
-    OVER = 2  # 过高
+    NORMAL = 0x00  # 正常
+    UNDER = 0x01   # 频率过低
+    OVER = 0x02    # 频率过高
+
+class FuseStatus(Enum):
+    """熔丝状态枚举"""
+    NORMAL = 0x00     # 正常
+    FUSE_BROKEN = 0x04  # 熔丝断开
+    SWITCH_OFF = 0x05   # 开关断开
+
+class AcCommStatus(Enum):
+    """交流通信状态枚举"""
+    NORMAL = 0x00   # 正常
+    ALARM = 0x80  # 告警
+
+class AcArresterStatus(Enum):
+    """交流防雷器状态枚举"""
+    NORMAL = 0x00  # 正常
+    ALARM = 0x81   # 告警
+
+class AcInputSwitchStatus(Enum):
+    """交流开关状态枚举"""
+    NORMAL = 0x00  # 正常
+    ALARM = 0x82  # 告警
+
+class AcOutputSwitchStatus(Enum):
+    """交流开关状态枚举"""
+    NORMAL = 0x00  # 正常
+    ALARM = 0x83  # 告警
+
+class AcPowerStatus(Enum):
+    """交流电源状态/交流第一路输入停电枚举"""
+    NORMAL = 0x00        # 正常
+    ALARM = 0x84  # 告警
+
+class AcAlarmReservedStatus(Enum):
+    """交流告警状态枚举"""
+    NORMAL = 0x00  # 正常
+    ALARM = 0x85   # 告警
+
+class AcCurrentStatus(Enum):
+    """交流电流状态枚举"""
+    NORMAL = 0x00  # 正常
+    OVER = 0x02    # 过高
 
 class TempStatus(Enum):
     """温度状态枚举"""
-    NORMAL = 0  # 正常
+    NORMAL = 0x00  # 正常
     OVER = 0xB0  # 过温
     UNDER = 0xB1  # 欠温
 
 class SensorStatus(Enum):
     """传感器状态枚举"""
-    NORMAL = 0  # 正常
+    NORMAL = 0x00  # 正常
     BREAK = 0xB2  # 未接
     FAULT = 0xB3  # 故障
 
@@ -339,15 +380,16 @@ class AcAnalogData(BaseModel):
 class AcAlarmStatus(BaseModel):
     """交流告警状态类"""
     _supported_fields = {'input_voltage_ab_a_status', 'input_voltage_bc_b_status', 'input_voltage_ca_c_status',
-                         'ac_arrester_status', 'ac_input_switch_status', 'ac_power_status'}
+                         'ac_arrester_status', 'ac_power_status'}
     _unsupported_fields = {
-        '_frequency_status': FrequencyStatus.NORMAL,  # 频率状态
-        '_ac_comm_failure_status': AlarmStatus.NORMAL,  # 交流屏通讯中断状态
-        '_ac_output_switch_status': AlarmStatus.NORMAL,  # 交流输出空开跳状态
-        '_reserved': [AlarmStatus.NORMAL] * 13,  # 预留告警状态
-        '_input_current_a_status': AlarmStatus.NORMAL,  # A相输入电流状态
-        '_input_current_b_status': AlarmStatus.NORMAL,  # B相输入电流状态
-        '_input_current_c_status': AlarmStatus.NORMAL  # C相输入电流状态
+        '_frequency_status': FrequencyStatus.NORMAL,        # 频率状态（不支持）
+        '_ac_comm_failure_status': AcCommStatus.NORMAL,     # 交流通信故障状态（不支持）
+        '_ac_input_switch_status': AcInputSwitchStatus.NORMAL,  # 交流输入空开跳（不支持）
+        '_ac_output_switch_status': AcOutputSwitchStatus.NORMAL,  # 交流输出开关状态（不支持）
+        '_reserved': [AcAlarmReservedStatus.NORMAL] * 13,           # 预留告警状态（不支持）
+        '_input_current_a_status': AcCurrentStatus.NORMAL,  # A相输入电流状态（不支持）
+        '_input_current_b_status': AcCurrentStatus.NORMAL,  # B相输入电流状态（不支持）
+        '_input_current_c_status': AcCurrentStatus.NORMAL   # C相输入电流状态（不支持）
     }
     _fixed_fields = {
         'data_flag': DataFlag.NORMAL,  # 数据标志，固定为正常
@@ -356,21 +398,16 @@ class AcAlarmStatus(BaseModel):
         'user_defined_params_count': 18  # 用户自定义参数数量，固定为18
     }
 
-    def __init__(self, input_voltage_ab_a_status: VoltageStatus = VoltageStatus.NORMAL,
-                 input_voltage_bc_b_status: VoltageStatus = VoltageStatus.NORMAL,
-                 input_voltage_ca_c_status: VoltageStatus = VoltageStatus.NORMAL,
-                 ac_arrester_status: AlarmStatus = AlarmStatus.NORMAL,
-                 ac_input_switch_status: AlarmStatus = AlarmStatus.NORMAL,
-                 ac_power_status: AlarmStatus = AlarmStatus.NORMAL):
-        self.data_flag = DataFlag.NORMAL
-        self.number_of_inputs = 1
+    def __init__(self,
+                 input_voltage_ab_a_status: VoltageStatus = VoltageStatus.NORMAL,  # AB/A相电压状态
+                 input_voltage_bc_b_status: VoltageStatus = VoltageStatus.NORMAL,  # BC/B相电压状态
+                 input_voltage_ca_c_status: VoltageStatus = VoltageStatus.NORMAL,  # CA/C相电压状态
+                 ac_arrester_status: AcArresterStatus = AcArresterStatus.NORMAL,   # 交流防雷器状态
+                 ac_power_status: AcPowerStatus = AcPowerStatus.NORMAL):           #交流第一路输入停电枚举
         self.input_voltage_ab_a_status = input_voltage_ab_a_status  # 输入线/相电压AB/A状态
         self.input_voltage_bc_b_status = input_voltage_bc_b_status  # 输入线/相电压BC/B状态
         self.input_voltage_ca_c_status = input_voltage_ca_c_status  # 输入线/相电压CA/C状态
-        self.fuse_count = 0
-        self.user_defined_params_count = 18
         self.ac_arrester_status = ac_arrester_status  # 交流防雷器断状态
-        self.ac_input_switch_status = ac_input_switch_status  # 交流输入空开跳状态
         self.ac_power_status = ac_power_status  # 交流第一路输入停电状态
         super().__init__()  # 调用父类的__init__方法来初始化unsupported和fixed字段
 
@@ -386,7 +423,7 @@ class AcAlarmStatus(BaseModel):
                            self.user_defined_params_count,
                            self.ac_arrester_status.value,
                            self._ac_comm_failure_status.value,
-                           self.ac_input_switch_status.value,
+                           self._ac_input_switch_status.value,
                            self._ac_output_switch_status.value,
                            self.ac_power_status.value,
                            *[status.value for status in self._reserved],
@@ -402,17 +439,17 @@ class AcAlarmStatus(BaseModel):
             input_voltage_ab_a_status=VoltageStatus(unpacked[2]),
             input_voltage_bc_b_status=VoltageStatus(unpacked[3]),
             input_voltage_ca_c_status=VoltageStatus(unpacked[4]),
-            ac_arrester_status=AlarmStatus(unpacked[8]),
-            ac_input_switch_status=AlarmStatus(unpacked[10]),
-            ac_power_status=AlarmStatus(unpacked[12])
+            ac_arrester_status=AcArresterStatus(unpacked[8]),
+            ac_power_status=AcPowerStatus(unpacked[12])
         )
         instance._frequency_status = FrequencyStatus(unpacked[5])
-        instance._ac_comm_failure_status = AlarmStatus(unpacked[9])
-        instance._ac_output_switch_status = AlarmStatus(unpacked[11])
-        instance._reserved = [AlarmStatus(status) for status in unpacked[13:26]]
-        instance._input_current_a_status = AlarmStatus(unpacked[26])
-        instance._input_current_b_status = AlarmStatus(unpacked[27])
-        instance._input_current_c_status = AlarmStatus(unpacked[28])
+        instance._ac_comm_failure_status = AcCommStatus(unpacked[9])
+        instance._ac_input_switch_status=AcInputSwitchStatus(unpacked[10]),
+        instance._ac_output_switch_status = AcOutputSwitchStatus(unpacked[11])
+        instance._reserved = [AcAlarmReservedStatus(status) for status in unpacked[13:26]]
+        instance._input_current_a_status = AcCurrentStatus(unpacked[26])
+        instance._input_current_b_status = AcCurrentStatus(unpacked[27])
+        instance._input_current_c_status = AcCurrentStatus(unpacked[28])
         return instance
 
 @dataclass
@@ -1219,7 +1256,7 @@ class DcConfigParams(BaseModel):
 
     def to_bytes(self) -> bytes:
         return struct.pack(
-            '<ffBBBBBBBBBB10BfffffffffffffffffffffffffffffffffB55B',
+            '<ffBBBBBBBBBBB10BfffffffffffffffffffffffffffffffffB55B',
             self.dc_over_voltage,
             self.dc_under_voltage,
             self.user_defined_params_count,
