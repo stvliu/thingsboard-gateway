@@ -35,9 +35,9 @@ class MU4801Simulator:
             input_voltage_ab_a_status=VoltageStatus.NORMAL,
             input_voltage_bc_b_status=VoltageStatus.NORMAL,
             input_voltage_ca_c_status=VoltageStatus.NORMAL,
-            ac_arrester_status=AlarmStatus.NORMAL,
-            ac_input_switch_status=AlarmStatus.NORMAL,
-            ac_power_status=AlarmStatus.NORMAL
+            ac_arrester_status=AcArresterStatus.NORMAL,
+            ac_input_switch_status=AcSwitchStatus.NORMAL,
+            ac_power_status=AcPowerStatus.NORMAL
         )
 
         self.ac_config_params = AcConfigParams(
