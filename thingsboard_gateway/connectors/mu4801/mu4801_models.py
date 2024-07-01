@@ -1474,7 +1474,7 @@ class SystemControl(BaseModel):
 
     def __init__(self, control_type: SystemControlType = SystemControlType.RESET):
         self.control_type = control_type  # 控制类型
-        super.__init__()
+        super().__init__()  # 调用父类的__init__方法来初始化unsupported和fixed字段
 
     def to_bytes(self):
         return struct.pack('<B', self.control_type.value)
