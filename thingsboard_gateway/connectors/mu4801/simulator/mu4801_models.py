@@ -337,13 +337,10 @@ class AcAnalogData(BaseModel):
                  input_voltage_bc_b: float = DEFAULT_FLOAT_VALUE,
                  input_voltage_ca_c: float = DEFAULT_FLOAT_VALUE,
                  input_frequency: float = DEFAULT_FLOAT_VALUE):
-        self.data_flag = DataFlag.NORMAL  # 数据标志
-        self.number_of_ac_inputs = 1  # 交流输入路数
         self.input_voltage_ab_a = input_voltage_ab_a  # 输入线/相电压 AB/A (V)
         self.input_voltage_bc_b = input_voltage_bc_b  # 输入线/相电压 BC/B (V)
         self.input_voltage_ca_c = input_voltage_ca_c  # 输入线/相电压 CA/C (V)
         self.input_frequency = input_frequency  # 输入频率 (Hz)
-        self.user_defined_params_count = AC_RESERVED_PARAMS_COUNT  # 用户自定义数量P
         super().__init__()  # 调用父类的__init__方法来初始化unsupported和fixed字段
 
     def to_bytes(self):
@@ -504,7 +501,6 @@ class RectAnalogData(BaseModel):
                  module_currents: List[float] = None, module_current_limit: List[float] = None,
                  module_voltage: List[float] = None, module_temperature: List[float] = None,
                  module_input_voltage_ab: List[float] = None):
-        self.data_flag = DataFlag.NORMAL  # 数据标志
         self.output_voltage = output_voltage  # 整流模块输出电压 (V)
         self.module_count = module_count  # 监控模块数量
         self.module_currents = module_currents or []  # 整流模块输出电流 (A)
@@ -512,7 +508,6 @@ class RectAnalogData(BaseModel):
         self.module_voltage = module_voltage or []  # 模块输出电压 (V)
         self.module_temperature = module_temperature or []  # 模块温度 (℃)
         self.module_input_voltage_ab = module_input_voltage_ab or []  # 交流输入三相电压AB (V)
-        self.user_defined_params_count = 13  # 固定值
         super().__init__()  # 调用父类的__init__方法来初始化unsupported和fixed字段
 
     def to_bytes(self):
