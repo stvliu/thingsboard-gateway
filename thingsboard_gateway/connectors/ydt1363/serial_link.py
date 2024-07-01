@@ -118,7 +118,7 @@ class SerialLink:
                     if len(soi) == 0:  # 超时,没有读取到数据
                         retries += 1
                         if retries >= self._max_retries:
-                            raise CommunicationError(timeout = timeout, attempts = retries)
+                            raise CommunicationError(f"Failed to receive frame after {self._max_retries} attempts")
                         else:
                             time.sleep(0.1)  # 等待一段时间再重试
                             continue

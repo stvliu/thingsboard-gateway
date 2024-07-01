@@ -177,6 +177,16 @@ class BaseModel:
         for field, default_value in self._fixed_fields.items():
             setattr(self, field, default_value)
 
+
+    def to_bytes(self):
+        """将对象转换为字节串"""
+        raise NotImplementedError("Subclasses must implement to_bytes method")
+
+    @classmethod
+    def from_bytes(cls, data):
+        """从字节串创建对象"""
+        raise NotImplementedError("Subclasses must implement from_bytes method")
+
     def to_dict(self):
         """将对象转换为字典"""
         return {
@@ -193,19 +203,44 @@ class BaseModel:
         instance = cls()
         for k, v in data.items():
             if k in cls._supported_fields and k not in cls._fixed_fields:
-                setattr(instance, k, v)
+                field_type = type(getattr(instance, k, None))
+                if issubclass(field_type, Enum):
+                    # 如果字段是枚举类型
+                    if isinstance(v, str):
+                        # 如果传入的值是字符串，假设它是枚举名称
+                        setattr(instance, k, field_type[v])
+                    else:
+                        # 如果传入的值非字符串，假设它是枚举值
+                        setattr(instance, k, field_type(v))
+                elif isinstance(getattr(instance, k), list) and v and isinstance(v[0], (str, int)):
+                    # 如果字段是枚举列表
+                    enum_type = type(getattr(instance, k)[0])
+                    if issubclass(enum_type, Enum):
+                        if isinstance(v[0], str):
+                            # 如果列表中的值是字符串，假设它们是枚举名称
+                            setattr(instance, k, [enum_type[item] for item in v])
+                        else:
+                            # 如果列表中的值非字符串，假设它是枚举值
+                            setattr(instance, k, [enum_type(item) for item in v])
+                else:
+                    # 对于非枚举类型，直接赋值
+                    setattr(instance, k, v)
         instance._init_unsupported_fields()
         instance._init_fixed_fields()
         return instance
 
-    def to_bytes(self):
-        """将对象转换为字节串"""
-        raise NotImplementedError("Subclasses must implement to_bytes method")
-
-    @classmethod
-    def from_bytes(cls, data):
-        """从字节串创建对象"""
-        raise NotImplementedError("Subclasses must implement from_bytes method")
+    def __str__(self):
+        """返回对象的字符串表示"""
+        class_name = self.__class__.__name__
+        attributes = []
+        for field in self._supported_fields:
+            value = getattr(self, field)
+            if isinstance(value, Enum):
+                value = value.name
+            elif isinstance(value, list) and value and isinstance(value[0], Enum):
+                value = [item.name for item in value]
+            attributes.append(f"{field}={value}")
+        return f"{class_name}({', '.join(attributes)})"
 
 @dataclass
 class DateTime(BaseModel):
@@ -1432,7 +1467,7 @@ class EnergyParams(BaseModel):
                  module_switch_cycle: int = DEFAULT_INT_VALUE,
                  module_best_efficiency_point: int = DEFAULT_INT_VALUE,
                  module_redundancy_point: int = DEFAULT_INT_VALUE):
-        self.energy_saving = energy_saving  # 节能允许
+        self.energy_saving = energy_saving  # 节能允许 (0: 使能, 1: 禁止)
         self.min_working_modules = min_working_modules  # 最小工作模块数
         self.module_switch_cycle = module_switch_cycle  # 模块循环开关周期
         self.module_best_efficiency_point = module_best_efficiency_point  # 模块最佳效率点
