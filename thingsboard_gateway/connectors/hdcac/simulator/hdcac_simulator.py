@@ -24,7 +24,6 @@ class HdcAcSimulator:
         
         # 使用对应的数据类初始化模拟数据
         self.ac_analog_data = AcAnalogData(
-            data_flag=DataFlag.NORMAL,
             cabinet_temp=24,
             supply_temp=24,
             voltage=220,
@@ -39,7 +38,6 @@ class HdcAcSimulator:
         )
         
         self.ac_alarm_status = AcAlarmStatus(
-            data_flag=DataFlag.NORMAL,
             compressor_alarm=AlarmStatus.NORMAL,
             high_temp=AlarmStatus.NORMAL,  
             low_temp=AlarmStatus.NORMAL,
@@ -47,7 +45,6 @@ class HdcAcSimulator:
             sensor_fault=AlarmStatus.NORMAL,
             over_voltage=AlarmStatus.NORMAL,  
             under_voltage=AlarmStatus.NORMAL,
-            reserved=AlarmStatus.INVALID
         )  
         
         self.ac_config_params = AcConfigParams(

@@ -177,6 +177,16 @@ class BaseModel:
         for field, default_value in self._fixed_fields.items():
             setattr(self, field, default_value)
 
+
+    def to_bytes(self):
+        """将对象转换为字节串"""
+        raise NotImplementedError("Subclasses must implement to_bytes method")
+
+    @classmethod
+    def from_bytes(cls, data):
+        """从字节串创建对象"""
+        raise NotImplementedError("Subclasses must implement from_bytes method")
+
     def to_dict(self):
         """将对象转换为字典"""
         return {
@@ -193,19 +203,75 @@ class BaseModel:
         instance = cls()
         for k, v in data.items():
             if k in cls._supported_fields and k not in cls._fixed_fields:
-                setattr(instance, k, v)
+                field_type = type(getattr(instance, k, None))
+                if issubclass(field_type, Enum):
+                    # 处理枚举类型
+                    instance._set_enum_field(k, v, field_type)
+                elif isinstance(getattr(instance, k), list):
+                    # 处理列表类型（可能是枚举列表）
+                    instance._set_list_field(k, v)
+                else:
+                    # 对于其他类型，尝试直接赋值
+                    setattr(instance, k, v)
         instance._init_unsupported_fields()
         instance._init_fixed_fields()
         return instance
 
-    def to_bytes(self):
-        """将对象转换为字节串"""
-        raise NotImplementedError("Subclasses must implement to_bytes method")
+    def _set_enum_field(self, field_name, value, enum_type):
+        """设置枚举字段的值"""
+        try:
+            setattr(self, field_name, self._convert_to_enum(value, enum_type))
+        except ValueError as e:
+            raise ValueError(f"Error setting field {field_name}: {str(e)}")
 
-    @classmethod
-    def from_bytes(cls, data):
-        """从字节串创建对象"""
-        raise NotImplementedError("Subclasses must implement from_bytes method")
+    def _set_list_field(self, field_name, value):
+        """设置列表字段的值"""
+        if not isinstance(value, list):
+            raise ValueError(f"Expected list for field {field_name}, got {type(value)}")
+
+        current_value = getattr(self, field_name)
+        if not current_value:
+            setattr(self, field_name, value)
+            return
+
+        # 假设列表中的所有元素类型相同，检查第一个元素
+        elem_type = type(current_value[0])
+        if issubclass(elem_type, Enum):
+            # 处理枚举列表
+            try:
+                new_value = [self._convert_to_enum(item, elem_type) for item in value]
+                setattr(self, field_name, new_value)
+            except ValueError as e:
+                raise ValueError(f"Error in list field {field_name}: {str(e)}")
+        else:
+            # 非枚举列表，直接赋值
+            setattr(self, field_name, value)
+
+    def _convert_to_enum(self, value, enum_type):
+        """将给定的值转换为指定的枚举类型"""
+        if isinstance(value, str):
+            try:
+                return enum_type[value.upper()]
+            except KeyError:
+                raise ValueError(f"Invalid enum name '{value}' for {enum_type.__name__}")
+        else:
+            try:
+                return enum_type(value)
+            except ValueError:
+                raise ValueError(f"Invalid enum value {value} for {enum_type.__name__}")
+
+    def __str__(self):
+        """返回对象的字符串表示"""
+        class_name = self.__class__.__name__
+        attributes = []
+        for field in self._supported_fields:
+            value = getattr(self, field)
+            if isinstance(value, Enum):
+                value = value.name
+            elif isinstance(value, list) and value and isinstance(value[0], Enum):
+                value = [item.name for item in value]
+            attributes.append(f"{field}={value}")
+        return f"{class_name}({', '.join(attributes)})"
 
 @dataclass
 class DateTime(BaseModel):
@@ -1432,7 +1498,7 @@ class EnergyParams(BaseModel):
                  module_switch_cycle: int = DEFAULT_INT_VALUE,
                  module_best_efficiency_point: int = DEFAULT_INT_VALUE,
                  module_redundancy_point: int = DEFAULT_INT_VALUE):
-        self.energy_saving = energy_saving  # 节能允许
+        self.energy_saving = energy_saving  # 节能允许 (0: 使能, 1: 禁止)
         self.min_working_modules = min_working_modules  # 最小工作模块数
         self.module_switch_cycle = module_switch_cycle  # 模块循环开关周期
         self.module_best_efficiency_point = module_best_efficiency_point  # 模块最佳效率点
