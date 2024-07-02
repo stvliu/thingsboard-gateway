@@ -205,29 +205,60 @@ class BaseModel:
             if k in cls._supported_fields and k not in cls._fixed_fields:
                 field_type = type(getattr(instance, k, None))
                 if issubclass(field_type, Enum):
-                    # 如果字段是枚举类型
-                    if isinstance(v, str):
-                        # 如果传入的值是字符串，假设它是枚举名称
-                        setattr(instance, k, field_type[v])
-                    else:
-                        # 如果传入的值非字符串，假设它是枚举值
-                        setattr(instance, k, field_type(v))
-                elif isinstance(getattr(instance, k), list) and v and isinstance(v[0], (str, int)):
-                    # 如果字段是枚举列表
-                    enum_type = type(getattr(instance, k)[0])
-                    if issubclass(enum_type, Enum):
-                        if isinstance(v[0], str):
-                            # 如果列表中的值是字符串，假设它们是枚举名称
-                            setattr(instance, k, [enum_type[item] for item in v])
-                        else:
-                            # 如果列表中的值非字符串，假设它是枚举值
-                            setattr(instance, k, [enum_type(item) for item in v])
+                    # 处理枚举类型
+                    instance._set_enum_field(k, v, field_type)
+                elif isinstance(getattr(instance, k), list):
+                    # 处理列表类型（可能是枚举列表）
+                    instance._set_list_field(k, v)
                 else:
-                    # 对于非枚举类型，直接赋值
+                    # 对于其他类型，尝试直接赋值
                     setattr(instance, k, v)
         instance._init_unsupported_fields()
         instance._init_fixed_fields()
         return instance
+
+    def _set_enum_field(self, field_name, value, enum_type):
+        """设置枚举字段的值"""
+        try:
+            setattr(self, field_name, self._convert_to_enum(value, enum_type))
+        except ValueError as e:
+            raise ValueError(f"Error setting field {field_name}: {str(e)}")
+
+    def _set_list_field(self, field_name, value):
+        """设置列表字段的值"""
+        if not isinstance(value, list):
+            raise ValueError(f"Expected list for field {field_name}, got {type(value)}")
+
+        current_value = getattr(self, field_name)
+        if not current_value:
+            setattr(self, field_name, value)
+            return
+
+        # 假设列表中的所有元素类型相同，检查第一个元素
+        elem_type = type(current_value[0])
+        if issubclass(elem_type, Enum):
+            # 处理枚举列表
+            try:
+                new_value = [self._convert_to_enum(item, elem_type) for item in value]
+                setattr(self, field_name, new_value)
+            except ValueError as e:
+                raise ValueError(f"Error in list field {field_name}: {str(e)}")
+        else:
+            # 非枚举列表，直接赋值
+            setattr(self, field_name, value)
+
+    def _convert_to_enum(self, value, enum_type):
+        """将给定的值转换为指定的枚举类型"""
+        if isinstance(value, str):
+            try:
+                return enum_type[value.upper()]
+            except KeyError:
+                raise ValueError(f"Invalid enum name '{value}' for {enum_type.__name__}")
+        else:
+            try:
+                return enum_type(value)
+            except ValueError:
+                raise ValueError(f"Invalid enum value {value} for {enum_type.__name__}")
 
     def __str__(self):
         """返回对象的字符串表示"""
