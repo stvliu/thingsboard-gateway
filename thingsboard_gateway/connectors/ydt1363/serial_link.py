@@ -2,6 +2,7 @@ import serial
 import time
 import logging
 import threading
+from threading import Event
 
 from thingsboard_gateway.connectors.ydt1363.exceptions import *
 from thingsboard_gateway.connectors.ydt1363.constants import *
@@ -30,17 +31,18 @@ class SerialLink:
         :param timeout: 超时时间
         :param reconnect_interval: 重连间隔时间
         """
-        self.port = port
-        self.baudrate = baudrate
-        self.bytesize = bytesize
-        self.parity = parity
-        self.stopbits = stopbits
+        self._port = port
+        self._baudrate = baudrate
+        self._bytesize = bytesize
+        self._parity = parity
+        self._stopbits = stopbits
         self.timeout = timeout
-        self.reconnect_interval = reconnect_interval
+        self._reconnect_interval = reconnect_interval
         self._serial = None
         self._send_lock = threading.Lock()  # 初始化发送锁
         self._receive_lock = threading.Lock()  # 初始化接收锁
         self._max_retries = 3  # 最大重连次数
+        self._stop_event = Event()  # 新增: 用于中断接收操作的事件
 
     def connect(self):
         """
@@ -49,19 +51,19 @@ class SerialLink:
         """
         try:
             self._serial = serial.Serial(
-                port=self.port,
-                baudrate=self.baudrate,
-                bytesize=self.bytesize,
-                parity=self.parity,
-                stopbits=self.stopbits,
+                port=self._port,
+                baudrate=self._baudrate,
+                bytesize=self._bytesize,
+                parity=self._parity,
+                stopbits=self._stopbits,
                 timeout=self.timeout
             )
             self._serial.flushInput()  # 清空输入缓冲区
             self._serial.flushOutput()  # 清空输出缓冲区
-            logger.info(f"Connected to serial port {self.port}")
+            logger.info(f"Connected to serial port {self._port}")
             return
         except serial.SerialException as e:
-            raise ConnectionError(f"Could not connect to serial port {self.port}")
+            raise ConnectionError(f"Could not connect to serial port {self._port}")
 
     def is_connected(self):
         """
@@ -75,9 +77,10 @@ class SerialLink:
         """
         断开与串行端口的连接。
         """
+        self._stop_event.set()  # 设置停止事件
         if self._serial and self._serial.is_open:
             self._serial.close()
-            logger.info(f"Disconnected from serial port {self.port}")
+            logger.info(f"Disconnected from serial port {self._port}")
 
     def send_frame(self, frame):
         """
@@ -87,6 +90,10 @@ class SerialLink:
         """
         with self._send_lock:  # 使用锁确保线程安全
             for attempt in range(self._max_retries):
+                if self._stop_event.is_set():
+                    logger.info("Send frame operation interrupted")
+                    return False
+
                 try:
                     if not self.is_connected():
                         self.connect()
@@ -96,7 +103,7 @@ class SerialLink:
                     logger.error(f"Send attempt {attempt + 1} failed: {e}")
                     self.disconnect()
                     if attempt < self._max_retries - 1:
-                        time.sleep(self.reconnect_interval)
+                        time.sleep(self._reconnect_interval)
                     else:
                         raise CommunicationError(f"Failed to send frame after {self._max_retries} attempts")
 
@@ -111,7 +118,7 @@ class SerialLink:
             logger.debug(f"Receiving frame")
             self._serial.timeout = timeout
             retries = 0
-            while True:
+            while not self._stop_event.is_set():  # 检查停止事件
                 try:
                     # 读取起始标志(SOI)
                     soi = self._read_bytes(START_FLAG_LENGTH)
@@ -211,7 +218,7 @@ class SerialLink:
         """
         重新连接串行端口。
         """
-        logger.debug(f"Reconnecting to serial port {self.port}")
+        logger.debug(f"Reconnecting to serial port {self._port}")
         self.disconnect()
         self.connect()
 
