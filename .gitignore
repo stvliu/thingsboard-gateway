@@ -24,3 +24,4 @@ __pycache__
 /for_build/etc/thingsboard-gateway/config/
 /thingsboard_gateway/logs/
 /tests/storage/
+.DS_Store
