@@ -58,6 +58,8 @@ class Ydt1363Protocol:
         response_frame = self._receive_frame()
         if response_frame is None:
             raise ProtocolError(f"No response received for command: {command}")
+            #logger.error(f"No response received for command: {command}")
+            #return
         
         # 解析响应数据
         response_data = self._decode_response_data(command, response_frame)
@@ -124,9 +126,11 @@ class Ydt1363Protocol:
     def _receive_frame(self):
         try:
             return self._serial_link.receive_frame()
+        except CommunicationInterruptedException:
+            logger.info("Communication was interrupted")
+            raise
         except ConnectionError as e:
             logger.error(f"Connection error while receiving frame: {e}")
-            # 可以在这里添加重连逻辑,或者抛出异常由更上层处理
             raise
         except Exception as e:
             logger.error(f"Unexpected error while receiving frame: {e}", exc_info=True)

@@ -27,6 +27,9 @@ class FrameCodec:
 
     @staticmethod
     def decode_frame(frame):
+        if frame is None:
+            logger.error("Cannot decode None frame", exc_info = True)
+            raise ValueError("Frame cannot be None")
         logger.debug(f"Parsing frame: {frame.hex()}")
         FrameCodec.validate_frame(frame)
         cid1 = f'0x{frame[CID1_INDEX]:02X}'

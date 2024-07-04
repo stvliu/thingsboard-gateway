@@ -41,15 +41,10 @@ class RTNDataError(RTNError):
     def __init__(self):
         super().__init__(RTN_INVALID_DATA, "Invalid data")
 
-class FrameReceiveTimeoutError(ProtocolError):
-    """
-    帧接收超时错误
+class CommunicationError(ProtocolError):
+    """通讯错误的基类"""
+    pass
 
-    当在指定的超时时间内未能完全接收到一个有效的数据帧时抛出此异常。
-    这可能是由于通信延迟、设备未响应或数据传输中断等原因导致的。
-    """
-    def __init__(self, timeout: float, attempts: int):
-        self.timeout = timeout  # 总的超时时间
-        self.attempts = attempts  # 尝试接收的次数
-        message = f"Failed to receive complete frame after {attempts} attempts over {timeout} seconds"
-        super().__init__(message)
+class CommunicationInterruptedException(Exception):
+    """当通信操作被中断时抛出的异常"""
+    pass

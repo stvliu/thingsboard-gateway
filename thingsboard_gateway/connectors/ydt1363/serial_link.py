@@ -19,7 +19,7 @@ class SerialLink:
     """
 
     def __init__(self, port, baudrate=9600, bytesize=serial.EIGHTBITS, parity=serial.PARITY_NONE,
-                 stopbits=serial.STOPBITS_ONE, timeout=None, reconnect_interval=1):
+                 stopbits=serial.STOPBITS_ONE, timeout:float =1, reconnect_interval=5):
         """
         初始化SerialLink对象。
 
@@ -36,7 +36,7 @@ class SerialLink:
         self._bytesize = bytesize
         self._parity = parity
         self._stopbits = stopbits
-        self.timeout = timeout
+        self._timeout = timeout
         self._reconnect_interval = reconnect_interval
         self._serial = None
         self._send_lock = threading.Lock()  # 初始化发送锁
@@ -49,6 +49,9 @@ class SerialLink:
         建立与串行端口的连接。
         如果连接失败,会抛出ConnectionError异常。
         """
+        if self._stop_event.is_set():
+            logger.warning("Attempting to connect while stop_event is set. Resetting first.")
+            self._reset()
         try:
             self._serial = serial.Serial(
                 port=self._port,
@@ -56,7 +59,7 @@ class SerialLink:
                 bytesize=self._bytesize,
                 parity=self._parity,
                 stopbits=self._stopbits,
-                timeout=self.timeout
+                timeout=self._timeout
             )
             self._serial.flushInput()  # 清空输入缓冲区
             self._serial.flushOutput()  # 清空输出缓冲区
@@ -107,7 +110,7 @@ class SerialLink:
                     else:
                         raise CommunicationError(f"Failed to send frame after {self._max_retries} attempts")
 
-    def receive_frame(self, timeout:float =1):
+    def receive_frame(self):
         """
         接收数据帧。
 
@@ -116,19 +119,14 @@ class SerialLink:
         """
         with self._receive_lock:  # 使用锁确保线程安全
             logger.debug(f"Receiving frame")
-            self._serial.timeout = timeout
             retries = 0
             while not self._stop_event.is_set():  # 检查停止事件
                 try:
                     # 读取起始标志(SOI)
                     soi = self._read_bytes(START_FLAG_LENGTH)
                     if len(soi) == 0:  # 超时,没有读取到数据
-                        retries += 1
-                        if retries >= self._max_retries:
-                            raise CommunicationError(f"Failed to receive frame after {self._max_retries} attempts")
-                        else:
-                            time.sleep(0.1)  # 等待一段时间再重试
-                            continue
+                        time.sleep(0.1)  # 等待一段时间再重试
+                        continue
 
                     if soi[0] != SOI:
                         logger.warning(f"Invalid SOI: {soi.hex()}, discarding frame")
@@ -184,18 +182,25 @@ class SerialLink:
 
                     logger.debug(f"Received frame: {frame.hex()}")
                     return frame
-
                 except serial.SerialException as e:
                     logger.error(f"Serial communication error: {e}")
+                    time.sleep(self._reconnect_interval) # 等待reconnect_interval秒后重连
                     self._reconnect()
-                except CommunicationError as e:
-                    retries = 0
-                    logger.debug(f"Frame receive timeout: {e}")
-                except ProtocolError as e:
-                    logger.warning(f"Protocol error: {e}")
                 except Exception as e:
                     logger.error(f"Unexpected error while receiving frame: {e}", exc_info=True)
-                time.sleep(0.1)
+                    time.sleep(0.1)
+            self._reset()
+            logger.info("Communication operation interrupted")
+            raise CommunicationInterruptedException("Frame reception was interrupted")
+
+    def _reset(self):
+        """
+        重置SerialLink的状态，清除stop_event并准备重新连接。
+        """
+        logger.info("Resetting SerialLink state")
+        self._stop_event.clear()  # 清除stop_event
+        self._serial = None  # 清除之前的serial对象
+        logger.info("SerialLink state has been reset")
 
     def _write_bytes(self, bytes):
         """
@@ -218,9 +223,12 @@ class SerialLink:
         """
         重新连接串行端口。
         """
-        logger.debug(f"Reconnecting to serial port {self._port}")
-        self.disconnect()
-        self.connect()
+        try:
+            if self._serial and self._serial.is_open:
+                self._serial.close()
+            self.connect()
+        except serial.SerialException as e:
+            logger.warning(f"Unable to reconnect to serial port {self._port}")
 
     def __enter__(self):
         """

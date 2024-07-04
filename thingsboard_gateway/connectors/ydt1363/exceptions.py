@@ -44,3 +44,7 @@ class RTNDataError(RTNError):
 class CommunicationError(ProtocolError):
     """通讯错误的基类"""
     pass
+
+class CommunicationInterruptedException(Exception):
+    """当通信操作被中断时抛出的异常"""
+    pass
