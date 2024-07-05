@@ -381,9 +381,9 @@ class MU4801Simulator:
 if __name__ == '__main__':
     device_addr = 1
     default_port = '/dev/ttyS3'
-    port = input(f'请输入串口号(默认为{default_port}): ')
-    if not port:
-        port = default_port
+    # port = input(f'请输入串口号(默认为{default_port}): ')
+    # if not port:
+    port = default_port
     logging.info(f"Using serial port: {port}")
     simulator = MU4801Simulator(device_addr, port)
     simulator.run()
