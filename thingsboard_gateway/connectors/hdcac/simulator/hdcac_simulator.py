@@ -48,7 +48,7 @@ class HdcAcSimulator:
         )
 
         self.ac_config_params = AcConfigParams(
-            start_temp=16,
+            start_temp=270,
             temp_hysteresis=10,
             heater_start_temp=280,
             heater_hysteresis=20,
@@ -56,12 +56,12 @@ class HdcAcSimulator:
             low_temp_alarm=160
         )
 
-        self.target_temp = 20  # 默认目标温度
-        self.ambient_temp = 30  #random.uniform(10, 30)  # 初始环境温度设置在10°C到30°C之间
+        self.target_temp = 27  # 默认目标温度
+        self.ambient_temp = random.uniform(30, 35)  # 初始环境温度设置在10°C到30°C之间
         self.cooling_efficiency = 1.0
         self.heating_efficiency = 1.0
 
-        self.simulation_interval = 30  # 每秒更新一次状态
+        self.simulation_interval = 15  # 每秒更新一次状态
         self.simulation_timer = None
         self.simulation_running = False
         self.last_update_time = time.time()
@@ -114,7 +114,7 @@ class HdcAcSimulator:
     def update_ambient_temperature(self, time_delta):
         temp_change = random.uniform(-0.1, 0.1) * time_delta
         self.ambient_temp += temp_change
-        self.ambient_temp = max(16, min(self.ambient_temp, 30))
+        self.ambient_temp = max(-30, min(self.ambient_temp, 40))
 
         hour = datetime.datetime.now().hour
         if 6 <= hour < 18:  # 白天
