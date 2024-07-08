@@ -10,7 +10,6 @@ from hdcac_models import *
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(name)s %(levelname)s %(message)s')
 logger = logging.getLogger(__name__)
 
-
 class HdcAcSimulator:
     def __init__(self, device_addr, port):
         self._log = logging.getLogger(self.__class__.__name__)
@@ -61,7 +60,7 @@ class HdcAcSimulator:
         self.cooling_efficiency = 1.0
         self.heating_efficiency = 1.0
 
-        self.simulation_interval = 2  # 每2秒更新一次状态
+        self.simulation_interval = 5  # 每5秒更新一次状态
         self.simulation_timer = None
         self.simulation_running = False
         self.last_update_time = time.time()
@@ -169,7 +168,7 @@ class HdcAcSimulator:
         self.mode_change_time = time.time()
         self.mode_start_time = time.time()
         self._log.info("Cooling mode started")
-        self.set_auto_mode_timer()
+        #self.set_auto_mode_timer()
 
     def stop_cooling(self):
         self.ac_run_status.air_conditioner = SwitchStatus.OFF
@@ -190,7 +189,7 @@ class HdcAcSimulator:
         self.mode_change_time = time.time()
         self.mode_start_time = time.time()
         self._log.info("Heating mode started")
-        self.set_auto_mode_timer()
+        #self.set_auto_mode_timer()
 
     def stop_heating(self):
         self.ac_run_status.air_conditioner = SwitchStatus.OFF

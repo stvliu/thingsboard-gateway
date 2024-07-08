@@ -185,8 +185,8 @@ class AcAnalogData(BaseModel):
         self.current = current   # （当前实时压缩机工作电流或上一次压缩机工作电流）,2字节无符号整数
 
     def to_bytes(self) -> bytes:
-        return struct.pack('<BhhHH', self.data_flag.value, self.cabinet_temp,
-                           self.supply_temp, self.voltage, self.current)
+        return struct.pack('<BhhHH', self.data_flag.value, int(self.cabinet_temp),
+                           int(self.supply_temp), int(self.voltage), int(self.current))
 
     @classmethod
     def from_bytes(cls, data: bytes):
@@ -313,9 +313,9 @@ class AcConfigParams(BaseModel):
         self.low_temp_alarm = low_temp_alarm     # 低温告警点,2字节有符号整数
 
     def to_bytes(self) -> bytes:
-        return struct.pack('<hhhhhh', self.start_temp, self.temp_hysteresis,
-                           self.heater_start_temp, self.heater_hysteresis,
-                           self.high_temp_alarm, self.low_temp_alarm)
+        return struct.pack('<hhhhhh', int(self.start_temp), int(self.temp_hysteresis),
+                           int(self.heater_start_temp), int(self.heater_hysteresis),
+                           int(self.high_temp_alarm), int(self.low_temp_alarm))
 
     @classmethod
     def from_bytes(cls, data: bytes):
