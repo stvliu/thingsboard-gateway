@@ -231,7 +231,7 @@ class HdcAcSimulator:
         current_efficiency = self.calculate_current_efficiency(cooling_duration)
 
         temp_diff = self.ac_analog_data.cabinet_temp / 10 - self.target_temp
-        cooling_rate = 0.5 * current_efficiency * time_delta
+        cooling_rate = 0.2 * current_efficiency * time_delta
 
         if not self.faults['refrigerant_leak']['status'] and not self.faults['compressor']['status']:
             temp_change = min(abs(temp_diff), cooling_rate) * (-1 if temp_diff > 0 else 1)
@@ -240,7 +240,7 @@ class HdcAcSimulator:
             # 制冷剂泄漏或压缩机故障时，温度变化很小或不变
             self.ac_analog_data.cabinet_temp += int(random.uniform(-0.1, 0.2) * 10)
 
-        # 更新送风温度
+        # 更新送风温度。如果风扇正常工作，送风温度会比机柜温度低，但不会低于 5°C（因为温度单位是 0.1°C，所以这里用 50）。如果风扇故障，送风温度就等于机柜温度。
         if not self.faults['fan']['status']:
             self.ac_analog_data.supply_temp = max(50, self.ac_analog_data.cabinet_temp - int(50 * current_efficiency))
         else:
@@ -254,7 +254,7 @@ class HdcAcSimulator:
         current_efficiency = self.calculate_current_efficiency(heating_duration)
 
         temp_diff = self.target_temp - self.ac_analog_data.cabinet_temp / 10
-        heating_rate = 0.5 * current_efficiency * time_delta
+        heating_rate = 0.2 * current_efficiency * time_delta
 
         if not self.faults['heater']['status']:
             temp_change = min(abs(temp_diff), heating_rate) * (1 if temp_diff > 0 else -1)
@@ -290,7 +290,7 @@ class HdcAcSimulator:
 
     def simulate_voltage_current(self, time_delta):
         if self.ac_run_status.air_conditioner == SwitchStatus.ON:
-            self.ac_analog_data.voltage = 220 + random.randint(-5, 5)
+            self.ac_analog_data.voltage = 220 + random.randint(-2, 2)
 
             if self.mode_change_time and (time.time() - self.mode_change_time) < self.compressor_startup_time:
                 # 压缩机启动时的高电流
