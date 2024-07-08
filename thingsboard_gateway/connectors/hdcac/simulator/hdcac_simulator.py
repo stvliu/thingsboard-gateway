@@ -48,7 +48,7 @@ class HdcAcSimulator:
         )
 
         self.ac_config_params = AcConfigParams(
-            start_temp=270,
+            start_temp=250,
             temp_hysteresis=10,
             heater_start_temp=280,
             heater_hysteresis=20,
@@ -56,7 +56,7 @@ class HdcAcSimulator:
             low_temp_alarm=160
         )
 
-        self.target_temp = 22  # 默认目标温度
+        self.target_temp = 20  # 默认目标温度
         self.ambient_temp = random.uniform(10, 30)  # 初始环境温度设置在10°C到30°C之间
         self.cooling_efficiency = 1.0
         self.heating_efficiency = 1.0
@@ -114,7 +114,7 @@ class HdcAcSimulator:
     def update_ambient_temperature(self, time_delta):
         temp_change = random.uniform(-0.1, 0.1) * time_delta
         self.ambient_temp += temp_change
-        self.ambient_temp = max(-30, min(self.ambient_temp, 40))
+        self.ambient_temp = max(-20, min(self.ambient_temp, 40))
 
         hour = datetime.datetime.now().hour
         if 6 <= hour < 18:  # 白天
@@ -246,18 +246,23 @@ class HdcAcSimulator:
             self.ac_run_status.indoor_fan = SwitchStatus.ON
             self.ac_run_status.outdoor_fan = SwitchStatus.ON
             self.ac_run_status.heater = SwitchStatus.OFF
-            self.target_temp = self.ac_config_params.start_temp / 10
+            #self.target_temp = self.ac_config_params.start_temp / 10
         elif command == RemoteCommand.COOLING_OFF:
+            self.ac_run_status.air_conditioner = SwitchStatus.OFF
+            self.ac_run_status.indoor_fan = SwitchStatus.OFF
+            self.ac_run_status.outdoor_fan = SwitchStatus.OFF
             self.ac_run_status.outdoor_fan = SwitchStatus.OFF
         elif command == RemoteCommand.HEATING_ON:
             self.ac_run_status.air_conditioner = SwitchStatus.ON
             self.ac_run_status.indoor_fan = SwitchStatus.ON
             self.ac_run_status.outdoor_fan = SwitchStatus.ON
             self.ac_run_status.heater = SwitchStatus.ON
-            self.target_temp = self.ac_config_params.heater_start_temp / 10
+            #self.target_temp = self.ac_config_params.heater_start_temp / 10
         elif command == RemoteCommand.HEATING_OFF:
-            self.ac_run_status.heater = SwitchStatus.OFF
+            self.ac_run_status.air_conditioner = SwitchStatus.OFF
+            self.ac_run_status.indoor_fan = SwitchStatus.OFF
             self.ac_run_status.outdoor_fan = SwitchStatus.OFF
+            self.ac_run_status.heater = SwitchStatus.OFF
         self._log.info(f"AC remote controlled: {command.name}")
 
     def handle_get_ac_config_params(self):
