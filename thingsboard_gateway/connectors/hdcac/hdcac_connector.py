@@ -386,6 +386,8 @@ class DeviceParamsManager:
         self._log.debug(f"Merging parameters for device {device_name}, model {model_name} with {params}")
         if params is None:
             return
+        if isinstance(params, str):
+            return
         if device_name not in self._device_params:
             self._log.debug(f"Creating new parameter dictionary for device {device_name}")
             self._device_params[device_name] = {}

@@ -183,6 +183,14 @@ class AcAnalogData(BaseModel):
         _, cabinet_temp, supply_temp, voltage, current = struct.unpack('<BhhHH', data)
         return cls(cabinet_temp, supply_temp, voltage, current)
 
+    def to_dict(self):
+        return {
+            'cabinet_temp': self.cabinet_temp / 10,
+            'supply_temp': self.supply_temp / 10,
+            'voltage': self.voltage,
+            'current': self.current
+        }
+
 @dataclass
 class AcAlarmStatus(BaseModel):
     """空调告警状态类"""
@@ -233,9 +241,9 @@ class AcRunStatus(BaseModel):
     _supported_fields = {'air_conditioner', 'indoor_fan', 'outdoor_fan', 'heater'}
     _fixed_fields = {'data_flag': DataFlag.NORMAL}
 
-    def __init__(self, air_conditioner: SwitchStatus = SwitchStatus.OFF,
-                 indoor_fan: SwitchStatus = SwitchStatus.OFF,
-                 outdoor_fan: SwitchStatus = SwitchStatus.OFF,
+    def __init__(self, air_conditioner: SwitchStatus = SwitchStatus.ON,
+                 indoor_fan: SwitchStatus = SwitchStatus.ON,
+                 outdoor_fan: SwitchStatus = SwitchStatus.ON,
                  heater: SwitchStatus = SwitchStatus.OFF):
         super().__init__()
         self.air_conditioner = air_conditioner  # 机柜空调设备状态,1字节
@@ -253,6 +261,22 @@ class AcRunStatus(BaseModel):
         _, air_conditioner, indoor_fan, outdoor_fan, heater = struct.unpack('<BBBBB', data)
         return cls(SwitchStatus(air_conditioner), SwitchStatus(indoor_fan),
                    SwitchStatus(outdoor_fan), SwitchStatus(heater))
+
+    def to_dict(self):
+        base_dict = super().to_dict()
+        base_dict['cooling'] = self._determine_cooling_status().name
+        return base_dict
+
+    @property
+    def cooling(self):
+        return (self.air_conditioner == SwitchStatus.ON
+                and self.outdoor_fan == SwitchStatus.ON
+                and self.heater == SwitchStatus.OFF)
+
+    def _determine_cooling_status(self) -> SwitchStatus:
+        if self.cooling:
+            return SwitchStatus.ON
+        return SwitchStatus.OFF
 
 @dataclass
 class AcConfigParams(BaseModel):
