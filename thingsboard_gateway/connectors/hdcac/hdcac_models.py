@@ -4,6 +4,7 @@ from dataclasses import dataclass
 import datetime
 import logging
 from typing import Dict, Any, Set
+import json
 
 # 日志配置
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(name)s %(levelname)s %(message)s')
@@ -87,6 +88,15 @@ class BaseModel:
     @classmethod
     def from_dict(cls, data):
         """从字典创建对象"""
+        if isinstance(data, str):
+            try:
+                data = json.loads(data)
+            except json.JSONDecodeError:
+                raise ValueError(f"Invalid JSON string: {data}")
+
+        if not isinstance(data, dict):
+            raise TypeError(f"Expected dict or JSON string, got {type(data)}")
+
         instance = cls()
         for k, v in data.items():
             if k in cls._supported_fields and k not in cls._fixed_fields:

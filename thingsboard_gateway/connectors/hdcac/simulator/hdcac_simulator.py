@@ -61,7 +61,7 @@ class HdcAcSimulator:
         self.cooling_efficiency = 1.0
         self.heating_efficiency = 1.0
 
-        self.simulation_interval = 1  # 每秒更新一次状态
+        self.simulation_interval = 10  # 每秒更新一次状态
         self.simulation_timer = None
         self.simulation_running = False
         self.last_update_time = time.time()

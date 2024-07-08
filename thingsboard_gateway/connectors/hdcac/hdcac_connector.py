@@ -132,12 +132,16 @@ class HdcAcConnector(Thread, Connector):
             data = None
             # 补齐参数
             if rpc_params:
-                 # 更新参数
-                self.__device_params_manager.merge_params(device_name, self.__get_model_name(server_side_rpc_config), rpc_params)
-                # 获取已补齐参数
-                merged_params = self.__device_params_manager.get_params(device_name,self.__get_model_name(server_side_rpc_config))
+                data = None
+                if isinstance(rpc_params, str):
+                    rpc_params = rpc_params
+                else:
+                    # 更新参数
+                    self.__device_params_manager.merge_params(device_name, self.__get_model_name(server_side_rpc_config), rpc_params)
+                    # 获取已补齐参数
+                    rpc_params = self.__device_params_manager.get_params(device_name,self.__get_model_name(server_side_rpc_config))
                 # 转换RPC数据
-                data = self.__downlink_converter.convert(server_side_rpc_config, merged_params)
+                data = self.__downlink_converter.convert(server_side_rpc_config, rpc_params)
             # 发送RPC命令
             self._send_rpc_command(server_side_rpc_config, data, device_name, rpc_method, rpc_data, rpc_id)
         else:

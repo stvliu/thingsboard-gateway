@@ -13,6 +13,8 @@ from enum import Enum
 from typing import List, Dict, Any, Set
 from dataclasses import dataclass
 import logging
+import json
+
 logging.basicConfig(level=logging.DEBUG)
 
 # 常量定义
@@ -200,6 +202,15 @@ class BaseModel:
     @classmethod
     def from_dict(cls, data):
         """从字典创建对象"""
+        if isinstance(data, str):
+            try:
+                data = json.loads(data)
+            except json.JSONDecodeError:
+                raise ValueError(f"Invalid JSON string: {data}")
+
+        if not isinstance(data, dict):
+            raise TypeError(f"Expected dict or JSON string, got {type(data)}")
+
         instance = cls()
         for k, v in data.items():
             if k in cls._supported_fields and k not in cls._fixed_fields:

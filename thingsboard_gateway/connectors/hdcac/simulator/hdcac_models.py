@@ -4,6 +4,7 @@ from dataclasses import dataclass
 import datetime
 import logging
 from typing import Dict, Any, Set
+import json
 
 # 日志配置
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(name)s %(levelname)s %(message)s')
@@ -87,6 +88,15 @@ class BaseModel:
     @classmethod
     def from_dict(cls, data):
         """从字典创建对象"""
+        if isinstance(data, str):
+            try:
+                data = json.loads(data)
+            except json.JSONDecodeError:
+                raise ValueError(f"Invalid JSON string: {data}")
+
+        if not isinstance(data, dict):
+            raise TypeError(f"Expected dict or JSON string, got {type(data)}")
+
         instance = cls()
         for k, v in data.items():
             if k in cls._supported_fields and k not in cls._fixed_fields:
@@ -190,7 +200,6 @@ class AcAnalogData(BaseModel):
             'voltage': self.voltage,
             'current': self.current
         }
-
 @dataclass
 class AcAlarmStatus(BaseModel):
     """空调告警状态类"""
@@ -241,9 +250,9 @@ class AcRunStatus(BaseModel):
     _supported_fields = {'air_conditioner', 'indoor_fan', 'outdoor_fan', 'heater'}
     _fixed_fields = {'data_flag': DataFlag.NORMAL}
 
-    def __init__(self, air_conditioner: SwitchStatus = SwitchStatus.ON,
-                 indoor_fan: SwitchStatus = SwitchStatus.ON,
-                 outdoor_fan: SwitchStatus = SwitchStatus.ON,
+    def __init__(self, air_conditioner: SwitchStatus = SwitchStatus.OFF,
+                 indoor_fan: SwitchStatus = SwitchStatus.OFF,
+                 outdoor_fan: SwitchStatus = SwitchStatus.OFF,
                  heater: SwitchStatus = SwitchStatus.OFF):
         super().__init__()
         self.air_conditioner = air_conditioner  # 机柜空调设备状态,1字节
@@ -262,6 +271,14 @@ class AcRunStatus(BaseModel):
         return cls(SwitchStatus(air_conditioner), SwitchStatus(indoor_fan),
                    SwitchStatus(outdoor_fan), SwitchStatus(heater))
 
+    def to_dict(self):
+        return {
+            'air_conditioner': self.air_conditioner.name,
+            'indoor_fan': self.indoor_fan.name,
+            'outdoor_fan': self.outdoor_fan.name,
+            'heater': self.heater.name,
+            'cooling': SwitchStatusself.air_conditioner== SwitchStatus.ON and self.heater == SwitchStatus.OFF
+        }
     def to_dict(self):
         base_dict = super().to_dict()
         base_dict['cooling'] = self._determine_cooling_status().name
@@ -306,6 +323,15 @@ class AcConfigParams(BaseModel):
         return cls(start_temp, temp_hysteresis, heater_start_temp,
                    heater_hysteresis, high_temp_alarm, low_temp_alarm)
 
+    def to_dict(self):
+        return {
+            'start_temp': self.start_temp / 10,
+            'temp_hysteresis': self.temp_hysteresis / 10,
+            'heater_start_temp': self.heater_start_temp  / 10,
+            'heater_hysteresis': self.heater_hysteresis / 10,
+            'high_temp_alarm': self.high_temp_alarm / 10,
+            'low_temp_alarm': self.low_temp_alarm / 10
+        }
 @dataclass
 class RemoteControl(BaseModel):
     """遥控控制类"""
