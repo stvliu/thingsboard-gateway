@@ -270,8 +270,23 @@ class HdcAcSimulator:
             self.ac_analog_data.supply_temp = self.ac_analog_data.cabinet_temp
 
     def simulate_natural_temperature_change(self, time_delta):
-        temp_diff = self.ambient_temp - self.ac_analog_data.cabinet_temp / 10
-        temp_change = temp_diff * 0.1 * time_delta
+        # 热惯性系数 (0-1之间，越大表示温度变化越慢)
+        thermal_inertia = 0.95
+
+        # 隔热性能 (0-1之间，越大表示隔热性能越好)
+        insulation_factor = 0.8
+
+        # 计算目标温度（考虑隔热性能）
+        target_temp = self.ambient_temp * (1 - insulation_factor) + (
+                    self.ac_analog_data.cabinet_temp / 10) * insulation_factor
+
+        # 计算温度差
+        temp_diff = target_temp - self.ac_analog_data.cabinet_temp / 10
+
+        # 计算温度变化，考虑热惯性
+        temp_change = temp_diff * (1 - thermal_inertia) * time_delta
+
+        # 更新温度
         self.ac_analog_data.cabinet_temp += int(temp_change * 10)
         self.ac_analog_data.supply_temp = self.ac_analog_data.cabinet_temp
 
