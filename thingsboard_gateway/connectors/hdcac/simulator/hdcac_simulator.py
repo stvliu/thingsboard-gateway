@@ -23,8 +23,8 @@ FAULT_PROBABILITY = 0.1  # 故障发生概率
 # 温度相关常量
 MIN_AMBIENT_TEMP = 27  # 最低环境温度(°C)
 MAX_AMBIENT_TEMP = 36  # 最高环境温度(°C)
-DAY_TEMP_CHANGE_RATE = 0.05  # 白天温度变化率(°C/秒)
-NIGHT_TEMP_CHANGE_RATE = -0.05  # 夜晚温度变化率(°C/秒)
+DAY_TEMP_CHANGE_RATE = 0.02  # 白天温度变化率(°C/秒)
+NIGHT_TEMP_CHANGE_RATE = -0.02  # 夜晚温度变化率(°C/秒)
 MIN_CABINET_TEMP = -20  # 最低机柜温度(°C)
 MAX_CABINET_TEMP = 40  # 最高机柜温度(°C)
 TEMP_SCALE = 10  # 温度缩放因子，用于将浮点温度转换为整数存储
@@ -53,7 +53,7 @@ COOLING_RATE_FACTOR = 0.2  # 制冷速率因子
 RANDOM_TEMP_CHANGE_MIN = -0.1  # 最小随机温度变化(°C)
 RANDOM_TEMP_CHANGE_MAX = 0.1  # 最大随机温度变化(°C)
 VOLTAGE_FLUCTUATION = 2  # 电压波动范围(V)
-DEFAULT_TARGET_TEMP = 16.0  # 默认目标温度(°C)
+DEFAULT_TARGET_TEMP = 18.0  # 默认目标温度(°C)
 
 
 class HdcAcSimulator:
@@ -315,7 +315,7 @@ class HdcAcSimulator:
         切换到自动模式
         """
         self._log.info("10分钟后切换到自动模式")
-        self.check_auto_mode()
+        # self.check_auto_mode()
 
     def simulate_temperature_change(self, time_delta):
         """
@@ -533,9 +533,9 @@ class HdcAcSimulator:
             self.cooling_efficiency = MAX_EFFICIENCY
             self.heating_efficiency = MAX_EFFICIENCY
 
-        if self.faults['fan']['status']:
-            self.ac_run_status.indoor_fan = SwitchStatus.OFF
-            self.ac_run_status.outdoor_fan = SwitchStatus.OFF
+        # if self.faults['fan']['status']:
+        #     self.ac_run_status.indoor_fan = SwitchStatus.OFF
+        #     self.ac_run_status.outdoor_fan = SwitchStatus.OFF
 
         # 更新告警状态
         self.update_alarm_status()

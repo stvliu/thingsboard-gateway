@@ -379,9 +379,9 @@ class HdcAcSimulator:
             self.cooling_efficiency = 1.0
             self.heating_efficiency = 1.0
 
-        if self.faults['fan']['status']:
-            self.ac_run_status.indoor_fan = SwitchStatus.OFF
-            self.ac_run_status.outdoor_fan = SwitchStatus.OFF
+        # if self.faults['fan']['status']:
+        #     self.ac_run_status.indoor_fan = SwitchStatus.OFF
+        #     self.ac_run_status.outdoor_fan = SwitchStatus.OFF
 
         # 更新告警状态
         self.update_alarm_status()
