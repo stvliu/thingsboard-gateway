@@ -505,10 +505,11 @@ class HdcAcSimulator:
         :param status: 故障状态
         """
         self.faults[fault]['status'] = status
-        if status:
+        if status and self.faults[fault]['timer'] is None:  # 只在故障状态为 True 且定时器为空时创建定时器
             self._log.warning(f"{fault.capitalize()} 故障发生.")
             # 设置故障自动恢复定时器
-            self.faults[fault]['timer'] = threading.Timer(self.fault_duration, self.set_fault, args=[fault, False])
+            self.faults[fault]['timer'] = threading.Timer(self.fault_duration, self.set_fault,
+                                                          args=[fault, False])
             self.faults[fault]['timer'].start()
         else:
             self._log.info(f"{fault.capitalize()} 故障已解决.")

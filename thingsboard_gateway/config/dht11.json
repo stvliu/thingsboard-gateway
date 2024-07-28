@@ -36,7 +36,5 @@
           }
         ]
       }
-    ],
-    "logLevel": "INFO",
-    "enableRemoteLogging": false
+    ]
   }
